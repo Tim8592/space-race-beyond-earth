@@ -130,7 +130,10 @@ test('Earth Observation One shares spacecraft design and completes a seven-day s
     await expect(page.getByRole('heading',{name:'Earth Observation One'})).toBeVisible();
     const start=page.getByRole('button',{name:/Launch Earth Observation One/});
     await expect(start).toBeEnabled();
+    const balance=page.locator('.kpi').filter({hasText:'AVAILABLE CAPITAL'}).locator('strong');
+    const balanceBefore=await balance.textContent();
     await start.click();
+    await expect(balance).not.toHaveText(balanceBefore??'');
     await expect(page.getByRole('heading',{name:/Satellite in orbit/})).toBeVisible();
     await page.getByRole('button',{name:/Advance one day/}).click();
     await expect(page.getByText(/Day 1: instrument operated/)).toBeVisible();
