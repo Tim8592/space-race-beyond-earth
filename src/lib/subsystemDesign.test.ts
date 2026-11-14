@@ -57,6 +57,30 @@ describe('coupled in-space spacecraft engineering', () => {
     }
   });
 
+  it('lets multiple RTGs supply electric thrusters far from the Sun, at a substantial mass cost', () => {
+    const solar = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, distanceAu: 39.5 });
+    const nuclear = sizeSubsystemDesign({
+      ...DEFAULT_SUBSYSTEM_DESIGN,
+      distanceAu: 39.5, cellAreaM2: 0, powerSourceId: 'mmrtg', powerSourceCount: 4,
+    });
+    expect(solar.canPowerThruster).toBe(false);
+    expect(nuclear.canPowerThruster).toBe(true);
+    expect(nuclear.generatorElectricPowerW).toBe(440);
+    expect(nuclear.powerSystemMassKg).toBe(180);
+    expect(nuclear.modeledDryMassKg).toBeGreaterThan(solar.modeledDryMassKg);
+    expect(nuclear.idealDeltaVms).toBeLessThan(solar.idealDeltaVms);
+  });
+
+  it('keeps radioisotope generator waste heat separate from the spacecraft radiator', () => {
+    const solar = sizeSubsystemDesign(DEFAULT_SUBSYSTEM_DESIGN);
+    const nuclear = sizeSubsystemDesign({
+      ...DEFAULT_SUBSYSTEM_DESIGN, powerSourceId: 'mmrtg', powerSourceCount: 1,
+    });
+    expect(nuclear.powerSystemWasteHeatW).toBeGreaterThan(1000);
+    expect(nuclear.thermalLoadW).toBeCloseTo(solar.thermalLoadW);
+    expect(nuclear.warnings.some(w => w.includes('Dedicated source heat rejection'))).toBe(true);
+  });
+
   it('rejects nonphysical values rather than reporting plausible mass estimates', () => {
     expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, radiatorTemperatureK: -10 })).toThrow(RangeError);
     expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, propellantMassKg: 0 })).toThrow(RangeError);
