@@ -2,7 +2,7 @@
 
 Research date: November 14, 2026. Source of truth: NASA's **2026 State-of-the-Art of Small Spacecraft Technology** (S3VI), alongside NASA Glenn, NASA GSFC, and JPL resources.
 
-**Status:** Research-backed catalog and pure engineering calculations have been added to `src/lib/spacecraftTechnology.ts` and `src/lib/spacecraftSystems.ts`. They are **not yet hooked up to the gameplay interface**. The existing launch-vehicle contract simulator continues to use explicitly illustrative game engine and contract values.
+**Updated v0.3 status:** The engineering catalog, first-order model, source-backed power options, and interactive orbital simulation are exposed through the Spacecraft Builder and Orbital Map tabs. Mission contracting is still separate from the in-space systems lab. The original launch-vehicle game remains a deliberately idealized single-stage model with fictional performance/cost inputs.
 
 ## 1. Model boundaries: launch vehicle vs. in-space spacecraft
 

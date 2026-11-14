@@ -6,7 +6,7 @@
 
 The goal is **not** to reproduce a professional flight dynamics package inside a video game. Instead, it is to make real engineering trade-offs understandable and engaging, while clearly distinguishing sourced physics from simplified mechanics.
 
-**Status:** Hackathon prototype, v0.2. The in-space spacecraft systems lab is interactive and separate from the mission economy. The first playable loop is Earth-orbit mission contracting and spacecraft configuration. The Moon, Mars, technology tree, space economy, and competitive deadline are planned features—not implemented yet.
+**Status:** Hackathon prototype, v0.3. Dedicated top-level tabs now separate Mission Control, Spacecraft Builder, Orbital Map, and Research. The spacecraft builder contains separate Propulsion, Power, Thermal, Tank and Engineering Analysis tabs. Solar, flight-heritage RTGs, a historical space-reactor example, and a ground-tested reactor concept are selectable in the power system. The map draws mathematically propagated Earth orbits and approximate JPL-derived planetary positions. These systems are not yet coupled into actual mission contracts or real low-thrust transfer feasibility. Moon/Mars contracts, launch windows, research progression, and lunar economy are future work.
 
 ## Quick start
 
@@ -38,7 +38,7 @@ npm run build
 
 The game saves campaign progress and saved vehicle blueprints in the browser's `localStorage`. The **Reset campaign** action clears the current save. No account or backend is required.
 
-## Current features (v0.1)
+## Current features (v0.3)
 
 | Feature | How it works | Status |
 | --- | --- | --- |
@@ -49,7 +49,9 @@ The game saves campaign progress and saved vehicle blueprints in the browser's `
 | Manufacturing learning | 2% build-cost reduction per previous attempt using the same propulsion family, capped at 20% | Playable (simplified) |
 | Simulation clock | Each mission advances a set number of days; manual 7-day advance | Playable |
 | Saved spacecraft designs | Save and reload named blueprints locally | Playable |
-| 2D mission visualization | Schematic Earth circular-orbit display with NASA-derived orbital speed and period | Playable (illustrative) |
+| Interactive orbital map | Keplerian Earth satellite trajectories with adjustable altitude/eccentricity and time; JPL 1800–2050 approximate Earth–Moon barycenter, Venus, Mars and Jupiter positions | Playable (two-body/approximate) |
+| Subsystem tabs | Propulsion, power, thermal, tanks, separate analysis | Playable |
+| Advanced generators | PV, MMRTG, MHW-RTG, GPHS-RTG, SNAP-10A heritage reactor, Kilopower ground-demonstrator reference | Playable (reference data; some integration/mass is incomplete) |
 | Research/tech tree | Fund a research institution, earn research points, unlock tech, improve manufacturing | **Planned** |
 | Deep-space transfers | Moon, Mars, Jupiter-moon orbital mechanics, launch windows and trajectory plots | **Planned** |
 | Infrastructure | Lunar outposts, fuel depots, manufacturing, recurring revenue | **Planned** |
@@ -70,9 +72,17 @@ This loop is intentionally small enough to be a working demonstration rather tha
 
 The 2026 NASA Small Spacecraft SoA research has been organized into a [component data catalog](src/lib/spacecraftTechnology.ts), [first-order sizing functions](src/lib/spacecraftSystems.ts), [unit tests](src/lib/spacecraftSystems.test.ts), and a detailed [NASA technology research guide](docs/NASA_TECHNOLOGY_RESEARCH.md). Source-backed examples cover in-space Hall/ion propulsion, PV cells, battery packs, thermal surfaces, CubeSat structure references, and GNC.
 
-**New in v0.2 — interactive subsystem lab:** click **Spacecraft Systems** in the navigation. The separate in-space spacecraft design panel connects propulsion, solar generation, batteries, thermal radiator sizing and (liquid-only) tank geometry into an illustrative system mass and ideal delta-V/burn-time analysis. Changing engine, solar distance, array area, battery, radiator coating or tank sizing updates dependent engineering quantities in real time. It has independently saved parameters in browser localStorage.
+**New in v0.3 — interactive subsystem lab:** click **Spacecraft Builder** in the navigation and choose a subsystem tab. The separate in-space spacecraft design panel connects propulsion, solar generation, batteries, thermal radiator sizing and (liquid-only) tank geometry into an illustrative system mass and ideal delta-V/burn-time analysis. Changing engine, solar distance, array area, battery, radiator coating or tank sizing updates dependent engineering quantities in real time. It has independently saved parameters in browser localStorage.
 
-**Limitations:** these models are early design estimates, not flight validation. Gas and solid propellant storage still lack a tank-mass model and are displayed as *incomplete modeled mass estimates*. PV/thermal assembly areal mass, PPU and tank-management allowances are explicitly illustrative, not NASA performance data. The separate v0.1 launch-vehicle contract simulator remains unchanged.
+**Limitations:** the map shows two-body planetary/satellite positions, **not** maneuver trajectories or actual launch windows. Solar output is distance-dependent, RTG output is age-dependent, and generator mass may change modeled delta-V. The source's own waste heat is shown separately, **not automatically routed through the spacecraft radiator**. These models are early design estimates, not flight validation. Gas and solid propellant storage still lack a tank-mass model and are displayed as *incomplete modeled mass estimates*. PV/thermal assembly areal mass, PPU and tank-management allowances are explicitly illustrative, not NASA performance data. The separate v0.1 launch-vehicle contract simulator remains unchanged.
+
+### Calculated orbits versus missions
+
+The interactive Orbital Map uses NASA/JPL parameters and [JPL's approximate planetary element equations](https://ssd.jpl.nasa.gov/planets/approx_pos.html). The Earth satellite view computes Kepler's equation and vis-viva speed for adjustable eccentricity, altitude and time. The solar-system view computes projected J2000 heliocentric positions using elements and secular rates for 1800–2050. It uses Earth–Moon barycenter, not geocentric Earth, and a UTC approximation of TDB. These models do **not** yet produce a launch-window optimizer, patched-conic Earth–Mars flight trajectory, orbit insertion or finite-thrust optimal control.
+
+### CAD strategy
+
+A future 3D assembler could use **Onshape** for parametric parts and assemblies and **Three.js** (optionally React Three Fiber) to load exported GLB/glTF meshes in our React web UI. Onshape REST integrations would need a **server-side API/OAuth layer**, not browser-only secret keys. **FreeCAD** or OpenCascade-based tools are potential offline/open-source alternatives. In-game mesh geometry and physical design properties (mass, tank volume, solar area, heat/power demands) should be linked through an explicit component schema. See [3D CAD and orbital roadmap](docs/CAD_AND_ORBITAL_ROADMAP.md).
 
 ## Engineering foundation
 

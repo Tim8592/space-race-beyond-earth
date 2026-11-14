@@ -1,6 +1,6 @@
 # Sources, tools, and SI/AI attribution
 
-This file documents the resources actually used by the **Space Race: Beyond Earth v0.1 starter project**. Update it whenever new data, assets, code, or AI-generated content is incorporated.
+This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.3**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
 
 ## NASA / JPL resources used in the application
 
@@ -13,7 +13,7 @@ The game uses classical two-body equations; these are general mechanics, not a c
 
 ## Additional NASA references used in the subsystem research code
 
-The technology catalog `src/lib/spacecraftTechnology.ts` and first-order engineering module `src/lib/spacecraftSystems.ts` include NASA-surveyed manufacturer information and NASA solar irradiance reference data. These are not wired into the game UI yet.
+The technology catalog `src/lib/spacecraftTechnology.ts` and first-order engineering module `src/lib/spacecraftSystems.ts` include NASA-surveyed manufacturer information and NASA solar irradiance reference data. These are now wired into the separate spacecraft subsystem builder and calculations. NASA/DOE/JPL references remain distinct from game balancing and user-chosen engineering assumptions.
 
 | Source | Link | Data used in research/code |
 | --- | --- | --- |
@@ -26,6 +26,20 @@ The technology catalog `src/lib/spacecraftTechnology.ts` and first-order enginee
 | NASA Glenn Ideal Rocket Equation | https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/ideal-rocket-equation/ | Ideal delta-V and inverse propellant requirement |
 
 Research details, formulas, limitations and additional sources: [NASA_TECHNOLOGY_RESEARCH.md](NASA_TECHNOLOGY_RESEARCH.md). NASA's SoA is a survey of publicly available sources, and listed product performance is not equivalent to NASA validation or endorsement.
+
+## Additional NASA/JPL power and orbit resources actually used in v0.3
+
+| Source | Link | Usage in code |
+| --- | --- | --- |
+| NASA/JPL Solar System Dynamics — approximate positions | https://ssd.jpl.nasa.gov/planets/approx_pos.html | Table 1 element values and rates (1800–2050); Kepler solver for heliocentric position visualization |
+| NASA/JPL Solar System Dynamics — orbital parameter GM | https://ssd.jpl.nasa.gov/astro_par.html | Earth gravity parameter for two-body orbit propagation |
+| NASA/JPL radioisotope power systems reference book (2015) | https://ntrs.nasa.gov/api/citations/20160001769/downloads/20160001769.pdf | Voyager MHW-RTG power/mass/degradation; GPHS-RTG historical power/mass/degradation |
+| NASA MMRTG technical primer | https://ntrs.nasa.gov/api/citations/20170000017/downloads/20170000017.pdf | MMRTG approximately 110 W electric, 45 kg and 1880 W thermal |
+| NASA 1965 space reactor study | https://ntrs.nasa.gov/api/citations/19650058959/downloads/19650058959.pdf | Historical SNAP-10A 500 W and unshielded system mass estimate; reactor integration still incomplete |
+| NASA KRUSTY ground test (2018) | https://ntrs.nasa.gov/citations/20180007748 | Ground-demonstrated fission research; explicitly not flight proven |
+| NASA Radioisotope Power Systems RTG summary | https://science.nasa.gov/planetary-science/programs/radioisotope-power-systems/power-radioisotope-thermoelectric-generators/ | Flight heritage and power class distinctions |
+
+An RTG's published thermal output is not automatically heat entering the spacecraft bus radiator. Reactor mass/source thermal subsystem size, source shielding, integration mass, power conditioning, and suitable reactor radiator design remain missing in the first-order model. The JPL solar-system model is a low-accuracy visualization, not mission-grade ephemeris.
 
 ## Other frameworks and external sources
 
