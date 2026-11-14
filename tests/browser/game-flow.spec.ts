@@ -77,3 +77,37 @@ test('Learning tab and Mission Library survive real navigation',async({page})=>{
     await expect(page.getByRole('heading',{name:'Historical spacecraft trajectory'})).toBeVisible();
   });
 });
+
+test('NASA GLB failure gives a specific error and Retry triggers a new fetch',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    let requests=0;
+    await page.route('**/models/Dawn.glb',async route=>{
+      requests++;
+      await route.fulfill({status:404,contentType:'text/plain',body:'Missing test model'});
+    });
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Mission Library'}).click();
+    await expect(page.locator('.craft-load-help')).toContainText('HTTP 404');
+    await expect.poll(()=>requests).toBeGreaterThanOrEqual(1);
+    const before=requests;
+    await page.getByRole('button',{name:'Retry NASA 3D model'}).click();
+    await expect.poll(()=>requests).toBeGreaterThan(before);
+    await expect(page.locator('.craft-load-help')).toContainText('HTTP 404');
+  });
+});
+
+test('Campaign blueprints can be saved and loaded after changing a mass slider',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    const name=page.locator('#craft-name');
+    await name.fill('QA verification spacecraft');
+    await page.getByRole('button',{name:/Save blueprint/}).click();
+    const reload=page.getByRole('combobox',{name:'Load saved blueprint'});
+    await expect(reload).toBeVisible();
+    await name.fill('Changed working copy');
+    await reload.selectOption('QA verification spacecraft');
+    await expect(name).toHaveValue('QA verification spacecraft');
+    await page.reload();
+    await expect(page.getByRole('combobox',{name:'Load saved blueprint'})).toBeVisible();
+  });
+});
