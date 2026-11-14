@@ -39,3 +39,27 @@ jobs:
           cache-dependency-path: orekit-service/pom.xml
       - name: Compile and test real Orekit transfer solver
         run: mvn --batch-mode --no-transfer-progress -f orekit-service/pom.xml verify
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Run interactive browser smoke tests
+        run: npm run test:browser
+      - name: Attach screenshots and traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-smoke-diagnostics
+          path: test-results/
+          retention-days: 5

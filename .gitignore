@@ -12,3 +12,7 @@ public/models/*.glb
 
 # Draco files copied locally from the installed Three.js package
 public/draco/
+
+# Playwright browser test reports
+playwright-report/
+test-results/

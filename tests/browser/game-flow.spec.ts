@@ -1,0 +1,79 @@
+import { test, expect, type Page } from '@playwright/test';
+
+async function expectNoErrors(page:Page, run:(errors:string[])=>Promise<void>) {
+  const errors:string[] = [];
+  const onError=(err:Error)=>errors.push(err.message);
+  page.on('pageerror',onError);
+  try {await run(errors);} finally {page.off('pageerror',onError);}
+  expect(errors,'Uncaught React or browser JavaScript exception').toEqual([]);
+}
+
+test('Mission Control supports a launch, financial feedback, and save-state reload',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await expect(page.getByRole('heading',{name:/Build the future/i})).toBeVisible();
+    await expect(page.getByText('AVAILABLE CAPITAL')).toBeVisible();
+    const launch=page.getByRole('button',{name:/Launch mission|Attempt mission anyway/i});
+    await expect(launch).toBeEnabled();
+    await launch.click();
+    await expect(page.getByText('SUCCESSFUL MISSIONS')).toBeVisible();
+    await expect(page.getByText('1 / 1')).toBeVisible();
+    await page.reload();
+    await expect(page.getByText('1 / 1')).toBeVisible();
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await expect(page.getByRole('heading',{name:'Recent missions'})).toBeVisible();
+  });
+});
+
+test('Spacecraft builder tabs, design fields and analysis remain interactive',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Spacecraft Builder'}).click();
+    await expect(page.getByRole('heading',{name:'Spacecraft Subsystems'})).toBeVisible();
+    const thruster=page.locator('label.sys-field').filter({hasText:'Number of thrusters'}).locator('input');
+    await expect(thruster).toHaveValue('1');
+    await thruster.fill('3');
+    await expect(thruster).toHaveValue('3');
+    await page.getByRole('tab',{name:'Power',exact:true}).click();
+    await expect(page.locator('label.sys-field').filter({hasText:'Number of solar wings'})).toBeVisible();
+    await page.getByRole('tab',{name:'Thermal',exact:true}).click();
+    await expect(page.locator('label.sys-field').filter({hasText:'Number of radiator panels'})).toBeVisible();
+    await page.getByRole('tab',{name:'Tanks'}).click();
+    await expect(page.getByText('Propellant storage class:')).toBeVisible();
+    await page.getByRole('tab',{name:'Engineering Analysis'}).click();
+    await expect(page.getByRole('heading',{name:'Coupled engineering analysis'})).toBeVisible();
+    await expect(page.getByText('Combined power margin')).toBeVisible();
+    await page.reload();
+    await page.getByRole('tab',{name:'Spacecraft Builder'}).click();
+    await expect(page.locator('label.sys-field').filter({hasText:'Number of thrusters'}).locator('input')).toHaveValue('3');
+  });
+});
+
+test('Orbital map and transfer planning have a graceful offline state',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Orbital Map'}).click();
+    await expect(page.getByRole('heading',{name:'Orbital Map & Simulation'})).toBeVisible();
+    await expect(page.getByRole('img',{name:/Calculated elliptical Earth satellite orbit/})).toBeVisible();
+    await page.getByRole('tab',{name:'Planet positions'}).click();
+    await expect(page.getByRole('img',{name:/Calculated approximate JPL planetary positions/})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Earth → planetary transfer'})).toBeVisible();
+    await page.getByRole('tab',{name:'Optimize minimum Δv'}).click();
+    await expect(page.getByRole('button',{name:/Find lowest Δv/})).toBeVisible();
+  });
+});
+
+test('Learning tab and Mission Library survive real navigation',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Learn Physics'}).click();
+    await expect(page.getByRole('heading',{name:'The physics behind your spacecraft'})).toBeVisible();
+    await page.getByRole('tab',{name:'Electrical power'}).click();
+    await expect(page.getByRole('heading',{name:/How much power can sunlight provide/})).toBeVisible();
+    await page.getByRole('tab',{name:'Mission Library'}).click();
+    await expect(page.getByRole('heading',{name:'Build on what has flown.'})).toBeVisible();
+    await page.getByRole('button',{name:/New Horizons/}).click();
+    await expect(page.getByRole('heading',{name:'New Horizons'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Historical spacecraft trajectory'})).toBeVisible();
+  });
+});
