@@ -8,10 +8,10 @@ import type { SubsystemDesign, SystemResults } from './lib/subsystemDesign';
 export type PartName = 'bus' | 'power' | 'radiator' | 'tank' | 'propulsion' | 'antenna';
 const PART_DETAILS: Record<PartName, string> = {
   bus: 'Structural spacecraft body: currently a visual envelope. Dry bus mass is entered in the engineering panel.',
-  power: 'Solar panels: size responds to selected active cell area. Real panel substrate, gimbals and deployment dynamics are approximated.',
-  radiator: 'Radiators: visible area responds to first-order radiative sizing. Heat pipes, view factors and source cooling still need detailed modeling.',
+  power: 'Solar wings: the number of panels follows the Power tab; individual wing area changes with the total active cell area. Generator count is also shown for radioisotope/fission options.',
+  radiator: 'Radiator count and individual panel size follow your Thermal tab. Heat pipes, view factors and source cooling still need detailed modeling.',
   tank: 'Propellant storage: schematic tank only. Liquid volume/wall sizing is used for the chemical option; xenon/iodine storage models are incomplete.',
-  propulsion: 'In-space propulsion: visual thruster type follows your selection. Rated power, Isp, burn time and mass are calculated independently.',
+  propulsion: 'Each engine nozzle is shown. Firing all selected engines scales total thrust, power, burn time and hardware mass; Isp remains a per-engine efficiency figure.',
   antenna: 'Communications dish: visual placeholder. Link-budget and pointing constraints are future engineering features.',
 };
 
@@ -40,60 +40,79 @@ function Metal({ color = '#b4c9d8' }: {color?: string}) {
   return <meshStandardMaterial color={color} metalness={0.7} roughness={0.35}/>;
 }
 
-function PanelWing({ side, scale }: {side: -1|1; scale: number}) {
-  const length = Math.max(0.7, Math.min(4.4, 0.75 + scale * 0.53));
-  const width = Math.max(0.5, Math.min(1.8, 0.55 + scale * 0.12));
-  const centerX = side*(1.05 + length / 2);
-  return (
-    <group>
-      <mesh position={[side*1.13,0,0]} rotation={[0,0,Math.PI/2]}>
-        <cylinderGeometry args={[0.048,0.048,1.1,9]}/><Metal color="#8494a8"/>
-      </mesh>
-      <mesh position={[centerX,0,0]}>
-        <boxGeometry args={[length,0.07,width]}/>
-        <meshStandardMaterial color="#162b68" metalness={0.42} roughness={0.3}/>
-      </mesh>
-      {Array.from({length:6},(_,i)=>(
-        <mesh key={i} position={[centerX-length/2+length*(i+0.5)/6,0.045,0]}>
-          <boxGeometry args={[Math.max(.02,length/6-0.035),0.011,width-0.06]}/>
-          <meshStandardMaterial color={i%2?'#2554a0':'#1b4687'} metalness={0.58} roughness={0.28}/>
-        </mesh>
-      ))}
-      {Array.from({length:4},(_,i)=>(
-        <mesh key={i} position={[centerX,0.05,-width/2+(i+1)*width/5]}>
-          <boxGeometry args={[length,0.01,0.011]}/>
-          <meshStandardMaterial color="#83a5d0" emissive="#163355" emissiveIntensity={0.2}/>
-        </mesh>
-      ))}
-      <mesh position={[centerX,0.06,0]}>
-        <boxGeometry args={[length,0.011,0.027]}/>
-        <meshStandardMaterial color="#9cb2cb"/>
-      </mesh>
-    </group>
-  );
-}
-
-function Radiator({area}: {area:number}) {
-  const panel = Math.min(2.8,Math.max(0.4,Math.sqrt(Math.max(0.01,area))*.66));
-  return <group>
-    {([-1,1] as const).map(side=><group key={side} position={[side*0.7,-0.1,-1.08]}>
-      <mesh><boxGeometry args={[panel/2,.06,panel]}/><meshStandardMaterial color="#aeb9c9" metalness={0.25} roughness={0.65}/></mesh>
-      {Array.from({length:6},(_,i)=><mesh key={i} position={[0,.04,-panel/2+(i+.5)*panel/6]}>
-        <boxGeometry args={[panel/2,.012,.018]}/><meshStandardMaterial color="#6f91ab" metalness={0.55}/>
-      </mesh>)}
-    </group>)}
+function PanelWing({ side, index, areaM2 }: { side: -1 | 1; index: number; areaM2: number }) {
+  // Schematic geometry: panel envelope scales with the square root of its
+  // allocation of total active cell area, not with physical 1:1 CAD units.
+  const areaScale = Math.sqrt(Math.max(0.01, areaM2));
+  const length = Math.max(0.55, Math.min(3.8, 0.65 + areaScale * 0.92));
+  const width = Math.max(0.42, Math.min(1.45, 0.3 + areaScale * 0.45));
+  const centerX = side * (1.03 + length / 2);
+  const offsetZ = (index - 1.5) * 0.72;
+  const columns = Math.max(2, Math.min(10, Math.ceil(3.1 * areaScale)));
+  const rows = Math.max(2, Math.min(5, Math.ceil(2 * areaScale)));
+  return <group position={[0, 0, offsetZ]}>
+    <mesh position={[side*1.08,0,0]} rotation={[0,0,Math.PI/2]}>
+      <cylinderGeometry args={[0.05,0.05,0.5,10]}/><Metal color="#8295aa"/>
+    </mesh>
+    <mesh position={[centerX,0,0]}>
+      <boxGeometry args={[length,0.07,width]}/>
+      <meshStandardMaterial color="#22375a" metalness={0.55} roughness={0.35}/>
+    </mesh>
+    {Array.from({length:columns * rows},(_,i)=>{
+      const x = centerX - length / 2 + length * ((i % columns)+0.5)/columns;
+      const z = -width/2 + width*(Math.floor(i/columns)+0.5)/rows;
+      return <mesh key={i} position={[x,0.047,z]}>
+        <boxGeometry args={[length/columns-0.025,0.008,width/rows-0.024]}/>
+        <meshStandardMaterial color={i%2===0?'#255cb1':'#1c458c'} metalness={0.35} roughness={0.22}/>
+      </mesh>;
+    })}
   </group>;
 }
 
-function Thruster({electric,ready}: {electric:boolean;ready:boolean}) {
-  return <group position={[0,-.1,-1.12]} rotation={[Math.PI/2,0,0]}>
-    <mesh><cylinderGeometry args={[.3,.43,.6,20]}/><Metal color="#667789"/></mesh>
-    <mesh position={[0,-.32,0]}><torusGeometry args={[.31,.055,10,24]}/><Metal color="#b6cbdf"/></mesh>
-    <mesh position={[0,-.34,0]}><circleGeometry args={[.255,24]}/><meshBasicMaterial color={electric&&ready?'#6caaf8':'#252d37'}/></mesh>
-    {electric&&ready&&<mesh position={[0,-.68,0]} rotation={[Math.PI,0,0]}>
-      <coneGeometry args={[.24,.7,24,1,true]}/>
-      <meshBasicMaterial color="#65a8ff" transparent opacity={0.35} depthWrite={false}/>
-    </mesh>}
+function RadiatorPanels({ areaM2, count }: {areaM2:number;count:number}) {
+  const perPanel = Math.max(0.01, areaM2 / count);
+  const dimension = Math.max(0.37,Math.min(1.3,Math.sqrt(perPanel)*0.77));
+  return <group>
+    {Array.from({length:count},(_,i)=>{
+      const side=i%2===0?-1:1;
+      const row=Math.floor(i/2);
+      const y=0.52-row*0.38;
+      const x=side*(0.62+row*.1);
+      const z=-1.04-row*.05;
+      return <group key={i} position={[x,y,z]}>
+        <mesh><boxGeometry args={[dimension*.78,dimension,.04]}/>
+          <meshStandardMaterial color="#c1cbd6" roughness={.55} metalness={.27}/>
+        </mesh>
+        {Array.from({length:5},(_,j)=><mesh key={j}
+          position={[-dimension*.34+dimension*.68*(j+.5)/5,0,.027]}>
+          <boxGeometry args={[.018,dimension*.92,.012]}/>
+          <meshStandardMaterial color="#7591aa" metalness={.5}/>
+        </mesh>)}
+      </group>;
+    })}
+  </group>;
+}
+
+function ThrusterCluster({ count, electric, ready }: {count:number;electric:boolean;ready:boolean}) {
+  const columns = Math.min(3,count);
+  const rows = Math.ceil(count/columns);
+  return <group position={[0,-.1,-1.15]}>
+    {Array.from({length:count},(_,i)=>{
+      const row=Math.floor(i/columns), col=i%columns;
+      const numberOnRow=Math.min(columns,count-row*columns);
+      const x=(col-(numberOnRow-1)/2)*.62;
+      const y=(row-(rows-1)/2)*.62;
+      return <group key={i} position={[x,y,0]} rotation={[Math.PI/2,0,0]}>
+        <mesh><cylinderGeometry args={[.18,.27,.41,20]}/><Metal color="#607489"/></mesh>
+        <mesh position={[0,-.24,0]}><torusGeometry args={[.2,.033,9,20]}/><Metal color="#bfd0e4"/></mesh>
+        <mesh position={[0,-.255,0]}><circleGeometry args={[.169,20]}/>
+          <meshBasicMaterial color={electric&&ready?'#7aafff':'#28303a'}/></mesh>
+        {electric&&ready&&<mesh position={[0,-.56,0]} rotation={[Math.PI,0,0]}>
+          <coneGeometry args={[.12,.53,18,1,true]}/>
+          <meshBasicMaterial color="#68b2ff" transparent opacity={.35} depthWrite={false}/>
+        </mesh>}
+      </group>;
+    })}
   </group>;
 }
 
@@ -116,38 +135,56 @@ export function ModularSpacecraft({
   selected: PartName;
   onSelect: (part: PartName)=>void;
 }) {
-  const pv = Math.sqrt(Math.max(0,design.cellAreaM2));
   const radiatorArea = analysis?.radiatorAreaM2 ?? 0.3;
-  const tankScale = Math.max(.28,Math.min(.7,.28+design.propellantMassKg/320));
-  const hasSolar = design.cellAreaM2>0;
+  const tankScale = Math.max(.28,Math.min(.73, .23 + Math.cbrt(design.propellantMassKg) *.12));
   const isNuclear = design.powerSourceId!=='solar';
+  const wingCount = design.cellAreaM2 > 0 ? design.solarWingCount : 0;
   return <group rotation={[.12,.1,0]}>
     <Pick part="bus" selected={selected} onSelect={onSelect}>
-      <mesh><boxGeometry args={[1.75,1.8,1.65]}/><meshStandardMaterial color="#b2a77f" metalness={0.32} roughness={0.72}/></mesh>
-      <mesh position={[0,0,0.836]}><boxGeometry args={[1.72,1.76,.02]}/><meshStandardMaterial color="#d8b65b" metalness={0.35} roughness={.58}/></mesh>
-      {[-.65,.65].map(x=><mesh key={x} position={[x,0,.855]}><boxGeometry args={[.04,1.77,.025]}/><Metal color="#747f87"/></mesh>)}
+      <mesh><boxGeometry args={[1.75,1.8,1.65]}/>
+        <meshStandardMaterial color="#b4ac82" metalness={.3} roughness={.72}/></mesh>
+      <mesh position={[0,0,0.836]}><boxGeometry args={[1.72,1.76,.02]}/>
+        <meshStandardMaterial color="#d8b85f" metalness={.3} roughness={.58}/></mesh>
+      {[-.65,.65].map(x=><mesh key={x} position={[x,0,.855]}>
+        <boxGeometry args={[.04,1.77,.025]}/><Metal color="#747f87"/>
+      </mesh>)}
       <mesh position={[0,.88,0]}><boxGeometry args={[1.78,.08,1.73]}/><Metal color="#c4d5e4"/></mesh>
     </Pick>
-    {hasSolar&&<Pick part="power" selected={selected} onSelect={onSelect}><PanelWing side={-1} scale={pv}/><PanelWing side={1} scale={pv}/></Pick>}
-    {isNuclear&&<Pick part="power" selected={selected} onSelect={onSelect}>
-      <mesh position={[.78,-1.2,.3]} rotation={[0,0,Math.PI/2]}>
-        <cylinderGeometry args={[.22,.22,1.55,18]}/><Metal color={design.powerSourceId==='mmrtg'?'#8e999e':'#8c786a'}/>
-      </mesh>
-      <mesh position={[.78,-1.2,.3]} rotation={[0,0,Math.PI/2]}>
-        <torusGeometry args={[.23,.035,8,20]}/><Metal color="#c0b19b"/>
-      </mesh>
+    {wingCount>0&&<Pick part="power" selected={selected} onSelect={onSelect}>
+      {Array.from({length:wingCount},(_,i)=>
+        <PanelWing key={i} side={i%2===0?-1:1}
+          index={Math.floor(i/2)}
+          areaM2={design.cellAreaM2/wingCount}/>)}
     </Pick>}
-    <Pick part="radiator" selected={selected} onSelect={onSelect}><Radiator area={radiatorArea}/></Pick>
+    {isNuclear&&<Pick part="power" selected={selected} onSelect={onSelect}>
+      {Array.from({length:design.powerSourceCount},(_,i)=>(
+        <group key={i} position={[1.08+(i%2)*.35,-1.05-Math.floor(i/2)*.38,.1]}>
+          <mesh rotation={[0,0,Math.PI/2]}>
+            <cylinderGeometry args={[.15,.15,.65,16]}/><Metal color="#8d969d"/>
+          </mesh>
+          <mesh rotation={[0,0,Math.PI/2]}>
+            <torusGeometry args={[.16,.027,8,18]}/><Metal color="#c0b19b"/>
+          </mesh>
+        </group>
+      ))}
+    </Pick>}
+    <Pick part="radiator" selected={selected} onSelect={onSelect}>
+      <RadiatorPanels areaM2={radiatorArea} count={design.radiatorPanelCount}/>
+    </Pick>
     <Pick part="tank" selected={selected} onSelect={onSelect}>
       <mesh position={[0,-.12,0]}>
-        <sphereGeometry args={[tankScale,20,16]}/><meshStandardMaterial color="#798a9b" metalness={.8} roughness={.25} transparent opacity={selected==='tank'?1:.85}/>
+        <sphereGeometry args={[tankScale,22,18]}/>
+        <meshStandardMaterial color="#798a9b" metalness={.8} roughness={.25}
+          transparent opacity={selected==='tank'?1:.85}/>
       </mesh>
       <mesh position={[0,-.12,.03]} rotation={[Math.PI/2,0,0]}>
         <torusGeometry args={[tankScale*.78,.028,8,24]}/><Metal color="#d9d0b1"/>
       </mesh>
     </Pick>
     <Pick part="propulsion" selected={selected} onSelect={onSelect}>
-      <Thruster electric={design.thrusterId!=='mono-reference'} ready={analysis?.canPowerThruster??false}/>
+      <ThrusterCluster count={design.thrusterCount}
+        electric={design.thrusterId!=='mono-reference'}
+        ready={analysis?.canPowerThruster??false}/>
     </Pick>
     <Pick part="antenna" selected={selected} onSelect={onSelect}><Dish/></Pick>
     <mesh position={[0,-1.7,0]} rotation={[-Math.PI/2,0,0]}>
