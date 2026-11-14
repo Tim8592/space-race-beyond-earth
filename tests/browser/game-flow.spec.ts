@@ -11,6 +11,7 @@ async function expectNoErrors(page:Page, run:(errors:string[])=>Promise<void>) {
 test('Mission Control supports a launch, financial feedback, and save-state reload',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
+    await page.getByRole('tab',{name:/Orbital Contracts · Classic mode/}).click();
     await expect(page.getByRole('heading',{name:/Build the future/i})).toBeVisible();
     await expect(page.getByText('AVAILABLE CAPITAL')).toBeVisible();
     const launch=page.getByRole('button',{name:/Launch mission|Attempt mission anyway/i});
@@ -28,7 +29,7 @@ test('Mission Control supports a launch, financial feedback, and save-state relo
 test('Spacecraft builder tabs, design fields and analysis remain interactive',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
-    await page.getByRole('tab',{name:'Spacecraft Builder'}).click();
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
     await expect(page.getByRole('heading',{name:'Spacecraft Subsystems'})).toBeVisible();
     const thruster=page.locator('label.sys-field').filter({hasText:'Number of thrusters'}).locator('input');
     await expect(thruster).toHaveValue('1');
@@ -44,7 +45,7 @@ test('Spacecraft builder tabs, design fields and analysis remain interactive',as
     await expect(page.getByRole('heading',{name:'Coupled engineering analysis'})).toBeVisible();
     await expect(page.getByText('Combined power margin')).toBeVisible();
     await page.reload();
-    await page.getByRole('tab',{name:'Spacecraft Builder'}).click();
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
     await expect(page.locator('label.sys-field').filter({hasText:'Number of thrusters'}).locator('input')).toHaveValue('3');
   });
 });
@@ -99,6 +100,7 @@ test('NASA GLB failure gives a specific error and Retry triggers a new fetch',as
 test('Campaign blueprints can be saved and loaded after changing a mass slider',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
+    await page.getByRole('tab',{name:/Orbital Contracts · Classic mode/}).click();
     const name=page.locator('#craft-name');
     await name.fill('QA verification spacecraft');
     await page.getByRole('button',{name:/Save blueprint/}).click();
@@ -108,6 +110,49 @@ test('Campaign blueprints can be saved and loaded after changing a mass slider',
     await reload.selectOption('QA verification spacecraft');
     await expect(name).toHaveValue('QA verification spacecraft');
     await page.reload();
+    await page.getByRole('tab',{name:/Orbital Contracts · Classic mode/}).click();
     await expect(page.getByRole('combobox',{name:'Load saved blueprint'})).toBeVisible();
+  });
+});
+
+test('Earth Observation One shares spacecraft design and completes a seven-day scientific mission',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await expect(page.getByRole('heading',{name:'Earth Observation One'})).toBeVisible();
+    await expect(page.getByText('Resource and capacity margins')).toBeVisible();
+    await expect(page.locator('.ob-capacity')).toHaveCount(6);
+    await expect(page.getByText('Projected science returned')).toBeVisible();
+    await page.getByRole('button',{name:/Edit propulsion, solar and thermal/}).click();
+    await expect(page.getByRole('heading',{name:'Spacecraft Subsystems'})).toBeVisible();
+    const thrusters=page.locator('label.sys-field').filter({hasText:'Number of thrusters'}).locator('input');
+    await thrusters.fill('2');
+    await page.getByRole('button',{name:/Return to mission design/}).click();
+    await expect(page.getByRole('heading',{name:'Earth Observation One'})).toBeVisible();
+    const start=page.getByRole('button',{name:/Launch Earth Observation One/});
+    await expect(start).toBeEnabled();
+    await start.click();
+    await expect(page.getByRole('heading',{name:/Satellite in orbit/})).toBeVisible();
+    await page.getByRole('button',{name:/Advance one day/}).click();
+    await expect(page.getByText(/Day 1: instrument operated/)).toBeVisible();
+    await page.reload();
+    await expect(page.getByText(/Day 1: instrument operated/)).toBeVisible();
+    await page.getByRole('button',{name:/Finish seven-day simulation/}).click();
+    await expect(page.getByRole('heading',{name:/Mission successful/})).toBeVisible();
+    await expect(page.getByText('1 / 1')).toBeVisible();
+    await page.getByRole('button',{name:/Redesign and try again/}).click();
+    await expect(page.getByText('Resource and capacity margins')).toBeVisible();
+  });
+});
+
+test('Earth observation thermal and downlink limits change the forecast, not just graphics',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    const science=page.locator('.ob-forecast').first();
+    await expect(science).toContainText('Projected science returned');
+    await page.getByRole('combobox',{name:'Communications / antenna'}).selectOption('uhf');
+    await expect(page.getByText(/Data generation exceeds daily contact capacity/)).toBeVisible();
+    await page.getByRole('combobox',{name:'Communications / antenna'}).selectOption('sband');
+    await page.getByRole('slider',{name:'Additional radiator area'}).fill('0');
+    await expect(page.getByText(/Insufficient modeled radiator heat rejection/)).toBeVisible();
   });
 });
