@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Spacecraft3D from './Spacecraft3D';
 import FieldHelp from './components/FieldHelp';
 import { descriptionFor } from './lib/fieldHelp';
@@ -18,7 +18,7 @@ import {
  */
 const SAVE_KEY = 'space-race-systems-lab-v1';
 
-function readDesign(): SubsystemDesign {
+export function readSubsystemDesign(): SubsystemDesign {
   try {
     const stored = JSON.parse(localStorage.getItem(SAVE_KEY) ?? 'null') as Partial<SubsystemDesign> | null;
     if (!stored || typeof stored !== 'object') return DEFAULT_SUBSYSTEM_DESIGN;
@@ -80,8 +80,9 @@ function Result({ label, value, note, tone }: {
   );
 }
 
-export default function SubsystemLab() {
-  const [design, setDesign] = useState<SubsystemDesign>(readDesign);
+export default function SubsystemLab({design,onDesignChange}:{
+  design:SubsystemDesign;onDesignChange:(next:SubsystemDesign)=>void;
+}) {
   const [activeSystemTab,setActiveSystemTab] = useState<'propulsion'|'power'|'thermal'|'tank'|'analysis'>('propulsion');
   const analysis = useMemo(() => {
     try { return { result: sizeSubsystemDesign(design), error: '' }; }
@@ -91,12 +92,8 @@ export default function SubsystemLab() {
   }, [design]);
   const result = analysis.result;
 
-  useEffect(() => {
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(design)); } catch { /* browser storage disabled */ }
-  }, [design]);
-
   function change<K extends keyof SubsystemDesign>(key: K, value: SubsystemDesign[K]) {
-    setDesign(previous => ({ ...previous, [key]: value }));
+    onDesignChange({...design,[key]:value});
   }
 
   const isLiquid = design.thrusterId === 'mono-reference';
@@ -293,7 +290,7 @@ export default function SubsystemLab() {
       </div>
       <div className="sys-footer">
         <span>Technology tables: NASA 2026 Small Spacecraft SoA · Engineering model: first-order, not certified</span>
-        <button className="secondary-button" onClick={()=>setDesign(DEFAULT_SUBSYSTEM_DESIGN)}>Reset subsystem design</button>
+        <button className="secondary-button" onClick={()=>onDesignChange(DEFAULT_SUBSYSTEM_DESIGN)}>Reset subsystem design</button>
       </div>
     </section>
   );
