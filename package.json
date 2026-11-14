@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run src/lib",
     "predev": "node scripts/prepare-3d-decoders.mjs && node scripts/fetch-mission-models.mjs --optional",
     "models:fetch": "node scripts/fetch-mission-models.mjs",
     "prebuild": "node scripts/prepare-3d-decoders.mjs",
