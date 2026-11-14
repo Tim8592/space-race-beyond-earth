@@ -66,7 +66,7 @@ function PercentBars({days}:{days:ReturnType<typeof simulateObservation>['days']
 }
 
 export default function EarthObservationMission({
-  spacecraft,launcher,cash,completedWithEngine,onEditSpacecraft,onEditLauncher,onComplete,
+  spacecraft,launcher,cash,completedWithEngine,onEditSpacecraft,onEditLauncher,onStart,onComplete,
 }:{
   spacecraft:SubsystemDesign;
   launcher:Vehicle;
@@ -74,6 +74,7 @@ export default function EarthObservationMission({
   completedWithEngine:number;
   onEditSpacecraft:()=>void;
   onEditLauncher:()=>void;
+  onStart:(costUsd:number)=>void;
   onComplete:(result:{success:boolean;missionCostUsd:number;payoutUsd:number;
     wetMassKg:number;returnedScience:number})=>void;
 }){
@@ -101,7 +102,8 @@ export default function EarthObservationMission({
   }
 
   function start(){
-    if(!canStart)return;
+    if(!canStart||!preview)return;
+    onStart(preview.missionCostUsd);
     setState(p=>({...p,run:{config,day:0,phase:'operations'}}));
   }
   function advance(days:number){

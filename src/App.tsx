@@ -237,6 +237,15 @@ export default function App() {
       ? `${contract.label} complete. ${integer(vehicle.payloadMassKg)} kg delivered; ${usd(contract.payoutUsd)} contract revenue received.`
       : `Mission unsuccessful. Your design did not meet every requirement. ${usd(buildCost)} was spent on the attempt.`);
   }
+  function startEarthObservation(costUsd:number){
+    setSnapshot(previous=>({...previous,game:{
+      ...previous.game,
+      cash:previous.game.cash-costUsd,
+      launched:previous.game.launched+1,
+      engineBuildCounts:{...previous.game.engineBuildCounts,
+        [previous.vehicle.engineId]:(previous.game.engineBuildCounts[previous.vehicle.engineId]??0)+1},
+    }}));
+  }
   function completeEarthObservation(outcome:{
     success:boolean; missionCostUsd:number; payoutUsd:number;
     wetMassKg:number; returnedScience:number;
@@ -255,14 +264,11 @@ export default function App() {
       };
       return {...previous,game:{
         ...previous.game,
-        cash:previous.game.cash-missionCostUsd+payoutUsd,
+        cash:previous.game.cash+payoutUsd,
         day:previous.game.day+7,
         completed:previous.game.completed+Number(success),
-        launched:previous.game.launched+1,
         deliveredKg:previous.game.deliveredKg+wetMassKg,
         revenue:previous.game.revenue+payoutUsd,
-        engineBuildCounts:{...previous.game.engineBuildCounts,
-          [previous.vehicle.engineId]:(previous.game.engineBuildCounts[previous.vehicle.engineId]??0)+1},
         history:[event,...previous.game.history].slice(0,12),
       }};
     });
@@ -325,6 +331,7 @@ export default function App() {
             cash={game.cash} completedWithEngine={game.engineBuildCounts[vehicle.engineId]??0}
             onEditSpacecraft={()=>setActiveView('systems')}
             onEditLauncher={()=>{setActiveView('missions');setCampaignMode('contracts')}}
+            onStart={startEarthObservation}
             onComplete={completeEarthObservation}/>}
         <div className={'control-layout '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')} id="mission-control">
           <div className="left-column">
