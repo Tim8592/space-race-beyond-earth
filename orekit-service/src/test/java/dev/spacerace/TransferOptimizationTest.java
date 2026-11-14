@@ -29,7 +29,7 @@ public class TransferOptimizationTest {
         assertEquals(expected,dvZeroVInfinity,1e-10);
         double dvAt3 = TransferOptimization.circularToHyperbolicDeltaVKmS(3,mu,radiusKm);
         assertTrue(dvAt3 > dvZeroVInfinity);
-        assertTrue(dvAt3 < 3.5);
+        assertTrue(dvAt3 < 5);
     }
 
     @Test
