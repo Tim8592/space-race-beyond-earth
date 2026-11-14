@@ -239,3 +239,95 @@
 .craft-load-help{font-size:11px;line-height:1.6;color:#eed8b2;background:#382b2a;border-top:1px solid #78573b;padding:12px 15px;margin:0}
 .craft-load-help code{color:#fce6ba}
 @media(max-width:650px){.heritage-track-heading{flex-direction:column}.heritage-milestones>div:last-child>div{grid-template-columns:1fr;gap:3px}}
+
+/* v0.7 — complete mission: Play Campaign / Earth Observation One */
+.campaign-switch{display:flex;flex-wrap:wrap;gap:9px;margin:5px 0 20px}
+.campaign-switch button{padding:12px 18px;background:#142b43;color:#bad3e7;border:1px solid #466680;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer}
+.campaign-switch button.selected{background:#1f4969;border-color:#a5d9f9;color:#f3f9ff}
+.lab-back{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:5px 0 15px;color:#a9c7db;font-size:12px;font-weight:700}
+.ob-mission{display:flex;flex-direction:column;gap:17px;margin-bottom:25px;min-width:0}
+.ob-mission>.panel{min-width:0}
+.ob-hero{background:linear-gradient(122deg,#102d4c,#14263d)}
+.ob-hero-title{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:10px 0 20px}
+.ob-hero h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(25px,3.3vw,37px);margin:0 0 9px;color:#f4f9ff;letter-spacing:-.6px}
+.ob-hero p{font-size:13px;line-height:1.75;color:#b6d1e3;max-width:740px;margin:0}
+.ob-hero p strong{color:#f3d7a6}
+.ob-phase{color:#dfbe87;font-size:11px;font-weight:800;border:1px solid #b18d65;background:#473a32;border-radius:7px;padding:10px 12px;white-space:nowrap;letter-spacing:.5px}
+.ob-brief-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ob-brief-facts span{display:flex;flex-direction:column;gap:6px;color:#a8c1d6;font-size:10px;font-weight:800;letter-spacing:.8px;padding:13px;background:#0e2138;border:1px solid #30506c;border-radius:7px}
+.ob-brief-facts strong{font-family:'Space Grotesk',sans-serif;color:#f2dfbb;font-size:19px;letter-spacing:0}
+.ob-mission-grid{display:grid;grid-template-columns:minmax(330px,.9fr) minmax(0,1.1fr);gap:17px;align-items:start}
+.ob-mission-grid .panel{min-width:0}
+.ob-mission h3{font-family:'Space Grotesk',sans-serif;font-size:20px;color:#ebf5ff;margin:8px 0 12px}
+.ob-subtitle,.ob-assumption{font-size:12px;line-height:1.7;color:#a6bed3}
+.ob-assumption{background:#15273b;padding:12px;border-left:2px solid #b5a174;margin-top:15px}
+.ob-options{display:flex;flex-direction:column;gap:9px}
+.ob-control{display:flex;flex-direction:column;gap:8px;color:#c6d9e9;font-size:11px;font-weight:800;letter-spacing:.2px}
+.ob-control select{border:1px solid #4a6b88;color:#edf7fe;background:#0d2034;border-radius:6px;padding:10px;min-height:40px;font-size:12px;max-width:100%}
+.ob-control>span{display:flex;align-items:center;gap:12px}
+.ob-control input[type=range]{flex:1;accent-color:#91cfff;min-width:0}
+.ob-control>span strong{color:#ecd3a9;white-space:nowrap;font-size:12px;min-width:75px;text-align:right}
+.ob-instrument-note{font-size:11px;color:#a5c2d5;padding:9px;background:#102b40;border-radius:6px}
+.ob-model .craft-canvas{height:315px}
+.ob-model .craft-visual-shell{margin:12px 0}
+.ob-model .craft-visual-head{padding:9px 12px}
+.ob-model .craft-disclaimer{font-size:9px}
+.ob-link-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:13px}
+.ob-link-actions button{font-size:11px}
+.ob-review{padding-bottom:22px}
+.ob-section-header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ob-section-header h3{margin:8px 0 17px}
+.ob-capacity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ob-capacity{padding:13px;background:#10253a;border:1px solid #304f6a;border-radius:9px;min-width:0}
+.ob-capacity.over{border-color:#bd7664;background:#2d2434}
+.ob-capacity.tight{border-color:#ad9860}
+.ob-capacity-top,.ob-capacity-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ob-capacity-top strong{font-size:12px;color:#e8f2fa}
+.ob-capacity-top span{font-size:12px;font-family:'Space Grotesk';color:#f2d4a7;text-align:right;white-space:nowrap}
+.ob-capacity-track{position:relative;width:100%;height:13px;border:1px solid #4d6272;background:#071624;border-radius:10px;overflow:hidden;margin:11px 0 7px}
+.ob-capacity-fill{height:100%;transition:width .18s ease;background:linear-gradient(90deg,#4088aa,#72c9bc)}
+.ob-capacity.tight .ob-capacity-fill{background:linear-gradient(90deg,#957144,#e5b778)}
+.ob-capacity.over .ob-capacity-fill{background:linear-gradient(90deg,#c18154,#e07268)}
+.ob-capacity-limit{position:absolute;right:0;top:0;height:100%;width:2px;background:#e7f0ff}
+.ob-capacity-foot small{font-size:10px;line-height:1.45;color:#9fb8cb;max-width:72%}
+.ob-capacity-foot b{font-size:9px;letter-spacing:.6px;white-space:nowrap;color:#96d7cb}
+.ob-capacity.tight .ob-capacity-foot b{color:#e9c284}
+.ob-capacity.over .ob-capacity-foot b{color:#ffad99}
+.ob-forecast{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:17px 0}
+.ob-forecast>div,.ob-live-stats>div{display:flex;flex-direction:column;gap:9px;min-width:0;padding:13px;border:1px solid #36556f;border-radius:8px;background:#14283e}
+.ob-forecast span,.ob-live-stats span{color:#a6c5dc;font-size:10px;text-transform:uppercase;line-height:1.5}
+.ob-forecast strong,.ob-live-stats strong{font-family:'Space Grotesk';font-size:clamp(14px,1.6vw,18px);color:#f2d6ab}
+.ob-warning-list{display:flex;flex-direction:column;gap:7px;margin:15px 0}
+.ob-warning-list p{font-size:11px;line-height:1.6;background:#272c3b;border-left:3px solid #d6a36c;padding:10px 12px;margin:0;color:#e4cbb2}
+.ob-warning-list p b{color:#ffb474;margin-right:6px}
+.ob-warning-list .ob-good{background:#16362e;border-left-color:#65c2a6;color:#b6e7d4}
+.ob-action{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:17px;border:1px solid #547b92;border-radius:10px;background:#122e48}
+.ob-action>div{display:flex;flex-direction:column;gap:8px}
+.ob-action strong{font-size:13px;color:#e9f5ff}
+.ob-action small{font-size:11px;line-height:1.5;color:#aec7d9}
+.ob-action .launch-button{min-width:230px}
+.ob-operations h3{margin:10px 0 16px}
+.ob-progress-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.ob-day-tile{font-size:10px;font-weight:800;letter-spacing:.4px;text-align:center;padding:12px 3px;background:#13273c;color:#8497a9;border:1px solid #334c62;border-radius:6px}
+.ob-day-tile.done{background:#285342;color:#d0f7e5;border-color:#438b6d}
+.ob-operations-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;margin-top:18px}
+.ob-live-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.ob-data-chart{height:155px;display:flex;justify-content:space-around;align-items:end;gap:7px;margin-top:12px;background:repeating-linear-gradient(to top,#38546918 0px,#38546918 1px,transparent 1px,transparent 25%);border-bottom:1px solid #608aa7}
+.ob-data-day{display:flex;flex-direction:column;align-items:center;justify-content:end;gap:6px;flex:1;height:100%;min-width:0}
+.ob-bar-pair{height:120px;width:100%;display:flex;align-items:end;justify-content:center;gap:4px}
+.ob-bar-col{width:20%;min-width:5px;max-width:18px;border-radius:3px 3px 0 0}
+.ob-bar-col.produced{background:#6694d4}
+.ob-bar-col.delivered{background:#6cc7b2}
+.ob-data-day small{font-size:9px;color:#9fb9cb}
+.ob-legend{display:flex;gap:18px;margin-top:12px;font-size:10px;color:#a4bdcd}
+.ob-legend span:first-child{color:#8ab1f2}
+.ob-legend span:last-child{color:#6cc7b2}
+.ob-day-note{font-size:12px;line-height:1.65;color:#c8dbec;background:#162d45;padding:13px;border-radius:7px;margin:16px 0}
+.ob-actions-row{display:flex;gap:12px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+.ob-debrief{padding:18px;border:1px solid #658aa0;border-radius:9px;background:#132b43;margin-top:20px}
+.ob-debrief h3{color:#f6d9a8}
+.ob-debrief>p{font-size:13px;line-height:1.6;color:#bbd3e3}
+.ob-debrief .ob-forecast{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1100px){.ob-mission-grid{grid-template-columns:1fr}.ob-forecast{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:780px){.ob-capacity-grid,.ob-operations-grid{grid-template-columns:1fr}.ob-brief-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.ob-phase{white-space:normal}.ob-hero-title{flex-direction:column}}
+@media(max-width:540px){.ob-forecast,.ob-live-stats,.ob-debrief .ob-forecast{grid-template-columns:1fr}.ob-action,.lab-back{flex-direction:column;align-items:stretch}.ob-action .launch-button{min-width:0;width:100%}.ob-day-tile{font-size:8px;padding:8px 1px}.ob-capacity-top{flex-wrap:wrap}}
