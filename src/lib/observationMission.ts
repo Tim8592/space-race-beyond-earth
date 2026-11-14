@@ -1,5 +1,5 @@
 import { calculateVehicleMetrics, ENGINES, estimateBuildCostUsd, type Vehicle } from './engineering';
-import { STANDARD_GRAVITY_MS2, EARTH_RADIUS_KM, EARTH_MU_KM3S2 } from './nasaData';
+import { STANDARD_GRAVITY_MS2, EARTH } from './nasaData';
 import { sizeSubsystemDesign, type SubsystemDesign, type SystemResults } from './subsystemDesign';
 import { BATTERY_PACKS } from './spacecraftTechnology';
 
@@ -126,11 +126,11 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   const launchReady=massKg<=launchCapacityKg &&
     launcherDeltaVMs>=requiredLaunchDeltaVMs && launcherTwr>=MIN_TWR;
 
-  const orbitRadiusKm=EARTH_RADIUS_KM+choices.orbitAltitudeKm;
-  const orbitPeriodHours=2*Math.PI*Math.sqrt(orbitRadiusKm**3/EARTH_MU_KM3S2)/3600;
+  const orbitRadiusKm=EARTH.equatorialRadiusKm+choices.orbitAltitudeKm;
+  const orbitPeriodHours=2*Math.PI*Math.sqrt(orbitRadiusKm**3/EARTH.gravitationalParameterKm3PerS2)/3600;
   // Circular orbit, worst-case solar beta=0; shadow is an illustrative
   // cylindrical Earth eclipse. Earth axis tilt / season are ignored.
-  const eclipseFraction=Math.asin(EARTH_RADIUS_KM/orbitRadiusKm)/Math.PI;
+  const eclipseFraction=Math.asin(EARTH.equatorialRadiusKm/orbitRadiusKm)/Math.PI;
   const sunlitFraction=1-eclipseFraction;
   const eclipseDurationHours=orbitPeriodHours*eclipseFraction;
   const eclipseRequiredWh=Math.max(0,spacecraft.busElectricalPowerW-
