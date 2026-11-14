@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Spacecraft3D from './Spacecraft3D';
+import FieldHelp from './components/FieldHelp';
+import { descriptionFor } from './lib/fieldHelp';
 import {
   BATTERY_PACKS, IN_SPACE_THRUSTERS, SOLAR_CELLS, THERMAL_SURFACES,
 } from './lib/spacecraftTechnology';
@@ -52,9 +54,9 @@ function NumberField({
 }) {
   return (
     <label className="sys-field">
-      <span>{label}<small>{unit}</small></span>
+      <span>{label}<small>{unit}</small><FieldHelp term={label}/></span>
       <input
-        type="number"
+        type="number" title={descriptionFor(label)}
         min={min} max={max} step={step} value={value}
         onChange={e => {
           const next = e.currentTarget.valueAsNumber;
@@ -115,7 +117,7 @@ export default function SubsystemLab() {
         <span className="sys-model-label">BETA · PRELIMINARY</span>
       </div>
       <p className="sys-intro">
-        This is separate from the launch rocket above. Real published component examples are used where available;
+        This is separate from the launch vehicle in Mission Control. Real published component examples are used where available;
         everything labeled <b>assumption</b> is an illustrative sizing input, not a NASA-certified design.
       </p>
 
@@ -136,19 +138,20 @@ export default function SubsystemLab() {
         <div className="sys-heading"><span>01</span><div><h3>Propulsion</h3><small>Specific impulse, thrust, mass flow and burn time</small></div></div>
         <div className="sys-input-grid">
           <label className="sys-field sys-wide">
-            <span>In-space engine / technology<small>SELECT COMPONENT</small></span>
+            <span>In-space engine / technology<small>SELECT COMPONENT</small><FieldHelp term="In-space engine / technology"/></span>
             <select value={design.thrusterId} onChange={e => change('thrusterId', e.target.value as SubsystemDesign['thrusterId'])}>
               <option value="mono-reference">Chemical monopropellant · illustrative 1 N / 230 s</option>
               {IN_SPACE_THRUSTERS.map(t => <option key={t.id} value={t.id}>{t.name} · {t.nominalSpecificImpulseSeconds} s</option>)}
             </select>
           </label>
+          <NumberField label="Number of thrusters" unit="identical engines · concurrent operation" value={design.thrusterCount} min={1} max={8} step={1} onChange={n=>change("thrusterCount",n)}/>
           <NumberField label="Propellant inventory" unit="kg" value={design.propellantMassKg} min={0.1} max={300} step={0.5} onChange={n=>change('propellantMassKg', n)}/>
           <NumberField label="Spacecraft bus (other dry hardware)" unit="kg · assumption" value={design.busDryMassKg} min={1} max={2000} step={5} onChange={n=>change('busDryMassKg',n)}/>
           <NumberField label="Science / cargo payload" unit="kg" value={design.payloadMassKg} min={0} max={1000} step={5} onChange={n=>change('payloadMassKg',n)}/>
         </div>
         <p className="sys-subnote">
           {selectedElectric
-            ? `NASA-surveyed operating point: ${fmt(selectedElectric.nominalThrustN * 1000, 'mN', 2)} thrust · ${fmt(selectedElectric.nominalSpecificImpulseSeconds, 's', 0)} Isp · ${fmt(selectedElectric.nominalThrusterPowerW, 'W', 0)} rated thruster input. This is not full propulsion-system power or mass.`
+            ? `NASA-surveyed per-thruster operating point: ${fmt(selectedElectric.nominalThrustN * 1000, 'mN', 2)} thrust · ${fmt(selectedElectric.nominalSpecificImpulseSeconds, 's', 0)} Isp · ${fmt(selectedElectric.nominalThrusterPowerW, 'W', 0)} rated thruster input. This is not full propulsion-system power or mass.`
             : 'Chemical baseline 1 N, 230 s, 8 W for valves (assumptions within NASA-surveyed monopropellant performance ranges).'}
           {' '}<a href="https://www.nasa.gov/smallsat-institute/sst-soa/in-space_propulsion/" target="_blank" rel="noreferrer">NASA propulsion survey ↗</a>
         </p>
@@ -158,7 +161,7 @@ export default function SubsystemLab() {
         <div className="sys-heading"><span>02</span><div><h3>Electrical power</h3><small>Solar generation → power processing → propulsion</small></div></div>
         <div className="sys-input-grid">
           <label className="sys-field sys-wide">
-            <span>Primary power generation<small>NASA HERITAGE / RESEARCH</small></span>
+            <span>Primary power generation<small>NASA HERITAGE / RESEARCH</small><FieldHelp term="Primary power generation"/></span>
             <select value={design.powerSourceId} onChange={e=>change('powerSourceId',e.target.value as PowerSourceId)}>
               {Object.values(POWER_SYSTEMS).map(system=><option key={system.id} value={system.id}>{system.name} · {system.heritage}</option>)}
             </select>
@@ -168,21 +171,22 @@ export default function SubsystemLab() {
             <NumberField label="Mission age for degradation" unit="years" value={design.missionYears} min={0} max={40} step={1} onChange={n=>change('missionYears',n)}/>
           </>}
           <label className="sys-field">
-            <span>Solar cell type<small>NASA-SURVEYED</small></span>
+            <span>Solar cell type<small>NASA-SURVEYED</small><FieldHelp term="Solar cell type"/></span>
             <select value={design.solarCellId} onChange={e=>change('solarCellId',e.target.value)}>
               {SOLAR_CELLS.map(cell=><option key={cell.id} value={cell.id}>{cell.name} ({fmt(cell.efficiencyBOL*100,'%',1)} BOL)</option>)}
             </select>
           </label>
           <label className="sys-field">
-            <span>Mission solar distance<small>APPROXIMATE REGION</small></span>
+            <span>Mission solar distance<small>APPROXIMATE REGION</small><FieldHelp term="Mission solar distance"/></span>
             <select value={design.distanceAu} onChange={e=>change('distanceAu',Number(e.target.value))}>
               {DESTINATIONS.map(d=><option key={d.name} value={d.distanceAu}>{d.name} ({d.distanceAu} AU)</option>)}
             </select>
           </label>
+          <NumberField label="Number of solar wings" unit="deployable panel assemblies" value={design.solarWingCount} min={1} max={8} step={1} onChange={n=>change("solarWingCount",n)}/>
           <NumberField label="Active solar cell area" unit="m²" value={design.cellAreaM2} min={0} max={250} step={0.5} onChange={n=>change('cellAreaM2',n)}/>
           <NumberField label="Housekeeping / instruments draw" unit="W" value={design.busElectricalPowerW} min={0} max={5000} step={10} onChange={n=>change('busElectricalPowerW',n)}/>
           <label className="sys-field">
-            <span>Battery pack technology<small>NASA-SURVEYED</small></span>
+            <span>Battery pack technology<small>NASA-SURVEYED</small><FieldHelp term="Battery pack technology"/></span>
             <select value={design.batteryPackId} onChange={e=>change('batteryPackId',e.target.value)}>
               {BATTERY_PACKS.map(b=><option key={b.id} value={b.id}>{b.name} · {b.specificEnergyWhKg} Wh/kg</option>)}
             </select>
@@ -191,7 +195,7 @@ export default function SubsystemLab() {
         </div>
         <p className="sys-subnote">
           Selected radioisotope or fission hardware operates alongside solar panels, with published reference mass included when available. Solar model uses measured 1 AU irradiance, cell efficiency and inverse-square solar distance;
-          a 75% overall array derate and 88% thruster power-processing efficiency are <b>assumptions</b>.
+          a 75% overall array derate and 88% thruster power-processing efficiency are <b>assumptions</b>. Solar wing count redistributes the selected total cell area.
           Battery reserve assumes 80% usable capacity and 90% discharge efficiency. Published generator masses exclude mission-specific mounting, and reactor integrations need independent thermal and safety analyses.
           {' '}{design.powerSourceId !== 'solar' && <a href={POWER_SYSTEMS[design.powerSourceId].sourceUrl} target="_blank" rel="noreferrer">Selected NASA power source ↗</a>}
           <a href="https://www.nasa.gov/smallsat-institute/sst-soa/power-subsystems/" target="_blank" rel="noreferrer"> NASA power survey ↗</a>
@@ -202,19 +206,20 @@ export default function SubsystemLab() {
         <div className="sys-heading"><span>03</span><div><h3>Thermal management</h3><small>Electrical heat generation and radiator solar loading</small></div></div>
         <div className="sys-input-grid">
           <label className="sys-field">
-            <span>Radiator surface treatment<small>NASA-SURVEYED α</small></span>
+            <span>Radiator surface treatment<small>NASA-SURVEYED α</small><FieldHelp term="Radiator surface treatment"/></span>
             <select value={design.coatingId} onChange={e=>change('coatingId',e.target.value)}>
               {THERMAL_SURFACES.map(t=><option key={t.id} value={t.id}>{t.name} · α={t.solarAbsorptivityBOL}</option>)}
             </select>
           </label>
           <NumberField label="IR emissivity (ε)" unit="assumption · 0–1" value={design.infraredEmissivity} min={0.1} max={1} step={0.05} onChange={n=>change('infraredEmissivity',n)}/>
+          <NumberField label="Number of radiator panels" unit="cooling panels" value={design.radiatorPanelCount} min={1} max={8} step={1} onChange={n=>change("radiatorPanelCount",n)}/>
           <NumberField label="Radiator operating temperature" unit="K · assumption" value={design.radiatorTemperatureK} min={180} max={420} step={5} onChange={n=>change('radiatorTemperatureK',n)}/>
           <NumberField label="Radiator sun incidence factor" unit="assumption · 0–1" value={design.radiatorSunIncidence} min={0} max={1} step={0.05} onChange={n=>change('radiatorSunIncidence',n)}/>
         </div>
         <p className="sys-subnote">
           Radiator sizing uses Stefan–Boltzmann emission minus direct solar absorption,
           and assumes a 3 K sink, clear view, and no planetary albedo/IR heating.
-          Surface <b>absorptivity</b> is reported; emissivity is a separate adjustable assumption.
+          Surface <b>absorptivity</b> is reported; emissivity is a separate adjustable assumption. Radiator panel count divides the required total area across surfaces.
           <a href="https://www.nasa.gov/smallsat-institute/sst-soa/thermal-control/" target="_blank" rel="noreferrer"> NASA thermal survey ↗</a>
         </p>
       </div>
@@ -226,7 +231,7 @@ export default function SubsystemLab() {
           <>
             <div className="sys-input-grid">
               <label className="sys-field">
-                <span>Liquid acquisition / tank type<small>ILLUSTRATIVE MASS ALLOWANCE</small></span>
+                <span>Liquid acquisition / tank type<small>ILLUSTRATIVE MASS ALLOWANCE</small><FieldHelp term="Liquid acquisition / tank type"/></span>
                 <select value={design.tankType} onChange={e=>change('tankType',e.target.value as SubsystemDesign['tankType'])}>
                   <option value="diaphragm">Diaphragm tank · +1 kg</option>
                   <option value="bellows">Bellows tank · +1.5 kg</option>
@@ -279,7 +284,7 @@ export default function SubsystemLab() {
             <strong>Engineering review</strong>
             <ul>
               {result.warnings.map((warning, i)=><li key={i}>{warning}</li>)}
-              <li>Solar-array mass (2.5 kg/m²), radiator mass (4 kg/m²), component and PMD allowances are game engineering assumptions, not NASA hardware data.</li>
+              <li>Solar-array mass (2.5 kg/m²), radiator mass (4 kg/m²), per-wing/per-panel mounts, component and PMD allowances are game engineering assumptions, not NASA hardware data.</li>
               <li>Reported mass does not include all mounting, propulsion feed, wiring, thermal plumbing, redundancy or verification margins. Neither propulsion capability nor power margin alone proves mission feasibility.</li>
             </ul>
           </div>
