@@ -40,14 +40,14 @@ function Metal({ color = '#b4c9d8' }: {color?: string}) {
   return <meshStandardMaterial color={color} metalness={0.7} roughness={0.35}/>;
 }
 
-function PanelWing({ side, index, areaM2 }: { side: -1 | 1; index: number; areaM2: number }) {
+function PanelWing({ side, index, rowCount, areaM2 }: { side: -1 | 1; index: number; rowCount:number; areaM2: number }) {
   // Schematic geometry: panel envelope scales with the square root of its
   // allocation of total active cell area, not with physical 1:1 CAD units.
   const areaScale = Math.sqrt(Math.max(0.01, areaM2));
   const length = Math.max(0.55, Math.min(3.8, 0.65 + areaScale * 0.92));
   const width = Math.max(0.42, Math.min(1.45, 0.3 + areaScale * 0.45));
   const centerX = side * (1.03 + length / 2);
-  const offsetZ = (index - 1.5) * 0.72;
+  const offsetZ = (index - (rowCount - 1)/2) * 0.78;
   const columns = Math.max(2, Math.min(10, Math.ceil(3.1 * areaScale)));
   const rows = Math.max(2, Math.min(5, Math.ceil(2 * areaScale)));
   return <group position={[0, 0, offsetZ]}>
@@ -153,7 +153,7 @@ export function ModularSpacecraft({
     {wingCount>0&&<Pick part="power" selected={selected} onSelect={onSelect}>
       {Array.from({length:wingCount},(_,i)=>
         <PanelWing key={i} side={i%2===0?-1:1}
-          index={Math.floor(i/2)}
+          index={Math.floor(i/2)} rowCount={Math.ceil(wingCount/2)}
           areaM2={design.cellAreaM2/wingCount}/>)}
     </Pick>}
     {isNuclear&&<Pick part="power" selected={selected} onSelect={onSelect}>
