@@ -164,6 +164,7 @@ function NASAReferenceMesh({ url, onStatus }: {
   const [object,setObject] = useState<Object3D|null>(null);
   useEffect(()=>{
     let cancelled = false;
+    setObject(null);
     const loader = new GLTFLoader();
     loader.load(url,(gltf)=>{
       if(cancelled)return;
@@ -193,17 +194,32 @@ export default function Spacecraft3D({
   referenceModelUrl?:string;
 }) {
   const [selected,setSelected]=useState<PartName>('bus');
-  const [useNasaModel,setUseNasaModel]=useState(false);
   const [nasaStatus,setNasaStatus]=useState<'idle'|'loading'|'loaded'|'failed'>('idle');
+  const [customUrl,setCustomUrl]=useState<string|null>(null);
+  const [viewerSource,setViewerSource]=useState<'modular'|'nasa'|'cad'>('modular');
   const onStatus = useMemo(()=> (status:'loaded'|'failed')=>setNasaStatus(status),[]);
-  useEffect(()=>{setUseNasaModel(false);setNasaStatus('idle')},[referenceModelUrl]);
+  useEffect(()=>{setViewerSource('modular');setNasaStatus('idle')},[referenceModelUrl]);
+  useEffect(()=>()=>{if(customUrl)URL.revokeObjectURL(customUrl)},[customUrl]);
+  const activeExternalModelUrl = viewerSource==='nasa'?referenceModelUrl :
+    viewerSource==='cad'?customUrl:null;
+  function loadCadFile(file:File|undefined) {
+    if(!file)return;
+    if(!file.name.toLowerCase().endsWith('.glb')){setNasaStatus('failed');return;}
+    setCustomUrl(URL.createObjectURL(file));
+    setViewerSource('cad');
+    setNasaStatus('loading');
+  }
 
   return <div className="craft-visual-shell">
     <div className="craft-visual-head">
       <div><b>3D spacecraft studio</b><span>Drag to orbit · scroll to zoom · click a component to inspect</span></div>
-      {referenceModelUrl && <button type="button" onClick={()=>{setUseNasaModel(v=>!v);setNasaStatus('loading');}}>
-        {useNasaModel?'View modular prototype':'Try NASA 3D model'}
-      </button>}
+      <div className="craft-model-actions">
+        <button type="button" onClick={()=>{setViewerSource('modular');setNasaStatus('idle')}}>Modular prototype</button>
+        {referenceModelUrl&&<button type="button" onClick={()=>{setViewerSource('nasa');setNasaStatus('loading')}}>NASA 3D model</button>}
+        <label className="craft-upload">Import CAD GLB
+          <input type="file" accept=".glb,model/gltf-binary" onChange={e=>loadCadFile(e.target.files?.[0])}/>
+        </label>
+      </div>
     </div>
     <div className="craft-canvas">
       <Canvas camera={{position:[7,5,9],fov:43,near:0.1,far:80}} dpr={[1,2]} gl={{antialias:true,alpha:false}}
@@ -214,17 +230,21 @@ export default function Spacecraft3D({
         <directionalLight position={[-5,-2,-4]} intensity={1} color="#5698da"/>
         <Stars radius={45} depth={35} count={1500} factor={1.4} fade speed={0}/>
         <gridHelper args={[28,28,'#244662','#142a3b']} position={[0,-2.35,0]}/>
-        {useNasaModel&&referenceModelUrl ? <>
+        {activeExternalModelUrl ? <>
           {nasaStatus!=='loaded'&&<ModularSpacecraft design={design} analysis={analysis} selected={selected} onSelect={setSelected}/>}
-          <NASAReferenceMesh url={referenceModelUrl} onStatus={onStatus}/>
+          <NASAReferenceMesh key={activeExternalModelUrl} url={activeExternalModelUrl} onStatus={onStatus}/>
         </> : <ModularSpacecraft design={design} analysis={analysis} selected={selected} onSelect={setSelected}/>}
         <OrbitControls enablePan enableDamping minDistance={3} maxDistance={22}/>
       </Canvas>
     </div>
     <div className="craft-visual-caption">
-      <span><strong>{useNasaModel?'NASA reference: ':'Selected: '}</strong>{useNasaModel ? (nasaStatus==='loaded'?'Source 3D model':nasaStatus==='failed'?'Remote model unavailable — showing prototype':'Loading model…') : selected.toUpperCase()}</span>
-      <small>{useNasaModel? 'External NASA GLB loaded when browser access permits. Fallback schematic is not the original model.' : PART_DETAILS[selected]}</small>
+      <span><strong>{viewerSource!=='modular'?'External 3D: ':'Selected: '}</strong>
+        {viewerSource!=='modular'?(nasaStatus==='loaded'?'GLB loaded':nasaStatus==='failed'?'Could not load GLB — see fallback':'Loading GLB…'):selected.toUpperCase()}
+      </span>
+      <small>{viewerSource!=='modular'?
+        'Imported GLB models are view-only and do not automatically set mass, inertia, tank sizes or physics parameters.'
+        :PART_DETAILS[selected]}</small>
     </div>
-    <p className="craft-disclaimer">SCHEMATIC GEOMETRY. Physical calculations use explicit engineering inputs, not mesh dimensions. The editable view is not parametric CAD.</p>
+    <p className="craft-disclaimer">SCHEMATIC GEOMETRY. Import a self-contained .glb from Onshape or FreeCAD for viewing. Engineering calculations use independent mass/geometry inputs, not mesh triangles; parametric CAD coupling is future work.</p>
   </div>;
 }
