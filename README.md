@@ -72,7 +72,7 @@ The 2026 NASA Small Spacecraft SoA research has been organized into a [component
 
 **New in v0.2 — interactive subsystem lab:** click **Spacecraft Systems** in the navigation. The separate in-space spacecraft design panel connects propulsion, solar generation, batteries, thermal radiator sizing and (liquid-only) tank geometry into an illustrative system mass and ideal delta-V/burn-time analysis. Changing engine, solar distance, array area, battery, radiator coating or tank sizing updates dependent engineering quantities in real time. It has independently saved parameters in browser localStorage.
 
-**Limitations:** these models are early design estimates, not flight validation. Gas and solid propellant storage still lack a tank-mass model and are displayed as *known lower-bound mass only*. PV/thermal assembly areal mass, PPU and tank-management allowances are explicitly illustrative, not NASA performance data. The separate v0.1 launch-vehicle contract simulator remains unchanged.
+**Limitations:** these models are early design estimates, not flight validation. Gas and solid propellant storage still lack a tank-mass model and are displayed as *incomplete modeled mass estimates*. PV/thermal assembly areal mass, PPU and tank-management allowances are explicitly illustrative, not NASA performance data. The separate v0.1 launch-vehicle contract simulator remains unchanged.
 
 ## Engineering foundation
 

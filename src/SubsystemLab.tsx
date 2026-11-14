@@ -230,7 +230,7 @@ export default function SubsystemLab() {
             <span>LIVE · IDEALIZED</span>
           </div>
           <div className="sys-result-grid">
-            <Result label="Ideal delta-V (lower-bound mass)" value={fmt(result.idealDeltaVms,'m/s',0)} note="Not a flight-trajectory prediction"/>
+            <Result label="Ideal delta-V (partial mass model)" value={fmt(result.idealDeltaVms,'m/s',0)} note="Not a flight-trajectory prediction"/>
             <Result label="Propellant burn at rated thrust" value={fmt(result.idealBurnDays,'days',1)} note="Continuous thrust; no coasting or eclipses"/>
             <Result label="Solar power generated" value={fmt(result.sunlightPowerW,'W',1)} note={fmt(design.distanceAu, 'AU',2)+' from Sun'}/>
             <Result label="Power requirement (bus + propulsion)" value={fmt(result.totalElectricalDemandW,'W',1)} note={result.canPowerThruster?'Rated operating point supplied':'POWER DEFICIT'} tone={result.canPowerThruster?'good':'bad'}/>
@@ -238,8 +238,8 @@ export default function SubsystemLab() {
             <Result label="Battery mass" value={fmt(result.batteryMassKg,'kg',2)} note="Pack-level Wh/kg; eclipse bus load only"/>
             <Result label="Internal thermal load" value={fmt(result.thermalLoadW,'W',1)} note="Bus + assumed propulsion heat coupling"/>
             <Result label="Required radiator area" value={fmt(result.radiatorAreaM2,'m²',2)} note="Net radiative heat rejection" tone={result.radiatorAreaM2===null?'bad':undefined}/>
-            <Result label={result.massEstimateIncomplete?'Known dry mass lower bound':'Preliminary dry mass'} value={fmt(result.dryMassLowerBoundKg,'kg',2)} note="PV + battery + thermal + propulsion + tank allowances"/>
-            <Result label={result.massEstimateIncomplete?'Known wet mass lower bound':'Preliminary wet mass'} value={fmt(result.wetMassLowerBoundKg,'kg',2)} note="Dry mass + propellant inventory"/>
+            <Result label={result.massEstimateIncomplete?'Partial modeled dry mass':'Preliminary dry mass'} value={fmt(result.modeledDryMassKg,'kg',2)} note="PV + battery + thermal + propulsion + tank allowances"/>
+            <Result label={result.massEstimateIncomplete?'Partial modeled wet mass':'Preliminary wet mass'} value={fmt(result.modeledWetMassKg,'kg',2)} note="Dry mass + propellant inventory"/>
             <Result label="Tank shell mass" value={fmt(result.tankShellMassKg,'kg',2)} note={isLiquid?'Ideal thin-wall + PMD allowance separately':'Not modeled for gas/solid storage'} tone={!isLiquid?'warn':undefined}/>
             <Result label="Tank volume / wall" value={isLiquid ? fmt(result.tankInternalVolumeL,'L',1)+' / '+fmt(result.tankWallMm,'mm',2) : 'Not sized'} note={isLiquid?'Shell geometry only':'Different storage physics required'}/>
           </div>

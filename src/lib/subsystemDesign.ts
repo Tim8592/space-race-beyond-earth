@@ -83,8 +83,8 @@ export type SystemResults = {
   tankWallMm: number | null;
   tankTypeAllowanceKg: number;
   tankThinWallSuitable: boolean | null;
-  dryMassLowerBoundKg: number;
-  wetMassLowerBoundKg: number;
+  modeledDryMassKg: number;
+  modeledWetMassKg: number;
   idealDeltaVms: number;
   idealBurnDays: number;
   lowThrustAccelerationMmS2: number;
@@ -206,7 +206,7 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
     warnings.push(
       thrusterId === 'busek-bit3'
         ? 'BIT-3 mass reported by NASA is integrated WET mass; omitted from dry roll-up to avoid double-counting. Full dry mass is unknown.'
-        : 'Compressed-gas xenon tank/feed mass is unmodeled. Shown wet/dry masses are lower bounds, not launch mass estimates.'
+        : 'Compressed-gas xenon tank/feed mass is unmodeled. Shown wet/dry masses are partial estimates, not verified launch mass estimates.'
     );
   }
   if (!canPowerThruster) warnings.push('Insufficient simultaneous sunlight power: selected thruster cannot fire at its rated point here.');
@@ -217,13 +217,13 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
     ? CHEMICAL_COMPONENT_MASS_KG
     : realThruster!.massScope === 'thruster-only' ? (realThruster!.reportedMassKg ?? 0) : 0;
   const systemAllowanceKg = isElectric ? ELECTRIC_SYSTEM_ALLOWANCE_KG : 0;
-  const dryMassLowerBoundKg = design.busDryMassKg + design.payloadMassKg
+  const modeledDryMassKg = design.busDryMassKg + design.payloadMassKg
     + design.cellAreaM2 * ARRAY_AREAL_MASS_KGM2
     + batteryMassKg + (radiatorMassKg ?? 0)
     + thrusterHardwareMassKg + systemAllowanceKg
     + (tankShellMassKg ?? 0) + tankTypeAllowanceKg;
-  const wetMassLowerBoundKg = dryMassLowerBoundKg + design.propellantMassKg;
-  const idealDeltaV = idealDeltaVms(wetMassLowerBoundKg, dryMassLowerBoundKg, engineSpecificImpulseS);
+  const modeledWetMassKg = modeledDryMassKg + design.propellantMassKg;
+  const idealDeltaV = idealDeltaVms(modeledWetMassKg, modeledDryMassKg, engineSpecificImpulseS);
   const idealBurnSeconds = idealBurnDurationSeconds(
     design.propellantMassKg, engineThrustN, engineSpecificImpulseS,
   );
@@ -237,9 +237,9 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
     radiatorMassKg, absorbedSolarFluxWm2, radiatorNetFluxWm2,
     tankShellMassKg, tankInternalVolumeL, tankRadiusM, tankWallMm,
     tankTypeAllowanceKg, tankThinWallSuitable,
-    dryMassLowerBoundKg, wetMassLowerBoundKg,
+    modeledDryMassKg, modeledWetMassKg,
     idealDeltaVms: idealDeltaV, idealBurnDays: idealBurnSeconds / 86400,
-    lowThrustAccelerationMmS2: engineThrustN / wetMassLowerBoundKg * 1000,
+    lowThrustAccelerationMmS2: engineThrustN / modeledWetMassKg * 1000,
     massEstimateIncomplete, warnings,
   };
 }

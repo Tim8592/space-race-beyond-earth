@@ -16,7 +16,7 @@ describe('coupled in-space spacecraft engineering', () => {
     const small = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, cellAreaM2: 1 });
     const large = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, cellAreaM2: 15 });
     expect(large.sunlightPowerW).toBeGreaterThan(small.sunlightPowerW);
-    expect(large.wetMassLowerBoundKg).toBeGreaterThan(small.wetMassLowerBoundKg);
+    expect(large.modeledWetMassKg).toBeGreaterThan(small.modeledWetMassKg);
     expect(large.idealDeltaVms).toBeLessThan(small.idealDeltaVms);
   });
 
@@ -37,15 +37,15 @@ describe('coupled in-space spacecraft engineering', () => {
     expect(chemical.tankShellMassKg).toBeGreaterThan(0);
     expect(higherPressure.tankWallMm).toBeCloseTo(chemical.tankWallMm! * 2, 6);
     expect(higherPressure.tankShellMassKg).toBeCloseTo(chemical.tankShellMassKg! * 2, 6);
-    expect(higherPressure.wetMassLowerBoundKg).toBeGreaterThan(chemical.wetMassLowerBoundKg);
-    expect(chemical.wetMassLowerBoundKg - chemical.dryMassLowerBoundKg).toBeCloseTo(base.propellantMassKg);
+    expect(higherPressure.modeledWetMassKg).toBeGreaterThan(chemical.modeledWetMassKg);
+    expect(chemical.modeledWetMassKg - chemical.modeledDryMassKg).toBeCloseTo(base.propellantMassKg);
   });
 
   it('changes dry mass with different propellant acquisition device allowances', () => {
     const base = { ...DEFAULT_SUBSYSTEM_DESIGN, thrusterId: 'mono-reference' as const };
     const bellows = sizeSubsystemDesign({ ...base, tankType: 'bellows' });
     const capillary = sizeSubsystemDesign({ ...base, tankType: 'capillary' });
-    expect(bellows.dryMassLowerBoundKg).toBeGreaterThan(capillary.dryMassLowerBoundKg);
+    expect(bellows.modeledDryMassKg).toBeGreaterThan(capillary.modeledDryMassKg);
   });
 
   it('does not incorrectly reuse liquid tank sizing for compressed xenon or iodine', () => {
