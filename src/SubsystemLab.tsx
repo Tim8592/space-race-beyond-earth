@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   BATTERY_PACKS, IN_SPACE_THRUSTERS, SOLAR_CELLS, THERMAL_SURFACES,
 } from './lib/spacecraftTechnology';
+import { POWER_SYSTEMS, type PowerSourceId } from './lib/powerSources';
 import {
   DEFAULT_SUBSYSTEM_DESIGN, DESTINATIONS, sizeSubsystemDesign,
   type SubsystemDesign, type SystemResults,
@@ -78,6 +79,7 @@ function Result({ label, value, note, tone }: {
 
 export default function SubsystemLab() {
   const [design, setDesign] = useState<SubsystemDesign>(readDesign);
+  const [activeSystemTab,setActiveSystemTab] = useState<'propulsion'|'power'|'thermal'|'tank'|'analysis'>('propulsion');
   const analysis = useMemo(() => {
     try { return { result: sizeSubsystemDesign(design), error: '' }; }
     catch (error) {
@@ -116,7 +118,18 @@ export default function SubsystemLab() {
         everything labeled <b>assumption</b> is an illustrative sizing input, not a NASA-certified design.
       </p>
 
-      <div className="sys-group">
+      <div className="sys-tab-strip" role="tablist" aria-label="Spacecraft subsystem">
+        {([
+          ['propulsion','Propulsion'], ['power','Power'], ['thermal','Thermal'],
+          ['tank','Tanks'], ['analysis','Engineering Analysis'],
+        ] as const).map(([id,label])=>(
+          <button key={id} role="tab" aria-selected={activeSystemTab===id}
+            className={activeSystemTab===id?'selected':''}
+            onClick={()=>setActiveSystemTab(id)}>{label}</button>
+        ))}
+      </div>
+
+      <div className={'sys-group '+(activeSystemTab==='propulsion'?'':'sys-hidden')}>
         <div className="sys-heading"><span>01</span><div><h3>Propulsion</h3><small>Specific impulse, thrust, mass flow and burn time</small></div></div>
         <div className="sys-input-grid">
           <label className="sys-field sys-wide">
@@ -138,9 +151,19 @@ export default function SubsystemLab() {
         </p>
       </div>
 
-      <div className="sys-group">
+      <div className={'sys-group '+(activeSystemTab==='power'?'':'sys-hidden')}>
         <div className="sys-heading"><span>02</span><div><h3>Electrical power</h3><small>Solar generation → power processing → propulsion</small></div></div>
         <div className="sys-input-grid">
+          <label className="sys-field sys-wide">
+            <span>Primary power generation<small>NASA HERITAGE / RESEARCH</small></span>
+            <select value={design.powerSourceId} onChange={e=>change('powerSourceId',e.target.value as PowerSourceId)}>
+              {Object.values(POWER_SYSTEMS).map(system=><option key={system.id} value={system.id}>{system.name} · {system.heritage}</option>)}
+            </select>
+          </label>
+          {design.powerSourceId !== 'solar' && <>
+            <NumberField label="Number of power units" unit="systems" value={design.powerSourceCount} min={1} max={8} step={1} onChange={n=>change('powerSourceCount',n)}/>
+            <NumberField label="Mission age for degradation" unit="years" value={design.missionYears} min={0} max={40} step={1} onChange={n=>change('missionYears',n)}/>
+          </>}
           <label className="sys-field">
             <span>Solar cell type<small>NASA-SURVEYED</small></span>
             <select value={design.solarCellId} onChange={e=>change('solarCellId',e.target.value)}>
@@ -164,14 +187,15 @@ export default function SubsystemLab() {
           <NumberField label="Eclipse / no-solar duration" unit="hours · assumption" value={design.eclipseHours} min={0} max={30} step={0.1} onChange={n=>change('eclipseHours',n)}/>
         </div>
         <p className="sys-subnote">
-          Solar model uses measured 1 AU irradiance, cell efficiency and inverse-square solar distance;
+          Selected radioisotope or fission hardware operates alongside solar panels, with published reference mass included when available. Solar model uses measured 1 AU irradiance, cell efficiency and inverse-square solar distance;
           a 75% overall array derate and 88% thruster power-processing efficiency are <b>assumptions</b>.
-          Battery reserve assumes 80% usable capacity and 90% discharge efficiency.
+          Battery reserve assumes 80% usable capacity and 90% discharge efficiency. Published generator masses exclude mission-specific mounting, and reactor integrations need independent thermal and safety analyses.
+          {' '}{design.powerSourceId !== 'solar' && <a href={POWER_SYSTEMS[design.powerSourceId].sourceUrl} target="_blank" rel="noreferrer">Selected NASA power source ↗</a>}
           <a href="https://www.nasa.gov/smallsat-institute/sst-soa/power-subsystems/" target="_blank" rel="noreferrer"> NASA power survey ↗</a>
         </p>
       </div>
 
-      <div className="sys-group">
+      <div className={'sys-group '+(activeSystemTab==='thermal'?'':'sys-hidden')}>
         <div className="sys-heading"><span>03</span><div><h3>Thermal management</h3><small>Electrical heat generation and radiator solar loading</small></div></div>
         <div className="sys-input-grid">
           <label className="sys-field">
@@ -192,7 +216,7 @@ export default function SubsystemLab() {
         </p>
       </div>
 
-      <div className="sys-group">
+      <div className={'sys-group '+(activeSystemTab==='tank'?'':'sys-hidden')}>
         <div className="sys-heading"><span>04</span><div><h3>Tank & propellant management</h3><small>Propellant mass, shell mass, volume and liquid acquisition</small></div></div>
         <p className="sys-storage"><b>Propellant storage class:</b> {storage}</p>
         {isLiquid ? (
@@ -223,6 +247,7 @@ export default function SubsystemLab() {
         )}
       </div>
 
+      <div className={activeSystemTab==='analysis'?'':'sys-hidden'}>
       {result ? (
         <>
           <div className="sys-results-heading">
@@ -233,10 +258,14 @@ export default function SubsystemLab() {
             <Result label="Ideal delta-V (partial mass model)" value={fmt(result.idealDeltaVms,'m/s',0)} note="Not a flight-trajectory prediction"/>
             <Result label="Propellant burn at rated thrust" value={fmt(result.idealBurnDays,'days',1)} note="Continuous thrust; no coasting or eclipses"/>
             <Result label="Solar power generated" value={fmt(result.sunlightPowerW,'W',1)} note={fmt(design.distanceAu, 'AU',2)+' from Sun'}/>
+            <Result label="Radioisotope / reactor output" value={fmt(result.generatorElectricPowerW,'W',1)} note={result.powerSystemHeritage}/>
+            <Result label="Combined generation" value={fmt(result.totalAvailablePowerW,'W',1)} note="Solar + generator"/>
+            <Result label="Power source installed mass" value={fmt(result.powerSystemMassKg,'kg',1)} note="Reference generator mass, incomplete for reactors"/>
+            <Result label="Separate generator waste heat" value={fmt(result.powerSystemWasteHeatW,'W',0)} note="Not added to bus radiator; dedicated rejection unresolved"/>
             <Result label="Power requirement (bus + propulsion)" value={fmt(result.totalElectricalDemandW,'W',1)} note={result.canPowerThruster?'Rated operating point supplied':'POWER DEFICIT'} tone={result.canPowerThruster?'good':'bad'}/>
-            <Result label="Sunlight power margin" value={fmt(result.sunlightMarginW,'W',1)} note="Includes stated PPU assumptions" tone={result.sunlightMarginW>=0?'good':'bad'}/>
-            <Result label="Battery mass" value={fmt(result.batteryMassKg,'kg',2)} note="Pack-level Wh/kg; eclipse bus load only"/>
-            <Result label="Internal thermal load" value={fmt(result.thermalLoadW,'W',1)} note="Bus + assumed propulsion heat coupling"/>
+            <Result label="Combined power margin" value={fmt(result.totalPowerMarginW,'W',1)} note="Power generation less bus and thruster loads" tone={result.totalPowerMarginW>=0?'good':'bad'}/>
+            <Result label="Battery mass" value={fmt(result.batteryMassKg,'kg',2)} note="Bus eclipse load net of continuous generator output"/>
+            <Result label="Internal thermal load" value={fmt(result.thermalLoadW,'W',1)} note="Bus and assumed propulsion heat; separate source heat excluded"/>
             <Result label="Required radiator area" value={fmt(result.radiatorAreaM2,'m²',2)} note="Net radiative heat rejection" tone={result.radiatorAreaM2===null?'bad':undefined}/>
             <Result label={result.massEstimateIncomplete?'Partial modeled dry mass':'Preliminary dry mass'} value={fmt(result.modeledDryMassKg,'kg',2)} note="PV + battery + thermal + propulsion + tank allowances"/>
             <Result label={result.massEstimateIncomplete?'Partial modeled wet mass':'Preliminary wet mass'} value={fmt(result.modeledWetMassKg,'kg',2)} note="Dry mass + propellant inventory"/>
@@ -253,6 +282,7 @@ export default function SubsystemLab() {
           </div>
         </>
       ) : <div className="sys-feedback sys-error">Invalid input: {analysis.error}. Restore physical values to see sizing results.</div>}
+      </div>
       <div className="sys-footer">
         <span>Technology tables: NASA 2026 Small Spacecraft SoA · Engineering model: first-order, not certified</span>
         <button className="secondary-button" onClick={()=>setDesign(DEFAULT_SUBSYSTEM_DESIGN)}>Reset subsystem design</button>
