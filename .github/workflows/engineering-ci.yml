@@ -22,3 +22,18 @@ jobs:
         run: npm test
       - name: Type-check and build web app
         run: npm run build
+
+  orekit-transfer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install JDK 17 with Maven dependency cache
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: orekit-service/pom.xml
+      - name: Compile and test real Orekit transfer solver
+        run: mvn --batch-mode --no-transfer-progress -f orekit-service/pom.xml verify
