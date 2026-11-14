@@ -88,8 +88,39 @@ public final class TransferServer {
                 exchange.close();
             }
         });
+        server.createContext("/api/optimize", exchange -> {
+            addCors(exchange);
+            try {
+                if (exchange.getRequestMethod().equals("OPTIONS")) {
+                    exchange.sendResponseHeaders(204,-1);
+                } else if (!exchange.getRequestMethod().equals("POST")) {
+                    response(exchange,405,Map.of("error","POST required"));
+                } else {
+                    // Local-only endpoint; cap request size even if Content-Length absent.
+                    final byte[] payload = exchange.getRequestBody().readNBytes(262145);
+                    if (payload.length > 262144) {
+                        response(exchange,413,Map.of("error","Optimization request exceeds 256 KiB"));
+                    } else {
+                        try {
+                            TransferOptimization.Request input =
+                                JSON.readValue(payload,TransferOptimization.Request.class);
+                            response(exchange,200,TransferOptimization.optimize(input));
+                        } catch (IllegalArgumentException e) {
+                            response(exchange,422,Map.of("error",e.getMessage()==null ?
+                                "Invalid optimization inputs":e.getMessage()));
+                        } catch (Exception e) {
+                            System.err.println("Optimization failed: " + e.getMessage());
+                            response(exchange,422,Map.of("error",
+                                "Orekit could not optimize these transfer candidates"));
+                        }
+                    }
+                }
+            } finally {
+                exchange.close();
+            }
+        });
         server.start();
         System.out.println("Space Race Orekit transfer server listening on http://127.0.0.1:"+port);
-        System.out.println("GET /health, POST /api/lambert; press Control+C to stop.");
+        System.out.println("GET /health, POST /api/lambert, POST /api/optimize; Control+C to stop.");
     }
 }
