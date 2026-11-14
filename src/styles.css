@@ -86,3 +86,39 @@
 .craft-visual-caption small{font-size:11px;line-height:1.6;color:#9ebad4}
 .craft-disclaimer{font-size:10px;color:#7795b1;letter-spacing:.4px;padding:0 17px 11px;margin:0;line-height:1.5}
 @media(max-width:650px){.craft-canvas{height:280px}.craft-visual-caption{flex-direction:column;align-items:flex-start}.craft-visual-head{flex-direction:column;align-items:flex-start}}
+
+
+/* NASA heritage missions side-by-side library */
+.library-hero{margin-bottom:18px}
+.library-hero h2{font-family:'Space Grotesk',sans-serif;font-size:28px;margin:10px 0}
+.library-hero p{color:#acc4d6;line-height:1.7;max-width:840px;font-size:13px}
+.heritage-grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(330px,.88fr);gap:17px;align-items:start}
+.heritage-left{display:flex;flex-direction:column;gap:17px;min-width:0}
+.heritage-select{display:flex;flex-direction:column;gap:9px}
+.heritage-option{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;background:#102238;border:1px solid #34506d;border-radius:8px;color:#e6f4ff;padding:12px}
+.heritage-option.selected{border-color:#85bedc;background:#173550}
+.heritage-option>div{display:flex;flex-direction:column;gap:4px}
+.heritage-option strong{font-family:'Space Grotesk';font-size:15px}
+.heritage-option span{font-size:11px;color:#a1b5c9}
+.heritage-option>small{color:#e0b88a;font-size:10px;letter-spacing:.4px}
+.heritage-preview .eyebrow{margin-bottom:12px}
+.heritage-image{margin:0;background:#081120;border-radius:10px;overflow:hidden;border:1px solid #2d536b}
+.heritage-image img{display:block;width:100%;aspect-ratio:16/10;object-fit:contain}
+.heritage-image figcaption{font-size:10px;color:#9db3c6;padding:10px 12px}
+.heritage-no-image{display:flex;align-items:center;justify-content:center;min-height:180px;flex-direction:column;background:linear-gradient(135deg,#10243b,#172f42);border:1px solid #35556f;border-radius:10px;text-align:center;padding:22px}
+.heritage-no-image>div{font-family:'Space Grotesk';font-size:19px;color:#ddf0ff}
+.heritage-no-image p{font-size:12px;color:#a4bfda;line-height:1.6}
+.heritage-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:13px}
+.heritage-links a,.heritage-source{display:inline-block;color:#9fd7ff;text-decoration:underline;text-underline-offset:3px;font-size:12px}
+.heritage-info{min-width:0;position:sticky;top:93px}
+.heritage-info h2{font-family:'Space Grotesk';font-size:30px;margin:9px 0}
+.heritage-status{color:#e7b980;font-size:12px;letter-spacing:.5px}
+.heritage-intro{color:#d6e6f2;font-size:13px;line-height:1.7}
+.heritage-specs{display:flex;flex-direction:column;gap:0;border-top:1px solid #3a4e65;margin:16px 0}
+.heritage-specs>div{display:grid;grid-template-columns:minmax(100px,.38fr) minmax(0,.62fr);gap:10px;border-bottom:1px solid #2b4057;padding:10px 0}
+.heritage-specs span{color:#9cb5c9;font-size:10px;text-transform:uppercase;line-height:1.6}
+.heritage-specs strong{font-size:12px;font-weight:600;color:#e4effb;line-height:1.6}
+.heritage-attr{font-size:11px;color:#a2bdd3;line-height:1.7;margin-top:14px}
+.heritage-info>.secondary-button{display:block;margin-top:14px}
+.heritage-limits{color:#9fb9ca;background:#0b1f32;border-left:2px solid #e5ba7c;padding:11px 13px;font-size:11px;line-height:1.65;margin-top:14px}
+@media(max-width:900px){.heritage-grid{grid-template-columns:1fr}.heritage-info{position:static}}
