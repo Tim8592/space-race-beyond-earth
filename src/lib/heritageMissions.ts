@@ -69,6 +69,7 @@ export const HERITAGE_MISSIONS: readonly HeritageMission[] = [
     payload: 'Multispectral imager, gamma-ray/neutron spectrometer, magnetometer, gravity science; DSOC technology demonstration',
     highlights: 'Solar-electric Hall propulsion, large cross-shaped solar arrays and a high-gain antenna. Published dry mass excludes propellant, while wet launch mass includes instruments and DSOC.',
     dimensions: 'Bus ~4.9 m tall with booms; total deployed span ~25 × 7.3 m',
+    imageUrl: 'https://d2pn8kiwq2w21t.cloudfront.net/images/Psyche_Mission_-_Spacecraft_H.2e16d0ba.fill-1800x775-c10.jpg',
     missionUrl: 'https://science.nasa.gov/mission/psyche/',
     spacecraftUrl: 'https://science.nasa.gov/mission/psyche/spacecraft/',
     credit: 'NASA / JPL-Caltech (spacecraft specs and photography)',

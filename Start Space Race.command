@@ -17,7 +17,8 @@ if [ ! -f "package.json" ]; then
   exit 1
 fi
 
-if [ ! -d "node_modules" ]; then
+# Update dependencies after a GitHub pull when package.json has changed.
+if [ ! -d "node_modules" ] || [ ! -f "node_modules/.package-lock.json" ] || [ "package.json" -nt "node_modules/.package-lock.json" ]; then
   echo "First launch: installing project dependencies..."
   if ! npm install; then
     echo "Installation failed. Check the messages above."
