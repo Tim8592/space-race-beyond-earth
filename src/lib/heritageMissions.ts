@@ -25,6 +25,8 @@ export type HeritageMission = {
   spacecraftUrl: string;
   modelUrl?: string;
   modelDownloadUrl?: string;
+  modelLocalUrl?: string;
+  trajectory?: {horizonsId:string;from:string;to:string;stepDays:number;events:readonly {date:string;label:string}[]};
   imageUrl?: string;
   credit: string;
 };
@@ -50,6 +52,15 @@ export const HERITAGE_MISSIONS: readonly HeritageMission[] = [
     spacecraftUrl: 'https://science.nasa.gov/mission/dawn/technology/spacecraft/',
     modelUrl: 'https://science.nasa.gov/3d-resources/dawn/',
     modelDownloadUrl: 'https://assets.science.nasa.gov/content/dam/science/cds/3d/resources/model/dawn/Dawn.glb',
+    modelLocalUrl: '/models/Dawn.glb',
+    trajectory: {horizonsId:'-203',from:'2007-09-28',to:'2018-10-31',stepDays:60,events:[
+      {date:'2007-09-27',label:'Launch'},
+      {date:'2009-02-17',label:'Mars gravity assist'},
+      {date:'2011-07-16',label:'Vesta arrival'},
+      {date:'2012-09-05',label:'Vesta departure'},
+      {date:'2015-03-06',label:'Ceres arrival'},
+      {date:'2018-11-01',label:'Mission end'},
+    ]},
     imageUrl: 'https://assets.science.nasa.gov/dynamicimage/assets/science/cds/3d/resources/model/dawn/Dawn.png?crop=faces%2Cfocalpoint&fit=clip&h=720&w=1280',
     credit: 'NASA / Brian E. Kumanchik (3D model); NASA/JPL (mission statistics)',
   },
@@ -72,6 +83,10 @@ export const HERITAGE_MISSIONS: readonly HeritageMission[] = [
     imageUrl: 'https://d2pn8kiwq2w21t.cloudfront.net/images/Psyche_Mission_-_Spacecraft_H.2e16d0ba.fill-1800x775-c10.jpg',
     missionUrl: 'https://science.nasa.gov/mission/psyche/',
     spacecraftUrl: 'https://science.nasa.gov/mission/psyche/spacecraft/',
+    trajectory: {horizonsId:'-255',from:'2023-10-14',to:'2026-11-01',stepDays:30,events:[
+      {date:'2023-10-13',label:'Launch'},
+      {date:'2029-08-01',label:'Target asteroid encounter (planned, not a recorded track point)'},
+    ]},
     credit: 'NASA / JPL-Caltech (spacecraft specs and photography)',
   },
   {
@@ -93,6 +108,12 @@ export const HERITAGE_MISSIONS: readonly HeritageMission[] = [
     missionUrl: 'https://science.nasa.gov/mission/new-horizons/',
     spacecraftUrl: 'https://science.nasa.gov/mission/new-horizons/',
     modelUrl: 'https://science.nasa.gov/resource/new-horizons-3d-model/',
+    trajectory: {horizonsId:'-98',from:'2006-01-20',to:'2019-01-03',stepDays:90,events:[
+      {date:'2006-01-19',label:'Launch'},
+      {date:'2007-02-28',label:'Jupiter gravity assist'},
+      {date:'2015-07-14',label:'Pluto encounter'},
+      {date:'2019-01-01',label:'Arrokoth encounter'},
+    ]},
     credit: 'NASA / Johns Hopkins APL; NASA Visualization Technology Applications and Development 3D model',
   },
   {
@@ -113,7 +134,14 @@ export const HERITAGE_MISSIONS: readonly HeritageMission[] = [
     dimensions: 'Large high-gain dish with instrument platform, booms and RTGs',
     missionUrl: 'https://science.nasa.gov/mission/voyager/',
     spacecraftUrl: 'https://science.nasa.gov/mission/voyager/',
-    modelUrl: 'https://science.nasa.gov/resource/voyager-3d-model/',
+    modelUrl: 'https://science.nasa.gov/3d-resources/voyager-probe-b/',
+    modelDownloadUrl: 'https://assets.science.nasa.gov/content/dam/science/cds/3d/resources/model/voyager-probe-%28b%29/Voyager%20Probe%20%28B%29.glb',
+    modelLocalUrl: '/models/Voyager.glb',
+    trajectory: {horizonsId:'-31',from:'1977-09-06',to:'1990-01-01',stepDays:90,events:[
+      {date:'1977-09-05',label:'Voyager 1 launch'},
+      {date:'1979-03-05',label:'Jupiter flyby'},
+      {date:'1980-11-12',label:'Saturn flyby'},
+    ]},
     credit: 'NASA/JPL; NASA Visualization Technology Applications and Development 3D model',
   },
 ];
