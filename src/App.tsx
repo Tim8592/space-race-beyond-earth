@@ -1,4 +1,6 @@
-import SubsystemLab from './SubsystemLab';
+import SubsystemLab, {readSubsystemDesign} from './SubsystemLab';
+import EarthObservationMission from './EarthObservationMission';
+import type { SubsystemDesign } from './lib/subsystemDesign';
 import OrbitalLab from './OrbitalLab';
 import MissionLibrary from './MissionLibrary';
 import LearningLab from './LearningLab';
@@ -160,6 +162,8 @@ export default function App() {
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'>('missions');
+  const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'>('observation');
+  const [spacecraftDesign,setSpacecraftDesign]=useState<SubsystemDesign>(readSubsystemDesign);
   const contract = CONTRACTS.find((item) => item.id === missionId) ?? CONTRACTS[0];
   const metrics = useMemo(() => calculateVehicleMetrics(vehicle), [vehicle]);
   const buildCost = estimateBuildCostUsd(vehicle, game.engineBuildCounts[vehicle.engineId] ?? 0);
@@ -175,6 +179,10 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch { /* private browser mode */ }
   }, [snapshot]);
+  useEffect(() => {
+    try { localStorage.setItem('space-race-systems-lab-v1',JSON.stringify(spacecraftDesign)); }
+    catch { /* optional browser persistence */ }
+  },[spacecraftDesign]);
 
   function updateVehicle(patch: Partial<Vehicle>) {
     setSnapshot((previous) => ({ ...previous, vehicle: { ...previous.vehicle, ...patch } }));
@@ -229,6 +237,39 @@ export default function App() {
       ? `${contract.label} complete. ${integer(vehicle.payloadMassKg)} kg delivered; ${usd(contract.payoutUsd)} contract revenue received.`
       : `Mission unsuccessful. Your design did not meet every requirement. ${usd(buildCost)} was spent on the attempt.`);
   }
+  function completeEarthObservation(outcome:{
+    success:boolean; missionCostUsd:number; payoutUsd:number;
+    wetMassKg:number; returnedScience:number;
+  }){
+    const {success,missionCostUsd,payoutUsd,wetMassKg,returnedScience}=outcome;
+    setSnapshot(previous=>{
+      const event:HistoryItem={
+        id:Date.now(),
+        day:previous.game.day,
+        contract:'Earth Observation One',
+        craft:previous.vehicle.name+' / scientific spacecraft',
+        success,
+        cost:missionCostUsd,
+        payout:payoutUsd,
+        deliveredKg:wetMassKg,
+      };
+      return {...previous,game:{
+        ...previous.game,
+        cash:previous.game.cash-missionCostUsd+payoutUsd,
+        day:previous.game.day+7,
+        completed:previous.game.completed+Number(success),
+        launched:previous.game.launched+1,
+        deliveredKg:previous.game.deliveredKg+wetMassKg,
+        revenue:previous.game.revenue+payoutUsd,
+        engineBuildCounts:{...previous.game.engineBuildCounts,
+          [previous.vehicle.engineId]:(previous.game.engineBuildCounts[previous.vehicle.engineId]??0)+1},
+        history:[event,...previous.game.history].slice(0,12),
+      }};
+    });
+    setMessage(success
+      ? 'Earth Observation One returned '+returnedScience.toFixed(1)+' science points. Contract paid out.'
+      : 'Earth Observation One completed without enough returned science. The mission cost was charged.');
+  }
   function reset() {
     if (!window.confirm('Start over? This clears your locally saved campaign and blueprints.')) return;
     setSnapshot({ game: DEFAULT_GAME, vehicle: INITIAL_VEHICLE, missionId: 'cargo' });
@@ -251,15 +292,15 @@ export default function App() {
           <div className="brand"><span className="brand-symbol"><span className="brand-orbit" /></span><div><strong>SPACE RACE</strong><small>BEYOND EARTH</small></div></div>
           <nav aria-label="Primary" className="game-tabs" role="tablist">
               {([
-                ['missions','Mission Control'],['systems','Spacecraft Builder'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],
+                ['missions','Play Campaign'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>setActiveView(id)}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.6</span></div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.7</span></div>
         </div>
       </header>
 
       <main className="main-content">
-        <section className={'intro '+(activeView==='missions'?'':'view-hidden')}>
+        <section className={'intro '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')}>
           <div><div className="eyebrow"><span className="small-diamond" /> YOUR SPACE PROGRAM STARTS HERE</div><h1>Build the future.<br /><em>Beyond Earth.</em></h1><p>Design capable spacecraft, accept orbital contracts, and turn engineering decisions into a thriving space economy.</p></div>
           <div className="intro-right"><span>CAMPAIGN / EARTH ERA</span><div className="day-marker">DAY <strong>{game.day.toString().padStart(3, '0')}</strong></div><button className="ghost-button" onClick={passWeek}>Advance 7 days <span>→</span></button></div>
         </section>
@@ -271,10 +312,24 @@ export default function App() {
           <div className="kpi"><span>TOTAL CONTRACT REVENUE</span><strong>{usd(game.revenue)}</strong><small>From completed missions</small></div>
         </section>
 
-        <div className={'control-layout '+(activeView==='missions'?'':'view-hidden')} id="mission-control">
+        {activeView==='missions'&&<div className="campaign-switch" role="tablist" aria-label="Campaign mission mode">
+          <button type="button" role="tab" aria-selected={campaignMode==='observation'}
+            className={campaignMode==='observation'?'selected':''}
+            onClick={()=>setCampaignMode('observation')}>Earth Observation One · Guided mission</button>
+          <button type="button" role="tab" aria-selected={campaignMode==='contracts'}
+            className={campaignMode==='contracts'?'selected':''}
+            onClick={()=>setCampaignMode('contracts')}>Orbital Contracts · Classic mode</button>
+        </div>}
+        {activeView==='missions'&&campaignMode==='observation'&&
+          <EarthObservationMission spacecraft={spacecraftDesign} launcher={vehicle}
+            cash={game.cash} completedWithEngine={game.engineBuildCounts[vehicle.engineId]??0}
+            onEditSpacecraft={()=>setActiveView('systems')}
+            onEditLauncher={()=>{setActiveView('missions');setCampaignMode('contracts')}}
+            onComplete={completeEarthObservation}/>}
+        <div className={'control-layout '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')} id="mission-control">
           <div className="left-column">
             <section className="panel" id="builder">
-              <div className="panel-heading"><div><div className="eyebrow">01 / DESIGN LAB</div><h2>Spacecraft Builder</h2><p>Configure your launch vehicle and evaluate its performance.</p></div><div className="panel-glyph">◈</div></div>
+              <div className="panel-heading"><div><div className="eyebrow">01 / LAUNCH VEHICLE DESIGN</div><h2>Launch Rocket Builder</h2><p>Configure the launch rocket that carries your spacecraft. This mass and engine selection also feed the guided Earth Observation mission.</p></div><div className="panel-glyph">◈</div></div>
               <div className="builder-name"><label htmlFor="craft-name">VEHICLE NAME</label><input id="craft-name" value={vehicle.name} maxLength={40} onChange={(event) => updateVehicle({ name: event.target.value })}/></div>
               <div className="section-label">PROPULSION SYSTEM <span>SELECT ONE</span></div>
               <div className="engine-grid">
@@ -318,7 +373,14 @@ export default function App() {
           </div>
         </div>
 
-        {activeView==='systems' && <div className="single-tab-page"><SubsystemLab /></div>}
+        {activeView==='systems' && <div className="single-tab-page">
+          <div className="lab-back"><span>ENGINEERING LAB · same spacecraft as Earth Observation One</span>
+            <button className="secondary-button" onClick={()=>{
+              setActiveView('missions');setCampaignMode('observation');
+            }}>Return to mission design →</button>
+          </div>
+          <SubsystemLab design={spacecraftDesign} onDesignChange={setSpacecraftDesign}/>
+        </div>}
         {activeView==='orbits' && <div className="single-tab-page"><OrbitalLab initialAltitudeKm={contract.altitudeKm} /></div>}
         {activeView==='library' && <div className="single-tab-page"><MissionLibrary onOpenMap={()=>setActiveView('orbits')}/></div>}
         {activeView==='learning' && <div className="single-tab-page">
