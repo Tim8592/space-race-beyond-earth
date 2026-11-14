@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import TransferPlanner, {type LambertSolution} from './TransferPlanner';
+import FieldHelp from './components/FieldHelp';
 import {
   EARTH_RADIUS_KM, PLANETS, earthOrbitAtTime, planetAtDate,
   type PlanetId,
@@ -151,10 +152,10 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
         </div>
         <div className="orbit-controls">
           {mode==='earth'?<>
-            <label>Perigee altitude <strong>{formatted(perigeeKm,0)} km</strong><input type="range" min="180" max="10000" step="20" value={perigeeKm} onChange={e=>{setPerigeeKm(Number(e.target.value));setElapsedMinutes(0);}}/></label>
-            <label>Eccentricity <strong>{eccentricity.toFixed(2)}</strong><input type="range" min="0" max="0.8" step="0.01" value={eccentricity} onChange={e=>{setEccentricity(Number(e.target.value));setElapsedMinutes(0);}}/></label>
-            <label>Periapsis orientation <strong>{formatted(periapsisAngle,0)}°</strong><input type="range" min="0" max="360" step="5" value={periapsisAngle} onChange={e=>setPeriapsisAngle(Number(e.target.value))}/></label>
-            <label>Elapsed time (one period) <strong>{formatted((elapsedMinutes%earthState.periodMinutes+earthState.periodMinutes)%earthState.periodMinutes,0)} min</strong><input type="range" min="0" max={earthState.periodMinutes} step="0.5" value={(elapsedMinutes%earthState.periodMinutes+earthState.periodMinutes)%earthState.periodMinutes} onChange={e=>{setElapsedMinutes(Number(e.target.value));setRunning(false);}}/></label>
+            <label>Perigee altitude <FieldHelp term="Perigee altitude"/> <strong>{formatted(perigeeKm,0)} km</strong><input type="range" min="180" max="10000" step="20" value={perigeeKm} onChange={e=>{setPerigeeKm(Number(e.target.value));setElapsedMinutes(0);}}/></label>
+            <label>Eccentricity <FieldHelp term="Eccentricity"/> <strong>{eccentricity.toFixed(2)}</strong><input type="range" min="0" max="0.8" step="0.01" value={eccentricity} onChange={e=>{setEccentricity(Number(e.target.value));setElapsedMinutes(0);}}/></label>
+            <label>Periapsis orientation <FieldHelp term="Periapsis orientation"/> <strong>{formatted(periapsisAngle,0)}°</strong><input type="range" min="0" max="360" step="5" value={periapsisAngle} onChange={e=>setPeriapsisAngle(Number(e.target.value))}/></label>
+            <label>Elapsed time (one period) <FieldHelp term="Elapsed time (one period)"/> <strong>{formatted((elapsedMinutes%earthState.periodMinutes+earthState.periodMinutes)%earthState.periodMinutes,0)} min</strong><input type="range" min="0" max={earthState.periodMinutes} step="0.5" value={(elapsedMinutes%earthState.periodMinutes+earthState.periodMinutes)%earthState.periodMinutes} onChange={e=>{setElapsedMinutes(Number(e.target.value));setRunning(false);}}/></label>
             <div className="orbit-data-grid">
               <div><span>Period</span><strong>{formatted(earthState.periodMinutes,1)} min</strong></div>
               <div><span>Speed now</span><strong>{formatted(earthState.speedKmS,3)} km/s</strong></div>
@@ -167,7 +168,7 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
             <label>Display scale
               <select value={outerView?'outer':'inner'} onChange={e=>setOuterView(e.target.value==='outer')}><option value="inner">Inner solar system (Venus–Mars)</option><option value="outer">Through Jupiter</option></select>
             </label>
-            <label>Simulation date <strong>{utcDate.toISOString().slice(0,10)}</strong><input type="range" min="0" max="3200" step="1" value={dayOffset} onChange={e=>{setDayOffset(Number(e.target.value));setRunning(false);}}/></label>
+            <label>Simulation date <FieldHelp term="Simulation date"/> <strong>{utcDate.toISOString().slice(0,10)}</strong><input type="range" min="0" max="3200" step="1" value={dayOffset} onChange={e=>{setDayOffset(Number(e.target.value));setRunning(false);}}/></label>
             <label>Inspect planet
               <select value={selectedPlanet} onChange={e=>setSelectedPlanet(e.target.value as PlanetId)}>{Object.entries(PLANETS).map(([id,p])=><option key={id} value={id}>{p.label}</option>)}</select>
             </label>
