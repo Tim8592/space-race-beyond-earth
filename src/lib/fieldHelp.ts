@@ -1,0 +1,56 @@
+/**
+ * Plain-English explanations shown on hover, keyboard focus and touch.
+ * Numeric values and sourced assumptions live in the engineering modules.
+ */
+export const FIELD_HELP: Record<string,string> = {
+  'In-space engine / technology': 'Select the propulsion hardware. Specific impulse changes propellant efficiency; thrust changes acceleration and burn time; electric thrusters also need electrical power. These engines do not launch from Earth.',
+  'Number of thrusters': 'Number of identical engines fitted and assumed to fire together. More engines raise total thrust, electrical demand, hardware mass and heat, but do not multiply Isp.',
+  'Propellant inventory': 'Usable propellant carried in kg. It increases initial/wet spacecraft mass; as fuel is burned, spacecraft mass decreases. Tank residuals and reserves remain unmodeled.',
+  'Spacecraft bus (other dry hardware)': 'Mass of everything not separately modeled: structure, avionics, instruments accommodation, cabling and supports. Avoid counting these twice with components added below.',
+  'Science / cargo payload': 'Mass devoted to mission instruments or delivered cargo. Payload adds mass but not propulsion capability.',
+  'Primary power generation': 'Select PV-only or an additional RTG/fission reference. Radioisotope generators can operate without sunlight; unflown reactor designs are not flight proven.',
+  'Number of power units': 'Number of identical generators. Electrical output and published generator hardware mass scale with count; reactor shielding and waste-heat rejection remain incomplete.',
+  'Mission age for degradation': 'How many years since beginning of mission. Some RTG examples use approximate annual electrical-power decline; do not treat it as a guaranteed end-of-life performance curve.',
+  'Solar cell type': 'Cell efficiency and manufacturer-rated power density at beginning of life. Array packing, temperature and degradation require separate allowances.',
+  'Mission solar distance': 'Approximate heliocentric distance measured in astronomical units (1 AU is roughly Earth–Sun distance). Sunlight and solar-cell output decline with the inverse square of distance.',
+  'Active solar cell area': 'Total illuminated, electrically active photovoltaic cell area, not the full panel envelope. The model estimates power and solar hardware mass from this area.',
+  'Number of solar wings': 'Number of deployable solar panel wings shown on the model. Total active area stays fixed, but each wing becomes smaller as more wings are added. Illustrative hinge mass is added for each wing.',
+  'Housekeeping / instruments draw': 'Continuous electric load for onboard computers, communications, instruments, sensors and heaters. Thruster power is added separately when an electric engine is selected.',
+  'Battery pack technology': 'Pack-level electrical energy stored per kilogram (Wh/kg). A higher value can reduce battery mass for an equivalent eclipse energy demand.',
+  'Eclipse / no-solar duration': 'Time the spacecraft must operate without solar generation. Longer eclipses increase battery storage needs unless another source powers the bus.',
+  'Radiator surface treatment': 'A coating changes solar absorptivity α: how much incoming sunlight a surface absorbs. Infrared emissivity ε is a separate thermal property.',
+  'IR emissivity (ε)': 'Fraction of ideal blackbody thermal radiation emitted by the radiator. Larger emissivity improves heat rejection at the same radiator area and temperature.',
+  'Radiator operating temperature': 'Assumed radiator surface temperature in kelvin. Thermal emission scales with absolute temperature to the fourth power; allowable electronics temperatures still constrain design.',
+  'Radiator sun incidence factor': 'Approximate fraction of full face-on solar illumination that strikes the radiator. A higher value adds absorbed solar heat and makes radiative cooling harder.',
+  'Number of radiator panels': 'Number of separate radiator panels. Required total radiating area is unchanged; it is divided between panels, with an illustrative extra bracket mass per panel.',
+  'Liquid acquisition / tank type': 'A diaphragm, bellows or capillary PMD helps feed liquid without swallowing pressurant gas in microgravity. The displayed extra mass is a game assumption, not a certified design.',
+  'Assumed liquid density': 'Liquid propellant density at the selected storage temperature and pressure. Volume V = m/ρ. This approximation must NOT be used for compressed xenon or solid iodine.',
+  'Differential tank pressure': 'Pressure inside the tank above its external environment. It affects ideal spherical shell stress and thickness.',
+  'Allowable membrane stress': 'Chosen engineering allowable tensile stress for shell sizing. Real pressure vessels require material properties, safety factors, weld efficiencies, proof and burst requirements.',
+  'Tank shell material density': 'Density of the tank wall material, not the propellant. Multiplying shell volume by this density estimates the ideal shell mass.',
+  'Dry mass': 'Vehicle mass before propellant is loaded, including structural components and onboard systems. For the launch game this is an illustrative single-stage configuration.',
+  'Propellant mass': 'Launch vehicle propellant mass. More propellant increases ideal delta-V but also increases launch mass, which can reduce initial thrust-to-weight.',
+  'Payload mass': 'Cargo delivered to orbit. It adds to initial and final mass and consumes launch capability.',
+  'Perigee altitude': 'Height of the orbit at closest approach to Earth. Elliptical orbits have a smaller perigee and a larger apogee.',
+  'Eccentricity': 'How non-circular the orbit is: zero means circular; approaching one produces a highly elongated ellipse.',
+  'Periapsis orientation': 'Angle of the ellipse’s closest-approach direction in the plotted orbital plane. It rotates the path without changing size or period.',
+  'Elapsed time (one period)': 'Location along the propagated orbit after the given time. The spacecraft moves faster near perigee and slower near apogee.',
+  'Departure date (fixed, UTC)': 'The departure date remains fixed during this optimization. Searching both dates would be a separate launch-window or porkchop-plot optimization.',
+  'Flight duration': 'Elapsed days between departure and arrival. Orekit solves the ideal Sun-centered two-body arc through the planets’ approximate positions at those dates.',
+  'Objective': 'Departure-only minimizes the initial injection burn; combined minimizes ideal departure plus circularization at destination. A flyby does not need capture.',
+  'Minimum flight time (days)': 'Shortest flight time to consider in the search. Decreasing it may require higher departure energy.',
+  'Maximum flight time (days)': 'Longest flight time to consider. Wider ranges can reveal other low-energy trajectories but take more computation.',
+  'Coarse step (days)': 'Time spacing between initial candidate transfers. The optimizer refines around its best sampled duration at one-day intervals.',
+  'Earth parking altitude (km)': 'Altitude of a hypothetical circular parking orbit before the impulsive departure burn; not a ground launch.',
+  'Target circular orbit altitude (km)': 'Altitude of the hypothetical circular target orbit used to estimate insertion delta-V. Aerobraking, inclination and flyby options are ignored.',
+  'Jupiter capture-orbit altitude (km)': 'Idealized distance above Jupiter’s reference equatorial radius, not a real surface or necessarily safe orbit. Radiation and moon encounters are omitted.',
+  'Departure date (UTC)': 'The date used to position Earth at departure. Kepler/Lambert approximations use UTC as an approximation of dynamical time.',
+  'Display scale': 'Choose the map extent. Planet positions are projected to the ecliptic plane, not a full three-dimensional orbit rendering.',
+  'Simulation date': 'Time used to calculate current approximate planetary positions using JPL published orbital elements.',
+  'Inspect planet': 'Choose which planet’s Sun-centered position and distance appear in the analysis panel.',
+};
+
+export function descriptionFor(label:string):string {
+  return FIELD_HELP[label] ??
+    'Adjust this input to explore the model. Read the Learning tab for the physical assumptions and equations.';
+}
