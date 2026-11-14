@@ -8,6 +8,14 @@ The goal is **not** to reproduce a professional flight dynamics package inside a
 
 **Status:** Hackathon prototype, v0.6. The game has Mission Control, Spacecraft Builder, Orbital Map, Mission Library, Learn Physics, and Research tabs. The Spacecraft Builder includes a selectable modular Three.js spacecraft preview (solar panels, radiators, tank, propulsion, antenna) and can import a GLB file exported from Onshape/FreeCAD for visual inspection. The Mission Library includes NASA-sourced Dawn, Psyche, New Horizons, and Voyager examples, reference models/images, statistics, milestone timelines, and on-demand historical JPL Horizons spacecraft paths when ephemerides are available. An **optional local Orekit Java service** now solves and plots impulsive Sun-centered Lambert transfers between approximate planetary positions. In-space subsystem models, orbital transfer solutions and launch-contract payouts are still separate; low-thrust electric trajectories, real launch-window optimization, gravity assists, and mission qualification are NOT implemented.
 
+## Challenge-aligned game plan and browser reliability tests
+
+The official *Space Mission Design Game* asks for a complete space mission experience spanning concept, spacecraft/instrument choice, launch, operations and evaluation, with meaningful mass, power, communications, data, resource and time trade-offs. Our current tools are capable technical building blocks but still need to be joined into one playable mission.
+
+- [Challenge alignment & complete-mission gameplay blueprint](docs/CHALLENGE_ALIGNMENT_AND_GAMEPLAY.md) — proposed vertical slice, feature priorities and technical cautions
+- **Automated browser smoke checks:** `npm run test:browser` (first install Chromium using `npx playwright install chromium`). GitHub Actions runs Chromium on every push to catch tab failures, browser exceptions, campaign persistence and NASA model retry regressions.
+- The independent core game must be deployable to an ordinary website without asking judges to install Java. Orekit and JPL historical position services are optional advanced modes.
+
 ## Quick start
 
 Requirements: Node.js LTS with npm (Node 22+ supported).

@@ -1,40 +1,49 @@
-# NASA Space Apps 2026 — project submission checklist
+# NASA Space Apps 2026 — submission readiness and 30-second demo
 
-> **Deadline:** Sunday, November 15, 2026, 11:59 PM **Halifax local time** per the participant form. Verify any local-organizer changes. Saving is not submitting.
+> **Deadline:** Sunday, November 15, 2026, 11:59 PM local time according to the NASA Space Apps event schedule. Verify your particular event's requirements. **Save Progress is not the same as Submit for Judging.**
 
-## Draft project summary — revise to describe the actual final product
+The repository is an independently developed 2026 *Space Mission Design Game* prototype. **Current features (v0.6):** Earth-orbit contract campaign, one-stage simplified launch rocket model, funding and manufacturing discounts, procedural 3D spacecraft assembly, NASA sample models, surveyed propulsion/power/thermal first-order sizing, real Keplerian Earth orbit map, approximate JPL planetary positions, optional local Orekit two-body Lambert transfers/flight-duration search, NASA heritage mission reference library, optional on-demand Horizons historical tracks, and an interactive learning tab.
 
-Space Race: Beyond Earth is a physics-informed space strategy game that asks players to think like spacecraft engineers and program managers. Players configure launch vehicles by selecting propulsion systems and trading dry mass, fuel mass, and payload capacity against estimated cost. Our prototype calculates ideal rocket delta-V and thrust-to-weight ratio, then uses those results in low Earth orbit contracts: meet the engineering constraints to deliver payloads, earn revenue, and expand your space program. A 2D orbit display uses NASA/JPL Earth parameters to estimate circular orbital speed and period. Our broader vision connects technological research, manufacturing experience, lunar infrastructure, and interplanetary mission planning into one progressively expanding space economy. By bringing engineering choices into a strategic gameplay loop, the project makes the trade-offs behind space exploration accessible and engaging.
+**Do not describe future work as a playable feature.** The campaign's launch-vehicle contracts, in-space spacecraft bus architecture and trajectory planner are presently separate. There is **no complete in-orbit science-data/downlink mission loop**, verified interplanetary spacecraft feasibility, lunar manufacturing, Mars colony, or real-time multiplayer.
 
-**Only claim functionality demonstrated by the final build.** The current application does not simulate Mars transfers or a lunar base.
+See [Challenge alignment & gameplay roadmap](CHALLENGE_ALIGNMENT_AND_GAMEPLAY.md) for a prioritized end-to-end plan.
 
-## Deliverables
+## Required public outputs — check before submission
 
-- [ ] Public **Project** link: deployed web application or repository URL.
-- [ ] Public **Project Demonstration** link: video **≤30 seconds** OR slide presentation **≤7 slides** including title/introduction.
-- [ ] Summary copied into project form and under field's character limit.
-- [ ] Project details: features, technology, engineering approach, impact, limitations, originality, design trade-offs.
-- [ ] NASA Data: list source links from `docs/ATTRIBUTION.md` with correct resource titles.
-- [ ] Space Agency Partner & Other Data: all third-party code, external content, frameworks, assets, fonts, and sources used in the final product.
-- [ ] SI tool use: accurately select applicable disclosure categories; ensure any generated image/video/audio has required disclosure/watermark/metadata.
-- [ ] Confirm final project is original and attribution is complete.
-- [ ] Test links **while signed out** or in a private window to ensure anyone can access without permission or login.
-- [ ] Click **Save Progress** as you work.
-- [ ] Click **Submit for Judging** before the deadline and verify confirmation.
+- [ ] Project public URL, preferably a browser demo hosted without requiring Java/Maven or any local tool installation.
+- [ ] Public project demonstration: ≤30 seconds of video **or** ≤7 slides including introduction (verify the form).
+- [ ] Final, concise project summary (50–200 words if form uses the previously supplied limit).
+- [ ] Project description explaining user need, actual game interactions, engineering trade-offs, NASA data, assumptions, creativity, impact and clear limitations.
+- [ ] Cite original NASA/JPL references, reference model sources, Orekit/Three.js/dependencies, images and licenses from [ATTRIBUTION.md](ATTRIBUTION.md).
+- [ ] Accurately disclose assistant/SI assistance in the project form; review any generated images/audio requirements.
+- [ ] Test all URLs while signed out/in a private window; verify on a second computer/browser if possible.
+- [ ] Save then **Submit for Judging** and check the final confirmation.
 
-## 30-second demo concept
+## Suggested honest 30-second demonstration for the CURRENT build
 
-- **0–5s:** 'Space Race: Beyond Earth — engineer your own space program.'
-- **5–12s:** Show propulsion and mass configuration changing live delta-V, cost and TWR.
-- **12–22s:** Select an orbit contract, show readiness, launch, payout and budget change.
-- **22–30s:** Show orbit visualization and mention NASA/JPL Earth parameters + the research/Moon/Mars roadmap (clearly labeled future work).
+1. **0–5 s:** "Space Race: Beyond Earth — make real engineering trade-offs into a space agency strategy game."
+2. **5–11 s:** Show the orbital contract, adjust launcher mass/propellant and see Δv/TWR/cost respond.
+3. **11–16 s:** Execute a contract and show budget and mission completion progress.
+4. **16–23 s:** Open the 3D spacecraft builder; change thrusters/solar wings; show electrical margin, heat and mass results.
+5. **23–27 s:** Open the orbit map; show Keplerian elliptical orbit or an already-calculated trajectory. **Do not rely on an offline Java backend during the recording**.
+6. **27–30 s:** "Built with NASA/JPL open data; next we're connecting scientific instruments, mission operations and downlink into one mission."
 
-## Project details outline
+If the proposed complete-mission MVP is implemented before judging, update the demonstration to show **mission objective → payload design → scientific downlink → debrief**, which responds more directly to the challenge.
 
-1. **Problem:** Space exploration requires integrated engineering, financing, mission selection, and resource management.
-2. **Solution:** A game that makes architecture and strategic trade-offs interactive.
-3. **Technical implementation:** React/TypeScript/Vite, classical ideal-rocket and two-body orbital calculations, local save state, contract-based simulation.
-4. **Data:** JPL Earth GM and NASA NSSDC Earth equatorial radius for orbital metrics.
-5. **Innovation:** Engineering calculations directly affect financial outcomes and reward strategic decisions.
-6. **Limitations:** One-stage idealization, illustrative contract thresholds, no validated launch trajectory or deep-space transfer physics yet.
-7. **Next steps:** Research, manufacturing, lunar missions, Mars windows, competitor milestones.
+## Suggested summary (update before submitting)
+
+Space Race: Beyond Earth is an interactive aerospace engineering and space agency game that helps players explore real trade-offs in mission planning. Players configure an idealized launch vehicle, evaluate thrust-to-weight ratio and rocket delta-v, and attempt fictional orbital delivery contracts while managing costs and revenue. A 3D spacecraft laboratory connects propulsion choices with electrical power, thermal rejection, battery sizing, propellant inventory and estimated spacecraft mass. Interactive orbital maps use NASA/JPL orbital data, while an optional local Orekit service models ideal two-body planetary transfers. Reference models of actual NASA missions and an interactive physics learning section help explain the engineering behind each decision. The project distinguishes published scientific parameters from game assumptions. Our next goal is to turn these connected engineering tools into a complete mission—from science objective and spacecraft design through launch, downlink, and post-mission analysis.
+
+## Local validation and known limitations
+
+```bash
+npm test
+npm run build
+npm run test:browser
+```
+
+Browser smoke tests require Playwright Chromium installed locally: `npx playwright install chromium`. CI runs the browser tests independently.
+
+The 3D NASA model downloads may be missing in a deployed version unless the asset is placed in that hosting build's `public/models` directory. NASA model downloads are local optional assets; do not imply the 3D files are bundled into GitHub. A public static React app will **not** have the local `127.0.0.1:8787` Orekit server, so manual transfer solving and on-demand NASA Horizons historical track requests are not generally available to remote viewers. Make that limitation explicit and provide in-browser scenario/fallback content for judging.
+
+**NASA Space Apps source:** https://www.spaceappschallenge.org/2026/ . Challenge details reproduced at https://hackathlone.com/challenges/space-mission-design-game .
