@@ -1,0 +1,64 @@
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_SUBSYSTEM_DESIGN, sizeSubsystemDesign } from './subsystemDesign';
+
+describe('coupled in-space spacecraft engineering', () => {
+  it('links Hall thruster load to solar array power and surface distance', () => {
+    const earth = sizeSubsystemDesign(DEFAULT_SUBSYSTEM_DESIGN);
+    const pluto = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, distanceAu: 39.5 });
+    expect(earth.isElectric).toBe(true);
+    expect(earth.canPowerThruster).toBe(true);
+    expect(pluto.sunlightPowerW).toBeCloseTo(earth.sunlightPowerW / 39.5 ** 2, 7);
+    expect(pluto.canPowerThruster).toBe(false);
+    expect(pluto.sunlightMarginW).toBeLessThan(0);
+  });
+
+  it('reflects added solar array mass in the spacecraft wet mass and delta V', () => {
+    const small = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, cellAreaM2: 1 });
+    const large = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, cellAreaM2: 15 });
+    expect(large.sunlightPowerW).toBeGreaterThan(small.sunlightPowerW);
+    expect(large.wetMassLowerBoundKg).toBeGreaterThan(small.wetMassLowerBoundKg);
+    expect(large.idealDeltaVms).toBeLessThan(small.idealDeltaVms);
+  });
+
+  it('links propulsion power to PPU waste heat and radiator area', () => {
+    const lower = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, thrusterId: 'busek-bht100' });
+    const higher = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, thrusterId: 'busek-bht200' });
+    expect(higher.totalElectricalDemandW).toBeGreaterThan(lower.totalElectricalDemandW);
+    expect(higher.thermalLoadW).toBeGreaterThan(lower.thermalLoadW);
+    expect(higher.radiatorAreaM2!).toBeGreaterThan(lower.radiatorAreaM2!);
+  });
+
+  it('includes both propellant and preliminary physical liquid tank mass', () => {
+    const base = { ...DEFAULT_SUBSYSTEM_DESIGN, thrusterId: 'mono-reference' as const };
+    const chemical = sizeSubsystemDesign(base);
+    const higherPressure = sizeSubsystemDesign({ ...base, tankPressureBar: base.tankPressureBar * 2 });
+    expect(chemical.isElectric).toBe(false);
+    expect(chemical.tankInternalVolumeL).toBeGreaterThan(0);
+    expect(chemical.tankShellMassKg).toBeGreaterThan(0);
+    expect(higherPressure.tankWallMm).toBeCloseTo(chemical.tankWallMm! * 2, 6);
+    expect(higherPressure.tankShellMassKg).toBeCloseTo(chemical.tankShellMassKg! * 2, 6);
+    expect(higherPressure.wetMassLowerBoundKg).toBeGreaterThan(chemical.wetMassLowerBoundKg);
+    expect(chemical.wetMassLowerBoundKg - chemical.dryMassLowerBoundKg).toBeCloseTo(base.propellantMassKg);
+  });
+
+  it('changes dry mass with different propellant acquisition device allowances', () => {
+    const base = { ...DEFAULT_SUBSYSTEM_DESIGN, thrusterId: 'mono-reference' as const };
+    const bellows = sizeSubsystemDesign({ ...base, tankType: 'bellows' });
+    const capillary = sizeSubsystemDesign({ ...base, tankType: 'capillary' });
+    expect(bellows.dryMassLowerBoundKg).toBeGreaterThan(capillary.dryMassLowerBoundKg);
+  });
+
+  it('does not incorrectly reuse liquid tank sizing for compressed xenon or iodine', () => {
+    for (const thrusterId of ['busek-bht100', 'busek-bit3'] as const) {
+      const results = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, thrusterId });
+      expect(results.tankShellMassKg).toBeNull();
+      expect(results.massEstimateIncomplete).toBe(true);
+      expect(results.warnings.some(w => /unmodeled|omitted/i.test(w))).toBe(true);
+    }
+  });
+
+  it('rejects nonphysical values rather than reporting plausible mass estimates', () => {
+    expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, radiatorTemperatureK: -10 })).toThrow(RangeError);
+    expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, propellantMassKg: 0 })).toThrow(RangeError);
+  });
+});
