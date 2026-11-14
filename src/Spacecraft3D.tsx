@@ -224,18 +224,25 @@ function NASAReferenceMesh({ url, onStatus }: {
 }
 
 export default function Spacecraft3D({
-  design,analysis,referenceModelUrl,
+  design,analysis,referenceModelUrl,preferReference=false,
 }:{
   design:SubsystemDesign;
   analysis:SystemResults|null;
   referenceModelUrl?:string;
+  preferReference?:boolean;
 }) {
   const [selected,setSelected]=useState<PartName>('bus');
   const [nasaStatus,setNasaStatus]=useState<'idle'|'loading'|'loaded'|'failed'>('idle');
   const [customUrl,setCustomUrl]=useState<string|null>(null);
-  const [viewerSource,setViewerSource]=useState<'modular'|'nasa'|'cad'>('modular');
+  const [viewerSource,setViewerSource]=useState<'modular'|'nasa'|'cad'>(
+    preferReference&&referenceModelUrl?'nasa':'modular'
+  );
   const onStatus = useMemo(()=> (status:'loaded'|'failed')=>setNasaStatus(status),[]);
-  useEffect(()=>{setViewerSource('modular');setNasaStatus('idle')},[referenceModelUrl]);
+  useEffect(()=>{
+    const shouldLoad=preferReference&&!!referenceModelUrl;
+    setViewerSource(shouldLoad?'nasa':'modular');
+    setNasaStatus(shouldLoad?'loading':'idle');
+  },[referenceModelUrl,preferReference]);
   useEffect(()=>()=>{if(customUrl)URL.revokeObjectURL(customUrl)},[customUrl]);
   const activeExternalModelUrl = viewerSource==='nasa'?referenceModelUrl :
     viewerSource==='cad'?customUrl:null;
@@ -279,9 +286,17 @@ export default function Spacecraft3D({
         {viewerSource!=='modular'?(nasaStatus==='loaded'?'GLB loaded':nasaStatus==='failed'?'Could not load GLB — see fallback':'Loading GLB…'):selected.toUpperCase()}
       </span>
       <small>{viewerSource!=='modular'?
-        'Imported GLB models are view-only and do not automatically set mass, inertia, tank sizes or physics parameters.'
+        (nasaStatus==='failed'?
+          'The NASA model is not installed. Download its GLB into this project’s public/models/ folder or run npm run models:fetch; the schematic spacecraft is shown meanwhile.'
+          :'The imported/reference GLB is view-only; it does not automatically set mass, inertia, tank sizes or physics parameters.')
         :PART_DETAILS[selected]}</small>
     </div>
+    {viewerSource==='nasa' && nasaStatus==='failed' &&
+      <p className="craft-load-help" role="status">
+        NASA model could not be loaded from <code>{referenceModelUrl}</code>.
+        Run <code>npm run models:fetch</code> in the repository folder (the normal launcher also attempts this on startup), or download the GLB from the NASA model page and place it inside <code>public/models/</code>.
+        Click <b>NASA 3D model</b> to retry.
+      </p>}
     <p className="craft-disclaimer">SCHEMATIC GEOMETRY. Import a self-contained .glb from Onshape or FreeCAD for viewing. Engineering calculations use independent mass/geometry inputs, not mesh triangles; parametric CAD coupling is future work.</p>
   </div>;
 }
