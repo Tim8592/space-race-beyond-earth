@@ -163,6 +163,7 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'>('missions');
   const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'>('observation');
+  const [observationResetKey,setObservationResetKey]=useState(0);
   const [spacecraftDesign,setSpacecraftDesign]=useState<SubsystemDesign>(readSubsystemDesign);
   const contract = CONTRACTS.find((item) => item.id === missionId) ?? CONTRACTS[0];
   const metrics = useMemo(() => calculateVehicleMetrics(vehicle), [vehicle]);
@@ -279,7 +280,9 @@ export default function App() {
   function reset() {
     if (!window.confirm('Start over? This clears your locally saved campaign and blueprints.')) return;
     setSnapshot({ game: DEFAULT_GAME, vehicle: INITIAL_VEHICLE, missionId: 'cargo' });
-    setMessage('Campaign restarted.');
+    try {localStorage.removeItem('space-race-observation-one-v1')}catch{/* optional storage */}
+    setObservationResetKey(k=>k+1);
+    setMessage('Campaign restarted, including the Earth Observation One mission.');
   }
   function passWeek() {
     setSnapshot((previous) => ({ ...previous, game: { ...previous.game, day: previous.game.day + 7 } }));
@@ -327,7 +330,7 @@ export default function App() {
             onClick={()=>setCampaignMode('contracts')}>Orbital Contracts · Classic mode</button>
         </div>}
         {activeView==='missions'&&campaignMode==='observation'&&
-          <EarthObservationMission spacecraft={spacecraftDesign} launcher={vehicle}
+          <EarthObservationMission key={observationResetKey} spacecraft={spacecraftDesign} launcher={vehicle}
             cash={game.cash} completedWithEngine={game.engineBuildCounts[vehicle.engineId]??0}
             onEditSpacecraft={()=>setActiveView('systems')}
             onEditLauncher={()=>{setActiveView('missions');setCampaignMode('contracts')}}
