@@ -55,5 +55,5 @@ Primary source: https://www.spaceappschallenge.org/2026/find-a-team/project_mora
 - Ground visibility hours, radio performance, sensor stats, cost and scientific points are fictional game assumptions.
 - The chosen instrument replaces a generic payload placeholder in the engineering lab; external comms and data storage hardware are added explicitly.
 - Negative resource margin cuts operational science duty rather than instantly killing the spacecraft. This is educational game logic, not real fault protection.
-- Mission cost is applied to the financial campaign when the simulation completes; mission outcome is a local deterministic forecast, not a stochastic event simulator.
+- Mission launch cost is deducted immediately; successful science-return payouts are credited at the debrief. Mission outcomes are deterministic forecasts, not stochastic event simulations.
 - The propulsion system still has incomplete stored-gas mass/PPU/tank and detailed radiation/thermal integration. The 3D assembly is only schematic.
