@@ -32,6 +32,16 @@ The builder supports a modular geometric prototype that changes its number of no
 
 The earlier Mission Library tried fetching NASA's model directly from a different website, which may fail due to browser cross-origin restrictions. **v0.6 instead loads downloaded files from the game's own server.** The game now attempts the downloads at startup via `npm run dev` / `Start Space Race.command`, saving each file under `public/models/` in your cloned repository. Internet access is required for the initial retrieval.
 
+**If the model fails to load, use these diagnostics:**
+
+```bash
+npm run models:inspect
+```
+
+This checks local Dawn/Voyager file signatures, complete byte lengths and glTF extensions (including Draco). In Mission Library, click **Retry NASA 3D model**. The loader now validates the HTTP response, prints mesh count and extension information, and displays the **actual error message** both on-screen and in your browser Console.
+
+Three.js's Draco decoder is copied from the installed Three.js package into `public/draco/` at startup and at build time. No external decoder CDN is required. If a GLB requires another unsupported extension, the viewer's diagnostic message will say so rather than claiming the NASA file is missing.
+
 **If the model doesn't load automatically, open Terminal in your repo folder and run:**
 
 ```bash
