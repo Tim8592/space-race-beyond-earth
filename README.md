@@ -6,7 +6,7 @@
 
 The goal is **not** to reproduce a professional flight dynamics package inside a video game. Instead, it is to make real engineering trade-offs understandable and engaging, while clearly distinguishing sourced physics from simplified mechanics.
 
-**Status:** Hackathon prototype, v0.3. Dedicated top-level tabs now separate Mission Control, Spacecraft Builder, Orbital Map, and Research. The spacecraft builder contains separate Propulsion, Power, Thermal, Tank and Engineering Analysis tabs. Solar, flight-heritage RTGs, a historical space-reactor example, and a ground-tested reactor concept are selectable in the power system. The map draws mathematically propagated Earth orbits and approximate JPL-derived planetary positions. These systems are not yet coupled into actual mission contracts or real low-thrust transfer feasibility. Moon/Mars contracts, launch windows, research progression, and lunar economy are future work.
+**Status:** Hackathon prototype, v0.4. The game has Mission Control, Spacecraft Builder, Orbital Map, Mission Library, and Research tabs. The Spacecraft Builder includes a selectable modular Three.js spacecraft preview (solar panels, radiators, tank, propulsion, antenna) and can import a GLB file exported from Onshape/FreeCAD for visual inspection. The Mission Library includes NASA-sourced Dawn, Psyche, New Horizons, and Voyager examples, reference models/images and statistics. An **optional local Orekit Java service** now solves and plots impulsive Sun-centered Lambert transfers between approximate planetary positions. In-space subsystem models, orbital transfer solutions and launch-contract payouts are still separate; low-thrust electric trajectories, real launch-window optimization, gravity assists, and mission qualification are NOT implemented.
 
 ## Quick start
 
@@ -17,6 +17,18 @@ Requirements: Node.js LTS with npm (Node 22+ supported).
 After cloning or pulling this repository, open the folder in **Finder** and double-click **`Start Space Race.command`**. It automatically installs dependencies on the first launch, starts the local game server, and opens the game in your default browser.
 
 Keep the Terminal window open while playing. To stop the game, select that window and press **Control+C**. On later launches, just double-click the file again.
+
+### Optional Orekit transfer calculations
+
+The regular game starts with **Node.js only**. To solve Earth-to-planet *impulsive Lambert transfers*, install a JDK (17 or newer) and Apache Maven (3.9+), then double-click **`Start Orekit.command`** in the same repository folder. Keep that second Terminal window running. The **Orbital Map → Planet positions → Earth-to-planet transfer** panel will detect the service at `127.0.0.1:8787`.
+
+Orekit is Java, not JavaScript: it cannot be included in the React browser bundle. The service is **local and optional**. It handles two-body Lambert transfers only, not gravity assists, finite-thrust solar-electric maneuvers, launch from parking orbit, or arrival capture. See [Orekit backend instructions](orekit-service/README.md).
+
+### Interactive 3D models
+
+The builder now supports a modular geometric prototype with responsive component visualization, and lets you import a **self-contained GLB** (e.g. exported from Onshape/FreeCAD) through **Import CAD GLB** without uploading it to a server. A NASA Dawn GLB can be loaded as a reference from its NASA asset URL when the browser permits cross-origin access; the game shows the procedural prototype if remote loading fails. External reference/imported meshes are **view-only** and do not automatically change mass, pressure, thrust, inertia or thermal calculations.
+
+NASA's free [3D Resources](https://science.nasa.gov/3d-resources/) include [Dawn](https://science.nasa.gov/3d-resources/dawn/), [New Horizons](https://science.nasa.gov/resource/new-horizons-3d-model/) and [Voyager](https://science.nasa.gov/resource/voyager-3d-model/). See [CAD and trajectory roadmap](docs/CAD_AND_ORBITAL_ROADMAP.md).
 
 ### Terminal: manual launch
 
@@ -38,7 +50,7 @@ npm run build
 
 The game saves campaign progress and saved vehicle blueprints in the browser's `localStorage`. The **Reset campaign** action clears the current save. No account or backend is required.
 
-## Current features (v0.3)
+## Current features (v0.4)
 
 | Feature | How it works | Status |
 | --- | --- | --- |
@@ -51,6 +63,9 @@ The game saves campaign progress and saved vehicle blueprints in the browser's `
 | Saved spacecraft designs | Save and reload named blueprints locally | Playable |
 | Interactive orbital map | Keplerian Earth satellite trajectories with adjustable altitude/eccentricity and time; JPL 1800–2050 approximate Earth–Moon barycenter, Venus, Mars and Jupiter positions | Playable (two-body/approximate) |
 | Subsystem tabs | Propulsion, power, thermal, tanks, separate analysis | Playable |
+| Spacecraft 3D studio | Procedural Three.js solar arrays, radiators, tank, bus, antenna, thruster; click parts, orbit/zoom; import user .glb exported from CAD | Interactive prototype |
+| NASA spacecraft heritage | Dawn, Psyche, New Horizons, Voyager reference technical profiles, image/model links | Reference library |
+| Orekit Lambert transfers | Optional local Java 17+ / Maven backend, solves Sun-centered impulsive transfer and draws conic, reports departure C3 and v-infinity at arrival | Implemented, requires separate service |
 | Advanced generators | PV, MMRTG, MHW-RTG, GPHS-RTG, SNAP-10A heritage reactor, Kilopower ground-demonstrator reference | Playable (reference data; some integration/mass is incomplete) |
 | Research/tech tree | Fund a research institution, earn research points, unlock tech, improve manufacturing | **Planned** |
 | Deep-space transfers | Moon, Mars, Jupiter-moon orbital mechanics, launch windows and trajectory plots | **Planned** |

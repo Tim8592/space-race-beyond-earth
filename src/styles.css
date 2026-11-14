@@ -146,3 +146,13 @@
 .transfer-disclaimer a{color:#a8d6f3;text-decoration:underline}
 @media(max-width:1020px){.transfer-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:550px){.transfer-inputs,.transfer-stats{grid-template-columns:1fr}.transfer-header{flex-direction:column}.transfer-engine-status{white-space:normal}}
+
+
+/* CAD GLB import controls in spacecraft studio */
+.craft-model-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.craft-model-actions button,.craft-upload{background:#17334c;border:1px solid #6088ad;border-radius:7px;color:#dfecfb;padding:9px 11px;font-size:11px;white-space:nowrap;cursor:pointer}
+.craft-upload{display:inline-flex;align-items:center;position:relative}
+.craft-upload input{position:absolute;opacity:0;width:1px;height:1px;overflow:hidden}
+.craft-upload:focus-within{outline:2px solid #a9d5f2}
+.craft-model-actions button:hover,.craft-upload:hover{background:#244a69}
+@media(max-width:650px){.craft-model-actions{justify-content:flex-start}}

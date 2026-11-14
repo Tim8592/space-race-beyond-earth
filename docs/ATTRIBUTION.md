@@ -1,6 +1,6 @@
 # Sources, tools, and SI/AI attribution
 
-This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.3**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
+This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.4**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
 
 ## NASA / JPL resources used in the application
 
@@ -40,6 +40,34 @@ Research details, formulas, limitations and additional sources: [NASA_TECHNOLOGY
 | NASA Radioisotope Power Systems RTG summary | https://science.nasa.gov/planetary-science/programs/radioisotope-power-systems/power-radioisotope-thermoelectric-generators/ | Flight heritage and power class distinctions |
 
 An RTG's published thermal output is not automatically heat entering the spacecraft bus radiator. Reactor mass/source thermal subsystem size, source shielding, integration mass, power conditioning, and suitable reactor radiator design remain missing in the first-order model. The JPL solar-system model is a low-accuracy visualization, not mission-grade ephemeris.
+
+## v0.4 mission heritage, 3D models and Orekit integration
+
+| Resource | URL | Actual use |
+| --- | --- | --- |
+| NASA Dawn Spacecraft facts | https://science.nasa.gov/mission/dawn/technology/spacecraft/ | Spacecraft and power/propulsion statistics; Dawn reference info panel |
+| NASA Dawn mission press kit (mass accounting) | https://assets.science.nasa.gov/content/dam/science/psd/solar/2023/09/d/dawn-ceres.pdf | Approx. 1,217.7 kg wet launch mass vs. 747.1 kg spacecraft mass and separate xenon/hydrazine inventories |
+| NASA Psyche spacecraft | https://science.nasa.gov/mission/psyche/spacecraft/ | Psyche reference propulsion, power, dimensions, mass, payload |
+| JPL Psyche reference illustration/photo | https://d2pn8kiwq2w21t.cloudfront.net/images/Psyche_Mission_-_Spacecraft_H.2e16d0ba.fill-1800x775-c10.jpg | Mission Library visual; source NASA/JPL-Caltech |
+| NASA New Horizons | https://science.nasa.gov/mission/new-horizons/ | Mass 478 kg, RTG and science payload reference |
+| NASA Voyager | https://science.nasa.gov/mission/voyager/ | Outer planet flyby / gravity assist comparison, power type |
+| NASA Dawn 3D resource and model | https://science.nasa.gov/3d-resources/dawn/ | User-triggered GLB model loading in reference view; NASA/Brian E. Kumanchik |
+| NASA New Horizons 3D resource | https://science.nasa.gov/resource/new-horizons-3d-model/ | Link to official model page |
+| NASA Voyager 3D resource | https://science.nasa.gov/resource/voyager-3d-model/ | Link to official model page |
+| Orekit 13.1.9 | https://www.orekit.org/ | JVM-based Lambert orbit estimation and Keplerian propagation; optional local service, Apache License 2.0 |
+| Three.js | https://threejs.org/ | WebGL spacecraft visualization / GLB loader; MIT License |
+| React Three Fiber | https://r3f.docs.pmnd.rs/ | Declarative React Three.js integration; MIT License |
+| Drei | https://drei.docs.pmnd.rs/ | Orbit controls / starfield helper components; MIT License |
+| NASA/JPL approximate planetary elements | https://ssd.jpl.nasa.gov/planets/approx_pos.html | Frontend heliocentric positions/approximate finite-difference velocities supplied to Orekit |
+| NASA Eyes on Solar System | https://eyes.nasa.gov/apps/solar-system/ | Interaction design inspiration only, NO code or assets copied |
+
+The user also shared https://delrizzo.dev/ for interaction inspiration, but the site was not accessible to verify implementation or retrieve material. No source code or assets are used from that site.
+
+**NASA materials:** NASA's media use guidelines and individual credits apply to reference models and images. Do not claim NASA endorses the game. The external NASA Dawn GLB is fetched by the browser at the user's choice and is not bundled into this repository.
+
+**Orekit calculations:** the local service uses actual Java Orekit code, but source positions are **approximate JPL orbital elements**, not high-precision Horizons/SPICE states. Departure C3 and v-infinity are not equivalent to rocket injection delta-V, capture delta-V, or a full feasible mission. Java Maven dependencies are open source and fetched from Maven Central at build time.
+
+**AI assistance:** OpenAI ChatGPT also assisted with v0.4 component/3D UI design, mission reference text and source links, and implementation of the optional Orekit backend and tests. Code must be checked with CI, local browser and numerical scenario validation before presenting as flight-ready.
 
 ## Other frameworks and external sources
 
