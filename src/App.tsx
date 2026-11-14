@@ -1,3 +1,4 @@
+import SubsystemLab from './SubsystemLab';
 import { useEffect, useMemo, useState } from 'react';
 import {
   calculateVehicleMetrics,
@@ -242,8 +243,8 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <div className="brand"><span className="brand-symbol"><span className="brand-orbit" /></span><div><strong>SPACE RACE</strong><small>BEYOND EARTH</small></div></div>
-          <nav aria-label="Primary"><a href="#mission-control" className="current">Mission Control</a><a href="#builder">Spacecraft</a><a href="#roadmap">Technology</a></nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.1</span></div>
+          <nav aria-label="Primary"><a href="#mission-control" className="current">Mission Control</a><a href="#builder">Launch Builder</a><a href="#systems-lab">Spacecraft Systems</a><a href="#roadmap">Technology</a></nav>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.2</span></div>
         </div>
       </header>
 
@@ -280,6 +281,8 @@ export default function App() {
               <Field title="Payload mass" value={vehicle.payloadMassKg} unit="kg" min={500} max={15000} step={500} onChange={(value) => updateVehicle({ payloadMassKg: value })}/>
               <div className="blueprint-bar"><button className="secondary-button" onClick={saveBlueprint}>+ Save blueprint</button>{game.blueprints.length > 0 && <select aria-label="Load saved blueprint" value="" onChange={(event) => {const selected = game.blueprints.find((item) => item.name === event.target.value); if(selected) updateVehicle({ ...selected });}}><option value="">Load saved design…</option>{game.blueprints.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select>}</div>
             </section>
+
+            <SubsystemLab />
 
             <section className="panel metrics-panel">
               <div className="panel-heading"><div><div className="eyebrow">02 / PERFORMANCE</div><h2>Engineering Analysis</h2><p>Live estimates using the ideal rocket equation.</p></div><span className="formula">Δv = Isp · g₀ · ln(m₀/mf)</span></div>

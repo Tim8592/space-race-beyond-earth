@@ -6,7 +6,7 @@
 
 The goal is **not** to reproduce a professional flight dynamics package inside a video game. Instead, it is to make real engineering trade-offs understandable and engaging, while clearly distinguishing sourced physics from simplified mechanics.
 
-**Status:** Hackathon prototype, v0.1. The first playable loop is Earth-orbit mission contracting and spacecraft configuration. The Moon, Mars, technology tree, space economy, and competitive deadline are planned features—not implemented yet.
+**Status:** Hackathon prototype, v0.2. The in-space spacecraft systems lab is interactive and separate from the mission economy. The first playable loop is Earth-orbit mission contracting and spacecraft configuration. The Moon, Mars, technology tree, space economy, and competitive deadline are planned features—not implemented yet.
 
 ## Quick start
 
@@ -70,7 +70,9 @@ This loop is intentionally small enough to be a working demonstration rather tha
 
 The 2026 NASA Small Spacecraft SoA research has been organized into a [component data catalog](src/lib/spacecraftTechnology.ts), [first-order sizing functions](src/lib/spacecraftSystems.ts), [unit tests](src/lib/spacecraftSystems.test.ts), and a detailed [NASA technology research guide](docs/NASA_TECHNOLOGY_RESEARCH.md). Source-backed examples cover in-space Hall/ion propulsion, PV cells, battery packs, thermal surfaces, CubeSat structure references, and GNC.
 
-**Not yet in the playable UI:** these new subsystem calculations are independent prototypes awaiting builder integration. The existing playable first-launch simulator and its fictional engine/contract numbers remain unchanged. Please distinguish physical models from game mechanics and do not interpret simplified calculations as certified flight designs.
+**New in v0.2 — interactive subsystem lab:** click **Spacecraft Systems** in the navigation. The separate in-space spacecraft design panel connects propulsion, solar generation, batteries, thermal radiator sizing and (liquid-only) tank geometry into an illustrative system mass and ideal delta-V/burn-time analysis. Changing engine, solar distance, array area, battery, radiator coating or tank sizing updates dependent engineering quantities in real time. It has independently saved parameters in browser localStorage.
+
+**Limitations:** these models are early design estimates, not flight validation. Gas and solid propellant storage still lack a tank-mass model and are displayed as *known lower-bound mass only*. PV/thermal assembly areal mass, PPU and tank-management allowances are explicitly illustrative, not NASA performance data. The separate v0.1 launch-vehicle contract simulator remains unchanged.
 
 ## Engineering foundation
 
