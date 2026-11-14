@@ -1,3 +1,5 @@
+> **v0.7 implementation update, Nov 14, 2026:** The priority Earth Observation One vertical slice described below is NOW implemented as a first-order deterministic gameplay demo. It connects shared spacecraft and launcher configurations, instrument/radio/storage choices, mass/power/thermal/eclipsed-energy/downlink/budget bars, seven days of imaging/data operations and a success/failure debrief. The text below also describes future refinements and should not be read as proof of detailed ADCS, real communications passes or mission-grade physics. See [Next steps](NEXT_STEPS_CAMPAIGN_AND_LAB.md).
+
 # Space Race: Beyond Earth — Challenge alignment & gameplay blueprint
 
 **Planning review:** 2026-11-14  

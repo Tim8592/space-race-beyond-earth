@@ -94,6 +94,13 @@ This version dynamically partitions a player-specified total active cell area ov
 
 **The JPL spacecraft track is sampled observational/predicted ephemeris data when available, not a mathematically reconstructed generic ellipse.** Connecting the sparse points for display should not be confused with a continuous, validated thrust/gravity-assist integration.
 
+## v0.7 linked Earth Observation One gameplay
+
+- **Real physics:** existing NASA/JPL Earth gravitational parameter and equatorial radius, two-body circular orbital period and a simplified cylindrical shadow/eclipsed fraction; spacecraft solar/thermal and rocket-equation modeling per prior citations
+- **Educational game assumptions, not NASA technical specifications:** compact/multispectral/hyperspectral instrument mass, power and data rates; UHF/S-band/X-band communications performance and pricing; contact windows; storage capacity hardware mass/cost; 7-day science point targets; mission budget, rewards, radiator extension and battery pricing; power/thermal-driven observation duty factor; mission score
+- **Science/data bookkeeping:** deterministic daily generation, buffer cap, overflow and downlink. Science credit is proportional to the data actually downlinked, not merely observed. This is illustrative game mechanics, not a flight communications or imaging model.
+- The real spacecraft bus and launch vehicle configurations are now shared between Play Campaign and Engineering Lab, with a snapshot taken when the user launches; the generic instrument payload field is replaced by the selected observation instrument mass.
+
 ## Other frameworks and external sources
 
 - React: https://react.dev/
