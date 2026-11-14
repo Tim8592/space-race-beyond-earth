@@ -96,9 +96,9 @@ export default function EarthObservationMission({
   const activeInstrument=INSTRUMENTS[choices.instrument];
   const budgetOK=!!preview&&preview.missionCostUsd<=OBSERVATION_BUDGET_USD&&preview.missionCostUsd<=cash;
   const canStart=!!preview&&preview.launchReady&&budgetOK;
-  const choicesChange=<K extends keyof ObservationChoices>(key:K,val:ObservationChoices[K])=>{
+  function choicesChange<K extends keyof ObservationChoices>(key:K,val:ObservationChoices[K]){
     setState(p=>({...p,choices:{...p.choices,[key]:val}}));
-  };
+  }
 
   function start(){
     if(!canStart)return;
