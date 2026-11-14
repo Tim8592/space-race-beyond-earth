@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import TransferPlanner, {type LambertSolution} from './TransferPlanner';
 import {
   EARTH_RADIUS_KM, PLANETS, earthOrbitAtTime, planetAtDate,
   type PlanetId,
@@ -25,6 +26,7 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
   const [outerView,setOuterView] = useState(false);
   const [selectedPlanet,setSelectedPlanet] = useState<PlanetId>('mars');
   const [running,setRunning] = useState(false);
+  const [transfer,setTransfer] = useState<LambertSolution|null>(null);
 
   const earthState = useMemo(
     () => earthOrbitAtTime(perigeeKm,eccentricity,elapsedMinutes,periapsisAngle),
@@ -71,6 +73,9 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
     return ()=>window.clearInterval(timer);
   },[running,mode]);
 
+  const transferPath = useMemo(() => transfer ? transfer.trajectoryAu.filter(p=>p.length>=2&&p.every(Number.isFinite))
+    .map((p,i)=>`${i===0?'M':'L'} ${(CX+p[0]*planetScale).toFixed(2)} ${(CY-p[1]*planetScale).toFixed(2)}`).join(' ') : '',
+    [transfer,planetScale]);
   const selectedInfo=planetAtDate(selectedPlanet,utcDate);
   const spacecraftX=CX+earthState.xKm*earthScale;
   const spacecraftY=CY-earthState.yKm*earthScale;
@@ -87,7 +92,7 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
           <h2>Orbital Map & Simulation</h2>
           <p>Propagate real Keplerian orbits. Adjust the elements, advance time and inspect orbital positions.</p>
         </div>
-        <span className="sys-model-label">TWO-BODY · NO TRANSFER SOLVER</span>
+        <span className="sys-model-label">TWO-BODY · OPTIONAL OREKIT</span>
       </div>
       <div className="orbit-tab-row" role="tablist" aria-label="Map coordinate system">
         <button type="button" className={mode==='earth'?'selected':''} aria-selected={mode==='earth'} role="tab" onClick={()=>{setMode('earth');setRunning(false);}}>Earth satellite orbit</button>
@@ -120,6 +125,12 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
               <text x="22" y="32" fontSize="13" fill="#b6d4e9">EARTH CENTER AT FOCUS</text>
             </> : <>
               {solarPaths.map(path=><path key={path.id} d={path.d} fill="none" stroke={colors[path.id]} strokeWidth="1.5" strokeOpacity=".65"/>)}
+              {transferPath && <path d={transferPath} fill="none" stroke="#ffc274" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity=".96"/>}
+              {transfer && transfer.trajectoryAu.length>0 && <>
+                <circle cx={CX+transfer.trajectoryAu[0][0]*planetScale} cy={CY-transfer.trajectoryAu[0][1]*planetScale} r="5" fill="#e7f6ff"/>
+                <circle cx={CX+transfer.trajectoryAu[transfer.trajectoryAu.length-1][0]*planetScale}
+                  cy={CY-transfer.trajectoryAu[transfer.trajectoryAu.length-1][1]*planetScale} r="5" fill="#ffbc88"/>
+              </>}
               <circle cx={CX} cy={CY} r="12" fill="url(#simSun)"/>
               <text x={CX+18} y={CY+4} fill="#eacb7c" fontSize="11">SUN</text>
               {planets.map(({id,location})=><g
@@ -135,7 +146,7 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
               </g>)}
               <text x="22" y="32" fontSize="12" fill="#b6d4e9">J2000 ECLIPTIC XY · {outerView?'OUTER':'INNER'} VIEW</text>
             </>}
-            <text x="22" y={H-18} fontSize="12" fill="#87a5c0">{mode==='earth'?'Two-body, no drag/J2/perturbations; proportional scale':'JPL Table 1 approximate elements; no transfer trajectory computed'}</text>
+            <text x="22" y={H-18} fontSize="12" fill="#87a5c0">{mode==='earth'?'Two-body, no drag/J2/perturbations; proportional scale':transfer?'Orekit Lambert conic + JPL approximate planet positions':'JPL Table 1 approximate elements; no solved transfer'}</text>
           </svg>
         </div>
         <div className="orbit-controls">
@@ -169,10 +180,18 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
           </>}
         </div>
       </div>
+      {mode==='heliocentric' && <TransferPlanner onSolved={s=>{
+        setTransfer(s);
+        setSelectedPlanet(s.target);
+        setOuterView(s.target==='jupiter');
+        setRunning(false);
+        const days = Math.round((Date.parse(s.departureDate+'T12:00:00Z')-BASE_DATE)/MS_PER_DAY);
+        setDayOffset(Math.max(0,days));
+      }}/>}
       <p className="sys-subnote">
         Calculated positions, not a decorative orbit. Earth view uses Newtonian two-body gravity and Kepler's equation; solar view uses JPL's published approximate elements valid from 1800–2050, with UTC substituted for TDB for interactive display.
         {' '}<a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html" target="_blank" rel="noreferrer">JPL equations and validity ↗</a>
-        {' '}*Earth marker is technically the Earth–Moon barycenter. This visualization does not calculate transfers, encounters, launch windows, thrust arcs, fuel consumption, or mission arrival.
+        {' '}*Earth marker is technically the Earth–Moon barycenter. A solved Orekit Lambert arc represents an idealized impulsive Sun-centered two-body transfer between approximate planet positions. It is not a finite-thrust trajectory, launch-window optimizer, gravity-assist solution or spacecraft feasibility assessment. Transfer arcs remain fixed to the selected dates while you move the map time slider.
       </p>
     </section>
   );

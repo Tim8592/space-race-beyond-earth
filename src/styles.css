@@ -122,3 +122,27 @@
 .heritage-info>.secondary-button{display:block;margin-top:14px}
 .heritage-limits{color:#9fb9ca;background:#0b1f32;border-left:2px solid #e5ba7c;padding:11px 13px;font-size:11px;line-height:1.65;margin-top:14px}
 @media(max-width:900px){.heritage-grid{grid-template-columns:1fr}.heritage-info{position:static}}
+
+
+/* Optional Orekit Lambert transfer dashboard */
+.transfer-panel{background:#0d1e32;border:1px solid #315874;border-radius:11px;padding:18px;margin-top:18px}
+.transfer-header{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.transfer-header h3{font-family:'Space Grotesk';font-size:20px;color:#eff6ff;margin:7px 0}
+.transfer-header p{font-size:12px;color:#a2bcd2;line-height:1.6;margin:0 0 15px}
+.transfer-engine-status{font-size:10px;letter-spacing:1px;color:#f0b3a0;background:#392938;border:1px solid #8b5352;padding:8px 11px;border-radius:6px;white-space:nowrap}
+.transfer-engine-status.online{color:#a2e7bb;background:#1e392e;border-color:#4a8c69}
+.transfer-inputs{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:11px;align-items:end}
+.transfer-inputs label{min-width:0;display:flex;flex-direction:column;gap:7px;font-size:11px;color:#c6deee;font-weight:700}
+.transfer-inputs input,.transfer-inputs select{min-width:0;background:#081527;border:1px solid #4c6480;color:#e7f3ff;border-radius:6px;padding:10px;min-height:40px;font-size:12px}
+.transfer-inputs small{font-size:9px;color:#8aafc4}
+.transfer-inputs .launch-button{min-height:41px;font-size:12px;padding:9px 12px;white-space:nowrap}
+.transfer-message{color:#ffc8ad;font-size:11px;line-height:1.5;margin:12px 0}
+.transfer-message.online{color:#a6dfc2}
+.transfer-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px}
+.transfer-stats>div{background:#132940;border:1px solid #365875;padding:11px;border-radius:6px;display:flex;flex-direction:column;gap:7px}
+.transfer-stats span{font-size:9px;text-transform:uppercase;color:#9cb9d1}
+.transfer-stats strong{font-family:'Space Grotesk';font-size:15px;color:#eff6ff}
+.transfer-disclaimer{font-size:11px;color:#95aec6;line-height:1.7;border-left:3px solid #d39f5f;background:rgba(209,149,67,.06);padding:10px 12px}
+.transfer-disclaimer a{color:#a8d6f3;text-decoration:underline}
+@media(max-width:1020px){.transfer-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:550px){.transfer-inputs,.transfer-stats{grid-template-columns:1fr}.transfer-header{flex-direction:column}.transfer-engine-status{white-space:normal}}
