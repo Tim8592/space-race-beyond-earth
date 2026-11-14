@@ -33,12 +33,11 @@ class TransferMathTest {
 
     @Test
     void rejectsInvalidMissionParameters() {
-        TransferMath.Request r = sample();
-        r.flightDays = -5;
-        assertThrows(IllegalArgumentException.class,()->TransferMath.solve(r));
-        r=sample();
-        r.samples=501;
-        TransferMath.Request tooMany=r;
+        TransferMath.Request badDuration = sample();
+        badDuration.flightDays = -5;
+        assertThrows(IllegalArgumentException.class,()->TransferMath.solve(badDuration));
+        TransferMath.Request tooMany = sample();
+        tooMany.samples=501;
         assertThrows(IllegalArgumentException.class,()->TransferMath.solve(tooMany));
     }
 }
