@@ -3,6 +3,8 @@ import { OrbitControls, Stars } from '@react-three/drei';
 import { useEffect, useMemo, useState } from 'react';
 import { Box3, Group, Object3D, Vector3 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { inspectGlb } from './lib/glbDiagnostics';
 import type { SubsystemDesign, SystemResults } from './lib/subsystemDesign';
 
 export type PartName = 'bus' | 'power' | 'radiator' | 'tank' | 'propulsion' | 'antenna';
@@ -194,33 +196,74 @@ export function ModularSpacecraft({
   </group>;
 }
 
-function NASAReferenceMesh({ url, onStatus }: {
+type ModelReport = { status:'loading'|'loaded'|'failed'; detail:string };
+
+function NASAReferenceMesh({url,onStatus}:{
   url:string;
-  onStatus:(s:'loaded'|'failed')=>void;
+  onStatus:(report:ModelReport)=>void;
 }) {
-  const [object,setObject] = useState<Object3D|null>(null);
+  const [object,setObject]=useState<Object3D|null>(null);
+
   useEffect(()=>{
-    let cancelled = false;
+    let cancelled=false;
+    const controller=new AbortController();
     setObject(null);
-    const loader = new GLTFLoader();
-    loader.load(url,(gltf)=>{
-      if(cancelled)return;
-      const root = gltf.scene;
-      const box = new Box3().setFromObject(root);
-      const size = box.getSize(new Vector3());
-      const maxDimension = Math.max(size.x,size.y,size.z);
-      if(!(maxDimension>0)){onStatus('failed');return;}
-      const center = box.getCenter(new Vector3());
-      root.position.sub(center);
-      const group = new Group();
-      group.add(root);
-      group.scale.setScalar(6.5/maxDimension);
-      setObject(group);
-      onStatus('loaded');
-    },undefined,()=>{if(!cancelled)onStatus('failed')});
-    return ()=>{cancelled=true;};
+    const report=(status:ModelReport['status'],detail:string)=>{
+      if(!cancelled)onStatus({status,detail});
+    };
+
+    async function load(){
+      try {
+        report('loading','Fetching '+url+' from the local game server…');
+        const response=await fetch(url,{signal:controller.signal,cache:'no-store'});
+        if(!response.ok)throw new Error('HTTP '+response.status+' '+response.statusText+' while requesting '+url);
+        const bytes=await response.arrayBuffer();
+        if(cancelled)return;
+        const info=inspectGlb(bytes);
+        const mandatory=info.extensionsRequired.join(', ') || 'none';
+        const details=info.bytes.toLocaleString()+' bytes, '+info.meshes+' meshes, GLB v'+info.version+
+          ', required extensions: '+mandatory;
+        report('loading','Downloaded '+details+'; decoding mesh…');
+
+        const loader=new GLTFLoader();
+        const draco=new DRACOLoader();
+        draco.setDecoderPath('/draco/');
+        draco.setDecoderConfig({type:'wasm'});
+        loader.setDRACOLoader(draco);
+        const base=url.startsWith('blob:')?'':new URL('./',new URL(url,window.location.href)).toString();
+
+        try {
+          const gltf=await loader.parseAsync(bytes,base);
+          if(cancelled)return;
+          const root=gltf.scene;
+          const box=new Box3().setFromObject(root);
+          const size=box.getSize(new Vector3());
+          const maxDimension=Math.max(size.x,size.y,size.z);
+          if(!Number.isFinite(maxDimension)||maxDimension<=0)
+            throw new Error('GLB parsed, but its scene has no measurable 3D geometry.');
+          const center=box.getCenter(new Vector3());
+          root.position.sub(center);
+          const group=new Group();
+          group.add(root);
+          group.scale.setScalar(6.5/maxDimension);
+          setObject(group);
+          report('loaded','Loaded '+details+'. Drag to orbit and scroll to zoom.');
+        } finally {
+          draco.dispose();
+        }
+      } catch (error) {
+        if(cancelled)return;
+        const reason=error instanceof Error?error.message:String(error);
+        console.error('Space Race GLB loader failed:',url,error);
+        report('failed',reason);
+      }
+    }
+
+    void load();
+    return ()=>{cancelled=true;controller.abort();};
   },[url,onStatus]);
-  return object ? <primitive object={object}/> : null;
+
+  return object?<primitive object={object}/>:null;
 }
 
 export default function Spacecraft3D({
@@ -233,15 +276,22 @@ export default function Spacecraft3D({
 }) {
   const [selected,setSelected]=useState<PartName>('bus');
   const [nasaStatus,setNasaStatus]=useState<'idle'|'loading'|'loaded'|'failed'>('idle');
+  const [loadDetails,setLoadDetails]=useState('');
+  const [loadAttempt,setLoadAttempt]=useState(0);
   const [customUrl,setCustomUrl]=useState<string|null>(null);
   const [viewerSource,setViewerSource]=useState<'modular'|'nasa'|'cad'>(
     preferReference&&referenceModelUrl?'nasa':'modular'
   );
-  const onStatus = useMemo(()=> (status:'loaded'|'failed')=>setNasaStatus(status),[]);
+  const onStatus=useMemo(()=>(report:ModelReport)=>{
+    setNasaStatus(report.status);
+    setLoadDetails(report.detail);
+  },[]);
   useEffect(()=>{
     const shouldLoad=preferReference&&!!referenceModelUrl;
     setViewerSource(shouldLoad?'nasa':'modular');
     setNasaStatus(shouldLoad?'loading':'idle');
+    setLoadDetails(shouldLoad?'Preparing NASA model…':'');
+    setLoadAttempt(0);
   },[referenceModelUrl,preferReference]);
   useEffect(()=>()=>{if(customUrl)URL.revokeObjectURL(customUrl)},[customUrl]);
   const activeExternalModelUrl = viewerSource==='nasa'?referenceModelUrl :
@@ -252,6 +302,8 @@ export default function Spacecraft3D({
     setCustomUrl(URL.createObjectURL(file));
     setViewerSource('cad');
     setNasaStatus('loading');
+    setLoadDetails('Opening imported GLB…');
+    setLoadAttempt(attempt=>attempt+1);
   }
 
   return <div className="craft-visual-shell">
@@ -259,7 +311,12 @@ export default function Spacecraft3D({
       <div><b>3D spacecraft studio</b><span>Drag to orbit · scroll to zoom · click a component to inspect</span></div>
       <div className="craft-model-actions">
         <button type="button" onClick={()=>{setViewerSource('modular');setNasaStatus('idle')}}>Modular prototype</button>
-        {referenceModelUrl&&<button type="button" onClick={()=>{setViewerSource('nasa');setNasaStatus('loading')}}>NASA 3D model</button>}
+        {referenceModelUrl&&<button type="button" onClick={()=>{
+          setViewerSource('nasa');
+          setNasaStatus('loading');
+          setLoadDetails('Retrying '+referenceModelUrl+'…');
+          setLoadAttempt(attempt=>attempt+1);
+        }}>{viewerSource==='nasa'?'Retry NASA 3D model':'NASA 3D model'}</button>}
         <label className="craft-upload">Import CAD GLB
           <input type="file" accept=".glb,model/gltf-binary" onChange={e=>loadCadFile(e.target.files?.[0])}/>
         </label>
@@ -276,7 +333,7 @@ export default function Spacecraft3D({
         <gridHelper args={[28,28,'#244662','#142a3b']} position={[0,-2.35,0]}/>
         {activeExternalModelUrl ? <>
           {nasaStatus!=='loaded'&&<ModularSpacecraft design={design} analysis={analysis} selected={selected} onSelect={setSelected}/>}
-          <NASAReferenceMesh key={activeExternalModelUrl} url={activeExternalModelUrl} onStatus={onStatus}/>
+          <NASAReferenceMesh key={activeExternalModelUrl+':'+loadAttempt} url={activeExternalModelUrl} onStatus={onStatus}/>
         </> : <ModularSpacecraft design={design} analysis={analysis} selected={selected} onSelect={setSelected}/>}
         <OrbitControls enablePan enableDamping minDistance={3} maxDistance={22}/>
       </Canvas>
@@ -285,17 +342,17 @@ export default function Spacecraft3D({
       <span><strong>{viewerSource!=='modular'?'External 3D: ':'Selected: '}</strong>
         {viewerSource!=='modular'?(nasaStatus==='loaded'?'GLB loaded':nasaStatus==='failed'?'Could not load GLB — see fallback':'Loading GLB…'):selected.toUpperCase()}
       </span>
-      <small>{viewerSource!=='modular'?
-        (nasaStatus==='failed'?
-          'The NASA model is not installed. Download its GLB into this project’s public/models/ folder or run npm run models:fetch; the schematic spacecraft is shown meanwhile.'
-          :'The imported/reference GLB is view-only; it does not automatically set mass, inertia, tank sizes or physics parameters.')
-        :PART_DETAILS[selected]}</small>
+      <small>{viewerSource!=='modular'
+        ? (loadDetails||'Loading model…')
+        : PART_DETAILS[selected]}</small>
     </div>
     {viewerSource==='nasa' && nasaStatus==='failed' &&
       <p className="craft-load-help" role="status">
-        NASA model could not be loaded from <code>{referenceModelUrl}</code>.
-        Run <code>npm run models:fetch</code> in the repository folder (the normal launcher also attempts this on startup), or download the GLB from the NASA model page and place it inside <code>public/models/</code>.
-        Click <b>NASA 3D model</b> to retry.
+        Could not load <code>{referenceModelUrl}</code>: <strong>{loadDetails||'Unknown model error'}</strong>.
+        Check whether <a href={referenceModelUrl} target="_blank" rel="noreferrer">the model URL opens</a>.
+        If it reports missing/corrupt bytes, run <code>npm run models:fetch</code>.
+        If it reports a decoder or extension error, share this exact message so the 3D loader can be updated.
+        Click <b>Retry NASA 3D model</b> to perform a fresh request.
       </p>}
     <p className="craft-disclaimer">SCHEMATIC GEOMETRY. Import a self-contained .glb from Onshape or FreeCAD for viewing. Engineering calculations use independent mass/geometry inputs, not mesh triangles; parametric CAD coupling is future work.</p>
   </div>;
