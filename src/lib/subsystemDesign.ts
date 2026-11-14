@@ -10,6 +10,9 @@ import {
 /** All example design choices here are preliminary and not flight qualification. */
 export type SubsystemDesign = {
   thrusterId: 'mono-reference' | 'busek-bht100' | 'busek-bht200' | 'busek-bit3';
+  thrusterCount: number;
+  solarWingCount: number;
+  radiatorPanelCount: number;
   solarCellId: string;
   batteryPackId: string;
   coatingId: string;
@@ -35,6 +38,9 @@ export type SubsystemDesign = {
 
 export const DEFAULT_SUBSYSTEM_DESIGN: SubsystemDesign = {
   thrusterId: 'busek-bht200',
+  thrusterCount: 1,
+  solarWingCount: 2,
+  radiatorPanelCount: 2,
   solarCellId: 'azur-3g30',
   batteryPackId: 'aac-optimus',
   coatingId: 'gsfc-silver',
@@ -129,6 +135,7 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
   }
   const inputNumbers = [
     design.distanceAu, design.cellAreaM2, design.propellantMassKg,
+    design.thrusterCount, design.solarWingCount, design.radiatorPanelCount,
     design.busDryMassKg, design.payloadMassKg, design.busElectricalPowerW,
     design.eclipseHours, design.powerSourceCount, design.missionYears, design.liquidDensityKgM3, design.tankPressureBar,
     design.tankAllowableStressMpa, design.tankMetalDensityKgM3,
@@ -140,17 +147,21 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
       design.infraredEmissivity <= 0 || design.infraredEmissivity > 1 ||
       design.radiatorSunIncidence < 0 || design.radiatorSunIncidence > 1 ||
       design.radiatorTemperatureK <= 0 ||
+      !Number.isInteger(design.thrusterCount) || design.thrusterCount < 1 || design.thrusterCount > 8 ||
+      !Number.isInteger(design.solarWingCount) || design.solarWingCount < 1 || design.solarWingCount > 8 ||
+      !Number.isInteger(design.radiatorPanelCount) || design.radiatorPanelCount < 1 || design.radiatorPanelCount > 8 ||
       !Number.isInteger(design.powerSourceCount) || design.powerSourceCount < 1 || design.powerSourceCount > 8 ||
       design.missionYears < 0 || design.missionYears > 40 || !POWER_SYSTEMS[design.powerSourceId]) {
     throw new RangeError('Spacecraft design contains nonphysical inputs');
   }
 
-  const engineName = realThruster?.name ?? 'Illustrative 1 N monopropellant';
+  const engineName = (realThruster?.name ?? 'Illustrative 1 N monopropellant') +
+    (design.thrusterCount > 1 ? ' × ' + design.thrusterCount : '');
   const engineSpecificImpulseS = realThruster?.nominalSpecificImpulseSeconds ?? 230;
-  const engineThrustN = realThruster?.nominalThrustN ?? 1;
-  const nominalThrusterPowerW = realThruster?.nominalThrusterPowerW ?? 0;
+  const engineThrustN = (realThruster?.nominalThrustN ?? 1) * design.thrusterCount;
+  const nominalThrusterPowerW = (realThruster?.nominalThrusterPowerW ?? 0) * design.thrusterCount;
   const propulsionElectronicsW = isElectric
-    ? nominalThrusterPowerW / PPU_EFFICIENCY : CHEMICAL_VALVE_POWER_W;
+    ? nominalThrusterPowerW / PPU_EFFICIENCY : CHEMICAL_VALVE_POWER_W * design.thrusterCount;
   const totalElectricalDemandW = design.busElectricalPowerW + propulsionElectronicsW;
   const sunlightPowerW = solarArrayPowerW({
     cellAreaM2: design.cellAreaM2,
@@ -185,7 +196,7 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
   // heat-coupling allowance, not a sourced device thermal measurement.
   const propulsionHeatW = isElectric
     ? propulsionElectronicsW - nominalThrusterPowerW + 0.1 * nominalThrusterPowerW
-    : CHEMICAL_VALVE_POWER_W;
+    : CHEMICAL_VALVE_POWER_W * design.thrusterCount;
   const thermalLoadW = design.busElectricalPowerW + propulsionHeatW;
   const solarFluxWm2 = SOLAR_IRRADIANCE / design.distanceAu ** 2;
   const absorbedSolarFluxWm2 =
@@ -234,6 +245,7 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
         : 'Compressed-gas xenon tank/feed mass is unmodeled. Shown wet/dry masses are partial estimates, not verified launch mass estimates.'
     );
   }
+  if (design.thrusterCount > 1) warnings.push('All selected thrusters assumed to fire concurrently at the published operating point; lifetime, pointing, plumes and electrical distribution are not checked.');
   if (!canPowerThruster) warnings.push('Insufficient simultaneous generation at this distance: selected thruster cannot fire at rated power.');
   if (design.powerSourceId !== 'solar') {
     warnings.push(POWER_SYSTEMS[design.powerSourceId].note);
@@ -247,13 +259,16 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
   if (design.distanceAu >= 5) warnings.push('Far from the Sun, solar array generation falls as 1/r²; any radioisotope/fission generator contribution is modeled separately.');
 
   const thrusterHardwareMassKg = !isElectric
-    ? CHEMICAL_COMPONENT_MASS_KG
-    : realThruster!.massScope === 'thruster-only' ? (realThruster!.reportedMassKg ?? 0) : 0;
-  const systemAllowanceKg = isElectric ? ELECTRIC_SYSTEM_ALLOWANCE_KG : 0;
+    ? CHEMICAL_COMPONENT_MASS_KG * design.thrusterCount
+    : realThruster!.massScope === 'thruster-only' ?
+      (realThruster!.reportedMassKg ?? 0) * design.thrusterCount : 0;
+  const systemAllowanceKg = isElectric ? ELECTRIC_SYSTEM_ALLOWANCE_KG * design.thrusterCount : 0;
+  // Illustrative deployable hinge/actuator and radiator bracket allowances.
+  const mountAllowanceKg = design.solarWingCount * 0.5 + design.radiatorPanelCount * 0.35;
   const modeledDryMassKg = design.busDryMassKg + design.payloadMassKg
     + design.cellAreaM2 * ARRAY_AREAL_MASS_KGM2
     + batteryMassKg + (radiatorMassKg ?? 0)
-    + thrusterHardwareMassKg + systemAllowanceKg
+    + thrusterHardwareMassKg + systemAllowanceKg + mountAllowanceKg
     + (powerSystemMassKg ?? 0)
     + (tankShellMassKg ?? 0) + tankTypeAllowanceKg;
   const modeledWetMassKg = modeledDryMassKg + design.propellantMassKg;
