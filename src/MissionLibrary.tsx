@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Spacecraft3D from './Spacecraft3D';
+import HeritageTrajectoryView from './HeritageTrajectoryView';
 import { DEFAULT_SUBSYSTEM_DESIGN, sizeSubsystemDesign } from './lib/subsystemDesign';
 import { HERITAGE_MISSIONS, type HeritageMission } from './lib/heritageMissions';
 
@@ -16,7 +17,7 @@ export default function MissionLibrary({ onOpenMap }: { onOpenMap:()=>void }) {
     <div className="panel library-hero">
       <div className="eyebrow">NASA MISSION HERITAGE / REFERENCE LIBRARY</div>
       <h2>Build on what has flown.</h2>
-      <p>Explore real spacecraft used for related mission classes. These are design precedents, <strong>not compulsory propulsion choices</strong> and not automatically validated player missions.</p>
+      <p>Inspect NASA spacecraft engineering, view downloadable 3D assets and retrieve historical spacecraft paths from JPL Horizons when data is available. These are design precedents, <strong>not compulsory propulsion choices</strong>.</p>
     </div>
     <div className="heritage-grid">
       <div className="heritage-left">
@@ -34,8 +35,9 @@ export default function MissionLibrary({ onOpenMap }: { onOpenMap:()=>void }) {
         </div>
         <div className="panel heritage-preview">
           <div className="eyebrow">VISUAL REFERENCE · {active.name.toUpperCase()}</div>
-          {active.modelDownloadUrl ? (
-            <Spacecraft3D design={DEFAULT_SUBSYSTEM_DESIGN} analysis={schematicAnalysis} referenceModelUrl={active.modelDownloadUrl}/>
+          {active.modelLocalUrl ? (
+            <Spacecraft3D key={active.id} design={DEFAULT_SUBSYSTEM_DESIGN}
+              analysis={schematicAnalysis} referenceModelUrl={active.modelLocalUrl} preferReference/>
           ) : active.imageUrl ? (
             <figure className="heritage-image"><img src={active.imageUrl} alt={'NASA photograph or illustration of '+active.name+' spacecraft'} loading="lazy"/><figcaption>{active.credit}</figcaption></figure>
           ) : (
@@ -45,9 +47,13 @@ export default function MissionLibrary({ onOpenMap }: { onOpenMap:()=>void }) {
             </div>
           )}
           <div className="heritage-links">
-            {active.modelUrl && <a href={active.modelUrl} target="_blank" rel="noreferrer">Open official NASA 3D model ↗</a>}
+            {active.modelUrl && <a href={active.modelUrl} target="_blank" rel="noreferrer">Official NASA 3D model and download ↗</a>}
+            {active.modelDownloadUrl && <a href={active.modelDownloadUrl} target="_blank" rel="noreferrer">Download original NASA GLB ↗</a>}
             <a href={active.spacecraftUrl} target="_blank" rel="noreferrer">NASA spacecraft details ↗</a>
           </div>
+        </div>
+        <div className="panel">
+          <HeritageTrajectoryView key={active.id} mission={active}/>
         </div>
       </div>
       <aside className="panel heritage-info">

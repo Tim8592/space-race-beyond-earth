@@ -105,6 +105,7 @@ export const HERITAGE_MISSIONS: readonly HeritageMission[] = [
     payload: '7 scientific instruments: Ralph, Alice, REX, LORRI, SWAP, PEPSSI, student dust counter',
     highlights: 'High-speed flyby, not an orbiter. Reached Pluto using powerful chemical launch stages and a Jupiter gravity assist, not an ion thruster.',
     dimensions: 'Approx. grand-piano-sized spacecraft bus',
+    imageUrl: 'https://www.energy.gov/sites/default/files/styles/full_article_width/public/new_horizon_article_hero2.jpg?itok=bAJkYBQ7',
     missionUrl: 'https://science.nasa.gov/mission/new-horizons/',
     spacecraftUrl: 'https://science.nasa.gov/mission/new-horizons/',
     modelUrl: 'https://science.nasa.gov/resource/new-horizons-3d-model/',
@@ -114,7 +115,7 @@ export const HERITAGE_MISSIONS: readonly HeritageMission[] = [
       {date:'2015-07-14',label:'Pluto encounter'},
       {date:'2019-01-01',label:'Arrokoth encounter'},
     ]},
-    credit: 'NASA / Johns Hopkins APL; NASA Visualization Technology Applications and Development 3D model',
+    credit: 'NASA / Johns Hopkins APL; reference illustration via U.S. Department of Energy',
   },
   {
     id: 'voyager',
