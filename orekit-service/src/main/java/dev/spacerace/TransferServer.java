@@ -119,8 +119,35 @@ public final class TransferServer {
                 exchange.close();
             }
         });
+        server.createContext("/api/heritage-track",exchange -> {
+            addCors(exchange);
+            try {
+                if (exchange.getRequestMethod().equals("OPTIONS")) {
+                    exchange.sendResponseHeaders(204,-1);
+                } else if (!exchange.getRequestMethod().equals("GET")) {
+                    response(exchange,405,Map.of("error","GET required"));
+                } else {
+                    String query=exchange.getRequestURI().getRawQuery();
+                    String missionId=null;
+                    if(query!=null && query.matches("mission=(dawn|psyche|new-horizons|voyager)")){
+                        missionId=query.substring("mission=".length());
+                    }
+                    if(missionId==null){
+                        response(exchange,400,Map.of("error","Select a known NASA heritage mission"));
+                    }else{
+                        try{
+                            response(exchange,200,HeritageTrajectory.load(missionId));
+                        }catch(Exception e){
+                            System.err.println("JPL historical track retrieval: "+e.getMessage());
+                            response(exchange,502,Map.of("error",
+                                "NASA Horizons track was unavailable. Check internet access or use the official mission timeline. "+e.getMessage()));
+                        }
+                    }
+                }
+            }finally{exchange.close();}
+        });
         server.start();
         System.out.println("Space Race Orekit transfer server listening on http://127.0.0.1:"+port);
-        System.out.println("GET /health, POST /api/lambert, POST /api/optimize; Control+C to stop.");
+        System.out.println("GET /health, POST /api/lambert, POST /api/optimize, GET /api/heritage-track; Control+C to stop.");
     }
 }
