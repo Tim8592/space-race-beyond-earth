@@ -11,6 +11,22 @@ This file documents the resources actually used by the **Space Race: Beyond Eart
 
 The game uses classical two-body equations; these are general mechanics, not a claim that NASA has approved the model. All mission payouts, component prices, engine figures, and mission readiness delta-V thresholds are original *illustrative gameplay* assumptions, **not NASA datasets**.
 
+## Additional NASA references used in the subsystem research code
+
+The technology catalog `src/lib/spacecraftTechnology.ts` and first-order engineering module `src/lib/spacecraftSystems.ts` include NASA-surveyed manufacturer information and NASA solar irradiance reference data. These are not wired into the game UI yet.
+
+| Source | Link | Data used in research/code |
+| --- | --- | --- |
+| NASA 2026 SoA — In-Space Propulsion | https://www.nasa.gov/smallsat-institute/sst-soa/in-space_propulsion/ | BHT-100, BHT-200 and BIT-3 thrust/Isp/power and scoped reported masses |
+| NASA 2026 SoA — Power | https://www.nasa.gov/smallsat-institute/sst-soa/power-subsystems/ | Example solar efficiencies, BOL peak densities, pack-level specific energy |
+| NASA GSFC Solar Irradiance Science | https://earth.gsfc.nasa.gov/climate/projects/solar-irradiance/science | TSI reference 1361.6 W/m² near 1 AU |
+| NASA 2026 SoA — Thermal | https://www.nasa.gov/smallsat-institute/sst-soa/thermal-control/ | Solar absorptivity of two surface materials |
+| NASA 2026 SoA — Structures | https://www.nasa.gov/smallsat-institute/sst-soa/structures-materials-and-mechanisms/ | CubeSat nominal chassis dimensions and structure mass references |
+| NASA 2026 SoA — GNC | https://www.nasa.gov/smallsat-institute/sst-soa/guidance-navigation-and-control/ | Example integrated ADCS mass |
+| NASA Glenn Ideal Rocket Equation | https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/ideal-rocket-equation/ | Ideal delta-V and inverse propellant requirement |
+
+Research details, formulas, limitations and additional sources: [NASA_TECHNOLOGY_RESEARCH.md](NASA_TECHNOLOGY_RESEARCH.md). NASA's SoA is a survey of publicly available sources, and listed product performance is not equivalent to NASA validation or endorsement.
+
 ## Other frameworks and external sources
 
 - React: https://react.dev/

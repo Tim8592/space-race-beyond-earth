@@ -66,6 +66,12 @@ The game saves campaign progress and saved vehicle blueprints in the browser's `
 
 This loop is intentionally small enough to be a working demonstration rather than a collection of disconnected screens.
 
+## NASA-sourced subsystem engineering foundation (development)
+
+The 2026 NASA Small Spacecraft SoA research has been organized into a [component data catalog](src/lib/spacecraftTechnology.ts), [first-order sizing functions](src/lib/spacecraftSystems.ts), [unit tests](src/lib/spacecraftSystems.test.ts), and a detailed [NASA technology research guide](docs/NASA_TECHNOLOGY_RESEARCH.md). Source-backed examples cover in-space Hall/ion propulsion, PV cells, battery packs, thermal surfaces, CubeSat structure references, and GNC.
+
+**Not yet in the playable UI:** these new subsystem calculations are independent prototypes awaiting builder integration. The existing playable first-launch simulator and its fictional engine/contract numbers remain unchanged. Please distinguish physical models from game mechanics and do not interpret simplified calculations as certified flight designs.
+
 ## Engineering foundation
 
 The prototype calculates ideal vehicle delta-V using the Tsiolkovsky rocket equation:
