@@ -6,3 +6,6 @@ coverage/
 *.local
 .env*
 !.env.example
+
+# NASA models downloaded locally from official sources
+public/models/*.glb
