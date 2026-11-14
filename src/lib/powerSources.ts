@@ -5,7 +5,7 @@
  * installation masses. Reactor shielding / separation / heat rejection are mission
  * dependent and not fully sized here.
  */
-export type PowerSourceId = 'solar' | 'mmrtg' | 'gphs-rtg' | 'snap10a' | 'krusty';
+export type PowerSourceId = 'solar' | 'mmrtg' | 'mhw-rtg' | 'gphs-rtg' | 'snap10a' | 'krusty';
 export type PowerSystem = {
   id: PowerSourceId;
   name: string;
@@ -43,6 +43,18 @@ export const POWER_SYSTEMS: Record<PowerSourceId, PowerSystem> = {
     degradationPerYear: 0.03, // Illustrative decline, NASA says a few percent per year
     sourceUrl: 'https://ntrs.nasa.gov/api/citations/20170000017/downloads/20170000017.pdf',
     note: '110 W and ~45 kg at launch; ~1880 W thermal. Power decline modeled at an illustrative 3%/year, NOT a certified EOL guarantee.',
+  },
+  'mhw-rtg': {
+    id: 'mhw-rtg',
+    name: 'MHW-RTG (Voyager heritage)',
+    class: 'radioisotope',
+    heritage: 'flight-proven',
+    nominalElectricW: 157,
+    reportedSystemMassKg: 37.7,
+    reportedThermalW: null, // no directly published thermal figure in the selected reference table
+    degradationPerYear: 0.016,
+    sourceUrl: 'https://ntrs.nasa.gov/api/citations/20160001769/downloads/20160001769.pdf',
+    note: 'JPL 2015 Radioisotope Power Systems Reference Book Table 14: 157 We (BOM), 37.7 kg, 1.6%/yr degradation. Heat rejection is not sized here.',
   },
   'gphs-rtg': {
     id: 'gphs-rtg',
@@ -102,8 +114,12 @@ export function getPowerOutput(id: PowerSourceId, count: number, missionYears: n
   const generatedElectricW = system.nominalElectricW * count * degradation;
   const installedGeneratorMassKg = system.reportedSystemMassKg === null
     ? null : system.reportedSystemMassKg * count;
+  // Pu-238 half-life ~87.7 years: apply a separate, approximate radioactive
+  // heat-decrease factor rather than keeping BOL heat constant for decades.
+  // This is distinct from electrical converter degradation.
+  const heatFraction = system.class === 'radioisotope' ? Math.pow(0.9921, missionYears) : 1;
   const generatorWasteHeatW = system.reportedThermalW === null
-    ? null : Math.max(0, system.reportedThermalW * count - generatedElectricW);
+    ? null : Math.max(0, system.reportedThermalW * count * heatFraction - generatedElectricW);
   return {
     generatedElectricW,
     installedGeneratorMassKg,
