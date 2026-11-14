@@ -1,6 +1,6 @@
 # Sources, tools, and SI/AI attribution
 
-This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.4**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
+This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.6**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
 
 ## NASA / JPL resources used in the application
 
@@ -63,7 +63,7 @@ An RTG's published thermal output is not automatically heat entering the spacecr
 
 The user also shared https://delrizzo.dev/ for interaction inspiration, but the site was not accessible to verify implementation or retrieve material. No source code or assets are used from that site.
 
-**NASA materials:** NASA's media use guidelines and individual credits apply to reference models and images. Do not claim NASA endorses the game. The external NASA Dawn GLB is fetched by the browser at the user's choice and is not bundled into this repository.
+**NASA materials:** NASA's media use guidelines and individual credits apply to reference models and images. Do not claim NASA endorses the game. NASA Dawn and Voyager (Probe B) GLB files are optionally downloaded at local game startup from official NASA sources to an untracked `public/models/` directory. The browser loads these same-origin assets; they are not included in the GitHub source or shipped as unlicensed binaries.
 
 **Orekit calculations:** the local service uses actual Java Orekit code, but source positions are **approximate JPL orbital elements**, not high-precision Horizons/SPICE states. Departure C3 and v-infinity are not equivalent to rocket injection delta-V, capture delta-V, or a full feasible mission. Java Maven dependencies are open source and fetched from Maven Central at build time.
 
@@ -76,6 +76,23 @@ The user also shared https://delrizzo.dev/ for interaction inspiration, but the 
 - [Orekit](https://www.orekit.org/): Java open-source impulsive Lambert candidate solving and propagation
 
 The JPL approximate ephemeris, impulsive patched-conic calculations, and sampled minimum over flight time are **not** mission-grade optimization. The game does not force a propulsion type per destination; launch/transfer/capture feasibility still requires spacecraft-specific finite-thrust and mass/power constraints.
+
+## v0.6 learning, historical trajectories and locally downloaded NASA 3D assets
+
+| Official resource | Link | Usage |
+| --- | --- | --- |
+| NASA Dawn 3D | https://science.nasa.gov/3d-resources/dawn/ | Optional local Dawn GLB display in Mission Library |
+| NASA Voyager Probe B 3D | https://science.nasa.gov/3d-resources/voyager-probe-b/ | Optional local Voyager visual reference GLB |
+| NASA/JPL Horizons | https://ssd.jpl.nasa.gov/horizons/ | On-demand spacecraft position vectors (Sun-centered ecliptic AU) for specific historical times when available |
+| NASA/JPL Horizons API | https://ssd-api.jpl.nasa.gov/doc/horizons.html | Optional Java-proxied request format, bounded historical data retrieval, 12-hour cache |
+| NASA Glenn Ideal Rocket Equation | https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/ideal-rocket-equation/ | Learning tab rocket equation, Isp/mass flow context |
+| NASA Small Spacecraft State-of-the-Art — Power | https://www.nasa.gov/smallsat-institute/sst-soa/power-subsystems/ | Learning tab solar and storage interpretation |
+| NASA Small Spacecraft State-of-the-Art — Thermal | https://www.nasa.gov/smallsat-institute/sst-soa/thermal-control/ | Learning tab thermal surface context |
+| NASA/DOE New Horizons mission reference | https://science.nasa.gov/mission/new-horizons/ | Mission reference image and historical spacecraft details |
+
+This version dynamically partitions a player-specified total active cell area over a user-specified number of visual solar panels, and similarly splits computed radiator area into selectable panels. The number of thrusters increases the model's nominal combined thrust, full-power electrical demand, hardware mass and heat in an **illustrative simultaneous firing assumption**; the visualization is not an assembly drawing or certified power distribution design. Local 3D download and Horizons requests have been unit/build-tested, but live NASA network access is environment-dependent.
+
+**The JPL spacecraft track is sampled observational/predicted ephemeris data when available, not a mathematically reconstructed generic ellipse.** Connecting the sparse points for display should not be confused with a continuous, validated thrust/gravity-assist integration.
 
 ## Other frameworks and external sources
 

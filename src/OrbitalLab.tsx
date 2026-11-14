@@ -165,11 +165,11 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
               <div><span>Radius now</span><strong>{formatted(earthState.radiusKm,0)} km</strong></div>
             </div>
           </>:<>
-            <label>Display scale
+            <label>Display scale <FieldHelp term="Display scale"/>
               <select value={outerView?'outer':'inner'} onChange={e=>setOuterView(e.target.value==='outer')}><option value="inner">Inner solar system (Venus–Mars)</option><option value="outer">Through Jupiter</option></select>
             </label>
             <label>Simulation date <FieldHelp term="Simulation date"/> <strong>{utcDate.toISOString().slice(0,10)}</strong><input type="range" min="0" max="3200" step="1" value={dayOffset} onChange={e=>{setDayOffset(Number(e.target.value));setRunning(false);}}/></label>
-            <label>Inspect planet
+            <label>Inspect planet <FieldHelp term="Inspect planet"/>
               <select value={selectedPlanet} onChange={e=>setSelectedPlanet(e.target.value as PlanetId)}>{Object.entries(PLANETS).map(([id,p])=><option key={id} value={id}>{p.label}</option>)}</select>
             </label>
             <div className="orbit-data-grid">

@@ -65,6 +65,16 @@ The frontend creates candidate arrival planetary position/velocity states using 
 
 **After GitHub Desktop pulls new code, stop and restart the Orekit launcher.** The JVM must be restarted to load the new endpoint.
 
+## NASA/JPL historical spacecraft flight paths (v0.6)
+
+Endpoint: `GET http://127.0.0.1:8787/api/heritage-track?mission=dawn`
+
+Supported mission keys: `dawn`, `psyche`, `new-horizons`, `voyager`. The Voyager key specifically requests **Voyager 1**, Horizons spacecraft ID `-31`. The backend uses the requested mission's fixed date range and a sparse 30–90 day step to request Sun-centered ecliptic **position vectors in AU** from JPL Horizons `https://ssd.jpl.nasa.gov/api/horizons.api`. It caches successful fetches in memory for 12 hours.
+
+This is a separate **internet-dependent** function, not an Orekit-computed historical path. Horizons may not return a usable vector table for an entire mission interval, and the 2D presentation hides out-of-plane motion. It shows sample-to-sample line segments only and a separate NASA milestone chronology if the remote response is unavailable. The game does not invent a closed historical orbit.
+
+**After pulling changes, restart `Start Orekit.command`** so this endpoint is available. The service is local-only, and the fixed mission whitelist limits requests.
+
 The service binds only to 127.0.0.1 and responds to local browser origins. It does not expose endpoints on the internet.
 
 Orekit is Apache 2.0 open-source software: https://www.orekit.org/ . Further planetary accuracy work should replace client-side approximate elements with versioned NASA/JPL SPICE ephemerides and time-system handling.
