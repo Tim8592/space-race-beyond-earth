@@ -49,6 +49,22 @@ Returns a plotted transfer arc in heliocentric AU, Earth/target relative hyperbo
 
 **Critical caveats:** Departure v-infinity is NOT the actual delta-V needed from a low Earth parking orbit. Arrival v-infinity is NOT a capture burn. No gravity assists, staged launch trajectory, finite-thrust solar-electric integration, thrust duty cycle, n-body perturbations, eclipse, atmosphere, power-vs-distance optimization or launch authorization are handled. Numerical results are not valid for flight design or certification.
 
+## Fixed-date Lambert flight-time optimization
+
+The frontend can send up to 200 candidate arrivals for one departure date through:
+
+- `POST http://127.0.0.1:8787/api/optimize`
+
+Request schema: `{ target: "venus"|"mars"|"jupiter", objective: "departure"|"total", earthParkingAltitudeKm: number, targetParkingAltitudeKm: number, candidates: [ <same request as /api/lambert>, ... ] }`.
+
+The frontend creates candidate arrival planetary position/velocity states using the JPL Table 1 approximate elements at each selected flight duration. The Java endpoint solves each with Orekit `IodLambert`, filters invalid candidates, computes cost, returns scores for each valid duration and a full Keplerian plotted trajectory for the lowest-cost candidate. The browser scans a coarse grid and refines the best sampled duration using one-day steps.
+
+**Objective (ideal patched conics):** `Δv ≈ √(v∞² + 2μ/r) − √(μ/r)`. This is the burn from a circular parking orbit to a hyperbolic excess trajectory, or the equivalent ideal hyperbolic arrival circularization burn. JPL gravitational parameters are from https://ssd.jpl.nasa.gov/astro_par.html and reference radii from https://ssd.jpl.nasa.gov/planets/phys_par.html .
+
+**Limitations:** Fixed departure date; only the sampled arrival-time/flight-duration range is optimized. Zero-revolution, prograde, impulsive two-body Lambert trajectories only. Planet positions and velocities use the browser's approximate JPL elements, not high-precision Horizons ephemerides. The Jupiter arrival circular orbit is conceptual (height measured from a 1-bar reference surface), not a recommended or operationally realistic close Jovian orbit. No ascent, parking-orbit orientation, gravity assists, atmospheres, aerocapture, orbit plane change, finite-thrust electric propulsion, spacecraft power, thermal capacity or mass budgeting. These are educational comparisons, not flight-ready trajectory optimizations.
+
+**After GitHub Desktop pulls new code, stop and restart the Orekit launcher.** The JVM must be restarted to load the new endpoint.
+
 The service binds only to 127.0.0.1 and responds to local browser origins. It does not expose endpoints on the internet.
 
 Orekit is Apache 2.0 open-source software: https://www.orekit.org/ . Further planetary accuracy work should replace client-side approximate elements with versioned NASA/JPL SPICE ephemerides and time-system handling.

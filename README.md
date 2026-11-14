@@ -6,7 +6,7 @@
 
 The goal is **not** to reproduce a professional flight dynamics package inside a video game. Instead, it is to make real engineering trade-offs understandable and engaging, while clearly distinguishing sourced physics from simplified mechanics.
 
-**Status:** Hackathon prototype, v0.4. The game has Mission Control, Spacecraft Builder, Orbital Map, Mission Library, and Research tabs. The Spacecraft Builder includes a selectable modular Three.js spacecraft preview (solar panels, radiators, tank, propulsion, antenna) and can import a GLB file exported from Onshape/FreeCAD for visual inspection. The Mission Library includes NASA-sourced Dawn, Psyche, New Horizons, and Voyager examples, reference models/images and statistics. An **optional local Orekit Java service** now solves and plots impulsive Sun-centered Lambert transfers between approximate planetary positions. In-space subsystem models, orbital transfer solutions and launch-contract payouts are still separate; low-thrust electric trajectories, real launch-window optimization, gravity assists, and mission qualification are NOT implemented.
+**Status:** Hackathon prototype, v0.5. The game has Mission Control, Spacecraft Builder, Orbital Map, Mission Library, and Research tabs. The Spacecraft Builder includes a selectable modular Three.js spacecraft preview (solar panels, radiators, tank, propulsion, antenna) and can import a GLB file exported from Onshape/FreeCAD for visual inspection. The Mission Library includes NASA-sourced Dawn, Psyche, New Horizons, and Voyager examples, reference models/images and statistics. An **optional local Orekit Java service** now solves and plots impulsive Sun-centered Lambert transfers between approximate planetary positions. In-space subsystem models, orbital transfer solutions and launch-contract payouts are still separate; low-thrust electric trajectories, real launch-window optimization, gravity assists, and mission qualification are NOT implemented.
 
 ## Quick start
 
@@ -30,6 +30,19 @@ The builder now supports a modular geometric prototype with responsive component
 
 NASA's free [3D Resources](https://science.nasa.gov/3d-resources/) include [Dawn](https://science.nasa.gov/3d-resources/dawn/), [New Horizons](https://science.nasa.gov/resource/new-horizons-3d-model/) and [Voyager](https://science.nasa.gov/resource/voyager-3d-model/). See [CAD and trajectory roadmap](docs/CAD_AND_ORBITAL_ROADMAP.md).
 
+### Optimize the lowest sampled delta-V for a specified departure date
+
+On **Orbital Map → Planet positions**, choose **Optimize minimum Δv**, select a destination and UTC departure date, and specify a flight-time search window. The optimizer uses Orekit to solve each candidate and refines around the lowest sampled duration to one-day intervals. Two optimization targets:
+
+- **Departure Δv** from an ideal circular Earth parking orbit (default 400 km).
+- **Departure + capture Δv** including ideal circular orbit insertion at the destination (default 300 km at Venus/Mars, or an illustrative 100,000 km above Jupiter's 1-bar equatorial reference radius).
+
+The ideal patched-conic burns use `Δv = √(v∞² + 2μ/r) − √(μ/r)` with NASA/JPL gravitational parameters and planetary radii. The map plots the lowest sampled solution and shows an energy-vs-flight-duration curve.
+
+**Important:** This holds the departure date fixed. It does **not** optimize both launch date and arrival date (porkchop plot), simulate Hall/ion finite burns, gravity assists, aerobraking or departure from Earth's surface. The lowest sampled cost inside the search range is not guaranteed to be a global optimum, and ideal instantaneous burns are not necessarily realizable by a given spacecraft.
+
+After pulling the change, **restart `Start Orekit.command`**; the running Java process does not update itself, and the newly added `/api/optimize` endpoint must be loaded.
+
 ### Terminal: manual launch
 
 Open a terminal **in this repository folder**, then run:
@@ -50,7 +63,7 @@ npm run build
 
 The game saves campaign progress and saved vehicle blueprints in the browser's `localStorage`. The **Reset campaign** action clears the current save. No account or backend is required.
 
-## Current features (v0.4)
+## Current features (v0.5)
 
 | Feature | How it works | Status |
 | --- | --- | --- |
@@ -66,6 +79,7 @@ The game saves campaign progress and saved vehicle blueprints in the browser's `
 | Spacecraft 3D studio | Procedural Three.js solar arrays, radiators, tank, bus, antenna, thruster; click parts, orbit/zoom; import user .glb exported from CAD | Interactive prototype |
 | NASA spacecraft heritage | Dawn, Psyche, New Horizons, Voyager reference technical profiles, image/model links | Reference library |
 | Orekit Lambert transfers | Optional local Java 17+ / Maven backend, solves Sun-centered impulsive transfer and draws conic, reports departure C3 and v-infinity at arrival | Implemented, requires separate service |
+| Fixed-date delta-V optimizer | Samples flight duration, refines best time to 1-day resolution, minimizes departure injection burn or ideal departure + capture burn at specified circular parking altitudes | Requires Orekit service |
 | Advanced generators | PV, MMRTG, MHW-RTG, GPHS-RTG, SNAP-10A heritage reactor, Kilopower ground-demonstrator reference | Playable (reference data; some integration/mass is incomplete) |
 | Research/tech tree | Fund a research institution, earn research points, unlock tech, improve manufacturing | **Planned** |
 | Deep-space transfers | Moon, Mars, Jupiter-moon orbital mechanics, launch windows and trajectory plots | **Planned** |

@@ -69,6 +69,14 @@ The user also shared https://delrizzo.dev/ for interaction inspiration, but the 
 
 **AI assistance:** OpenAI ChatGPT also assisted with v0.4 component/3D UI design, mission reference text and source links, and implementation of the optional Orekit backend and tests. Code must be checked with CI, local browser and numerical scenario validation before presenting as flight-ready.
 
+## v0.5 transfer optimizer — actual sources and assumptions
+
+- [JPL Solar System Dynamics astrodynamic parameters](https://ssd.jpl.nasa.gov/astro_par.html): Earth, Venus, Mars-system and Jupiter-system gravitational parameters used in ideal departure/capture burn estimates
+- [JPL planetary physical parameters](https://ssd.jpl.nasa.gov/planets/phys_par.html): reference equatorial radii for ideal circular parking orbits
+- [Orekit](https://www.orekit.org/): Java open-source impulsive Lambert candidate solving and propagation
+
+The JPL approximate ephemeris, impulsive patched-conic calculations, and sampled minimum over flight time are **not** mission-grade optimization. The game does not force a propulsion type per destination; launch/transfer/capture feasibility still requires spacecraft-specific finite-thrust and mass/power constraints.
+
 ## Other frameworks and external sources
 
 - React: https://react.dev/
