@@ -1,6 +1,7 @@
 import {
   BATTERY_PACKS, IN_SPACE_THRUSTERS, SOLAR_CELLS, THERMAL_SURFACES,
 } from './spacecraftTechnology';
+import { getPowerOutput, POWER_SYSTEMS, type PowerSourceId } from './powerSources';
 import {
   idealDeltaVms, idealBurnDurationSeconds, idealLiquidSphericalTank,
   solarArrayPowerW, batteryMassForEclipseKg,
@@ -12,6 +13,9 @@ export type SubsystemDesign = {
   solarCellId: string;
   batteryPackId: string;
   coatingId: string;
+  powerSourceId: PowerSourceId;
+  powerSourceCount: number;
+  missionYears: number;
   distanceAu: number;
   cellAreaM2: number;
   propellantMassKg: number;
@@ -34,6 +38,9 @@ export const DEFAULT_SUBSYSTEM_DESIGN: SubsystemDesign = {
   solarCellId: 'azur-3g30',
   batteryPackId: 'aac-optimus',
   coatingId: 'gsfc-silver',
+  powerSourceId: 'solar',
+  powerSourceCount: 1,
+  missionYears: 0,
   distanceAu: 1,
   cellAreaM2: 4,
   propellantMassKg: 5,
@@ -68,6 +75,12 @@ export type SystemResults = {
   nominalThrusterPowerW: number;
   totalElectricalDemandW: number;
   sunlightPowerW: number;
+  generatorElectricPowerW: number;
+  powerSystemMassKg: number | null;
+  powerSystemWasteHeatW: number | null;
+  powerSystemHeritage: string;
+  totalAvailablePowerW: number;
+  totalPowerMarginW: number;
   sunlightMarginW: number;
   canPowerThruster: boolean;
   batteryMassKg: number;
@@ -117,7 +130,7 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
   const inputNumbers = [
     design.distanceAu, design.cellAreaM2, design.propellantMassKg,
     design.busDryMassKg, design.payloadMassKg, design.busElectricalPowerW,
-    design.eclipseHours, design.liquidDensityKgM3, design.tankPressureBar,
+    design.eclipseHours, design.powerSourceCount, design.missionYears, design.liquidDensityKgM3, design.tankPressureBar,
     design.tankAllowableStressMpa, design.tankMetalDensityKgM3,
     design.infraredEmissivity, design.radiatorTemperatureK, design.radiatorSunIncidence,
   ];
@@ -126,7 +139,9 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
       design.payloadMassKg < 0 || design.busElectricalPowerW < 0 || design.eclipseHours < 0 ||
       design.infraredEmissivity <= 0 || design.infraredEmissivity > 1 ||
       design.radiatorSunIncidence < 0 || design.radiatorSunIncidence > 1 ||
-      design.radiatorTemperatureK <= 0) {
+      design.radiatorTemperatureK <= 0 ||
+      !Number.isInteger(design.powerSourceCount) || design.powerSourceCount < 1 || design.powerSourceCount > 8 ||
+      design.missionYears < 0 || design.missionYears > 40 || !POWER_SYSTEMS[design.powerSourceId]) {
     throw new RangeError('Spacecraft design contains nonphysical inputs');
   }
 
@@ -144,11 +159,20 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
     incidenceCosine: 1,
     userDeratingFactor: BOL_ARRAY_DERATE,
   });
+  const powerSource = getPowerOutput(design.powerSourceId, design.powerSourceCount, design.missionYears);
+  const generatorElectricPowerW = powerSource.generatedElectricW;
+  const powerSystemMassKg = powerSource.installedGeneratorMassKg;
+  const powerSystemWasteHeatW = powerSource.generatorWasteHeatW;
+  const powerSystemHeritage = powerSource.heritage;
+  const totalAvailablePowerW = sunlightPowerW + generatorElectricPowerW;
+  const totalPowerMarginW = totalAvailablePowerW - totalElectricalDemandW;
+  // Keep this diagnostic separate: shows whether solar PV alone is sufficient.
   const sunlightMarginW = sunlightPowerW - totalElectricalDemandW;
-  const canPowerThruster = sunlightMarginW >= 0;
+  const canPowerThruster = totalPowerMarginW >= 0;
 
   const batteryMassKg = batteryMassForEclipseKg({
-    eclipseLoadW: design.busElectricalPowerW,
+    // No propulsion burn during eclipse; steady nuclear generation may run continuously.
+    eclipseLoadW: Math.max(0, design.busElectricalPowerW - generatorElectricPowerW),
     eclipseHours: design.eclipseHours,
     packSpecificEnergyWhKg: battery.specificEnergyWhKg,
     maxDepthOfDischarge: DOD,
@@ -181,7 +205,8 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
   let tankThinWallSuitable: boolean | null = null;
   let tankTypeAllowanceKg = 0;
   const warnings: string[] = [];
-  const massEstimateIncomplete = isElectric || radiatorMassKg === null;
+  const massEstimateIncomplete = isElectric || radiatorMassKg === null || powerSystemMassKg === null ||
+    POWER_SYSTEMS[design.powerSourceId].class === 'fission';
   if (!isElectric) {
     const tank = idealLiquidSphericalTank({
       propellantMassKg: design.propellantMassKg,
@@ -209,9 +234,17 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
         : 'Compressed-gas xenon tank/feed mass is unmodeled. Shown wet/dry masses are partial estimates, not verified launch mass estimates.'
     );
   }
-  if (!canPowerThruster) warnings.push('Insufficient simultaneous sunlight power: selected thruster cannot fire at its rated point here.');
+  if (!canPowerThruster) warnings.push('Insufficient simultaneous generation at this distance: selected thruster cannot fire at rated power.');
+  if (design.powerSourceId !== 'solar') {
+    warnings.push(POWER_SYSTEMS[design.powerSourceId].note);
+    warnings.push('Generator waste heat is reported separately and is NOT automatically assigned to the bus radiator. Dedicated source heat rejection, thermal coupling and mounting are not fully modeled.');
+  }
+  if (powerSystemMassKg === null) warnings.push('Power system hardware mass is unknown and omitted; wet/dry masses and delta-V are incomplete.');
+  if (POWER_SYSTEMS[design.powerSourceId].class === 'fission') {
+    warnings.push('Fission configuration is historical or experimental. Shielding, safety constraints, thermal rejection, standoffs and authorization are not sized.');
+  }
   if (radiatorAreaM2 === null) warnings.push('Net radiator heat flux is non-positive at this orientation and temperature; thermal rejection fails.');
-  if (design.distanceAu >= 5) warnings.push('Far from the Sun, array power falls as 1/r². Consider a different power architecture (RTG/fission not yet modeled).');
+  if (design.distanceAu >= 5) warnings.push('Far from the Sun, solar array generation falls as 1/r²; any radioisotope/fission generator contribution is modeled separately.');
 
   const thrusterHardwareMassKg = !isElectric
     ? CHEMICAL_COMPONENT_MASS_KG
@@ -221,6 +254,7 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
     + design.cellAreaM2 * ARRAY_AREAL_MASS_KGM2
     + batteryMassKg + (radiatorMassKg ?? 0)
     + thrusterHardwareMassKg + systemAllowanceKg
+    + (powerSystemMassKg ?? 0)
     + (tankShellMassKg ?? 0) + tankTypeAllowanceKg;
   const modeledWetMassKg = modeledDryMassKg + design.propellantMassKg;
   const idealDeltaV = idealDeltaVms(modeledWetMassKg, modeledDryMassKg, engineSpecificImpulseS);
@@ -233,6 +267,8 @@ export function sizeSubsystemDesign(design: SubsystemDesign): SystemResults {
     engineSourceUrl: realThruster?.source.url ?? 'https://www.nasa.gov/smallsat-institute/sst-soa/in-space_propulsion/',
     engineSpecificImpulseS, engineThrustN, nominalThrusterPowerW,
     totalElectricalDemandW, sunlightPowerW, sunlightMarginW, canPowerThruster,
+    generatorElectricPowerW, powerSystemMassKg, powerSystemWasteHeatW,
+    powerSystemHeritage, totalAvailablePowerW, totalPowerMarginW,
     batteryMassKg, storedBatteryEnergyWh, thermalLoadW, radiatorAreaM2,
     radiatorMassKg, absorbedSolarFluxWm2, radiatorNetFluxWm2,
     tankShellMassKg, tankInternalVolumeL, tankRadiusM, tankWallMm,
