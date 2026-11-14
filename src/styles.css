@@ -156,3 +156,26 @@
 .craft-upload:focus-within{outline:2px solid #a9d5f2}
 .craft-model-actions button:hover,.craft-upload:hover{background:#244a69}
 @media(max-width:650px){.craft-model-actions{justify-content:flex-start}}
+
+/* v0.5: fixed departure date, sampled minimum impulsive delta-v */
+.transfer-opt-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px;border:1px solid #375572;background:#101f33;border-radius:8px;margin-top:14px;align-items:end}
+.transfer-opt-inputs label{display:flex;flex-direction:column;gap:7px;color:#c6deee;font-size:11px;font-weight:700;min-width:0}
+.transfer-opt-inputs input{background:#081527;border:1px solid #4c6480;color:#e7f3ff;border-radius:6px;min-height:40px;padding:10px;width:100%;min-width:0}
+.transfer-opt-inputs .launch-button{min-height:41px;font-size:12px;white-space:nowrap;padding:9px 12px}
+.transfer-range-note{color:#9fb8ce;font-size:11px;line-height:1.65;margin:12px 0}
+.transfer-opt-highlight{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:10px;padding:12px;border-radius:9px;border:1px solid #587ca0;background:linear-gradient(125deg,#132d4d,#1b263f);margin-top:14px}
+.transfer-opt-highlight>div{display:flex;flex-direction:column;gap:8px;padding:9px}
+.transfer-opt-highlight span{color:#b1cae1;font-size:10px;letter-spacing:.5px;text-transform:uppercase}
+.transfer-opt-highlight strong{color:#f4d49c;font-size:22px;font-family:'Space Grotesk';font-variant-numeric:tabular-nums}
+.transfer-opt-highlight strong small{font-size:11px;color:#c6d5df}
+.transfer-opt-highlight>div>small{color:#adc6da;font-size:11px;line-height:1.5}
+.optimization-chart{margin:16px 0;background:#081827;border:1px solid #344f6b;border-radius:9px;padding:12px 14px}
+.optimization-chart svg{width:100%;height:auto;display:block;margin-top:6px}
+.transfer-ranked{margin-top:15px}
+.transfer-ranked-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:8px}
+.transfer-ranked-list button{border:1px solid #435f7c;border-radius:8px;padding:11px;background:#14283c;color:#e0effb;display:flex;flex-direction:column;align-items:flex-start;gap:7px;cursor:pointer}
+.transfer-ranked-list button:hover{border-color:#a2d2ed;background:#224361}
+.transfer-ranked-list strong{font-size:13px;font-family:'Space Grotesk'}
+.transfer-ranked-list span{font-size:11px;color:#f8c786}
+@media(max-width:950px){.transfer-opt-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}.transfer-ranked-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:580px){.transfer-opt-inputs,.transfer-opt-highlight{grid-template-columns:1fr}.transfer-ranked-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
