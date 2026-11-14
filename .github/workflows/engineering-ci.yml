@@ -18,6 +18,8 @@ jobs:
           node-version: '22'
       - name: Install npm dependencies
         run: npm install --no-audit --no-fund
+      - name: Audit npm dependency vulnerabilities
+        run: npm audit --audit-level=moderate
       - name: Run engineering calculation tests
         run: npm test
       - name: Type-check and build web app
