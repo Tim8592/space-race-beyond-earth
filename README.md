@@ -6,7 +6,7 @@
 
 The goal is **not** to reproduce a professional flight dynamics package inside a video game. Instead, it is to make real engineering trade-offs understandable and engaging, while clearly distinguishing sourced physics from simplified mechanics.
 
-**Status:** Hackathon prototype, v0.6. The game has Mission Control, Spacecraft Builder, Orbital Map, Mission Library, Learn Physics, and Research tabs. The Spacecraft Builder includes a selectable modular Three.js spacecraft preview (solar panels, radiators, tank, propulsion, antenna) and can import a GLB file exported from Onshape/FreeCAD for visual inspection. The Mission Library includes NASA-sourced Dawn, Psyche, New Horizons, and Voyager examples, reference models/images, statistics, milestone timelines, and on-demand historical JPL Horizons spacecraft paths when ephemerides are available. An **optional local Orekit Java service** now solves and plots impulsive Sun-centered Lambert transfers between approximate planetary positions. In-space subsystem models, orbital transfer solutions and launch-contract payouts are still separate; low-thrust electric trajectories, real launch-window optimization, gravity assists, and mission qualification are NOT implemented.
+**Status:** Hackathon prototype, v0.7. The game has Play Campaign, Engineering Lab, Orbital Map, Mission Library, Learn Physics, and Research tabs. The Spacecraft Builder includes a selectable modular Three.js spacecraft preview (solar panels, radiators, tank, propulsion, antenna) and can import a GLB file exported from Onshape/FreeCAD for visual inspection. The Mission Library includes NASA-sourced Dawn, Psyche, New Horizons, and Voyager examples, reference models/images, statistics, milestone timelines, and on-demand historical JPL Horizons spacecraft paths when ephemerides are available. An **optional local Orekit Java service** now solves and plots impulsive Sun-centered Lambert transfers between approximate planetary positions. The new Earth Observation One mission shares the spacecraft sizing configuration, rocket performance and 3D design to run a seven-day imaging/data-downlink mission. Interplanetary transfer solutions remain an advanced separate tool; low-thrust electric trajectories, real launch-window optimization, gravity assists and flight qualification are NOT implemented.
 
 ## Challenge-aligned game plan and browser reliability tests
 
@@ -15,6 +15,18 @@ The official *Space Mission Design Game* asks for a complete space mission exper
 - [Challenge alignment & complete-mission gameplay blueprint](docs/CHALLENGE_ALIGNMENT_AND_GAMEPLAY.md) — proposed vertical slice, feature priorities and technical cautions
 - **Automated browser smoke checks:** `npm run test:browser` (first install Chromium using `npx playwright install chromium`). GitHub Actions runs Chromium on every push to catch tab failures, browser exceptions, campaign persistence and NASA model retry regressions.
 - The independent core game must be deployable to an ordinary website without asking judges to install Java. Orekit and JPL historical position services are optional advanced modes.
+
+## New in v0.7 — Earth Observation One
+
+**Play Campaign → Earth Observation One** is a guided complete mission demonstration. Pick a compact/multispectral/hyperspectral instrument, radio, recorder, observation duty cycle, orbit altitude, payload allocation and optional radiator/battery upgrades. The mission uses the **same spacecraft design** as Engineering Lab, replacing its generic instrument payload mass slot with the chosen real-world-shaped game instrument. The original rocket builder determines the launch performance for the actual spacecraft wet mass.
+
+Live horizontal bars compare **launch payload (kg), sunlit electrical load (W), thermal load (W), eclipse energy (Wh), daily science data/downlink (Mb/day), and total cost ($M)** with their modeled capacities. Overages are red; each shows consequences. Launch a viable design and advance through seven days of simulated operations; data can be buffered, overflow and be downlinked, with **science counted only after downlink**. The final debrief explains failure causes and financial outcome. No Orekit server required.
+
+**Everything beyond the NASA/JPL Earth/orbit and cataloged spacecraft component values is labeled a game assumption**: instrument mass/power/data and science reward, radio rates/ground contact, budget, thermal- and power-driven science derating and score. The model is deliberately an educational approximation and not a flight design. Mission costs are settled at the end of the seven-day run. A snapshot of the spacecraft configuration is locked at launch, so later design edits do not retroactively change the in-flight mission.
+
+The original launch-contract activity remains under **Play Campaign → Orbital Contracts (Classic mode)**. Use **Engineering Lab** for the detailed subsystem tabs and return to the campaign to see the effect of those design changes.
+
+[Next steps: Play Campaign and Engineering Lab architecture](docs/NEXT_STEPS_CAMPAIGN_AND_LAB.md)
 
 ## Quick start
 
@@ -108,7 +120,7 @@ npm run build
 
 The game saves campaign progress and saved vehicle blueprints in the browser's `localStorage`. The **Reset campaign** action clears the current save. No account or backend is required.
 
-## Current features (v0.6)
+## Current features (v0.7)
 
 | Feature | How it works | Status |
 | --- | --- | --- |
@@ -126,6 +138,8 @@ The game saves campaign progress and saved vehicle blueprints in the browser's `
 | Field explanations | Hover/focus/tap accessible (?) descriptions beside engineering and trajectory inputs | Interactive |
 | Learn Physics | Separate tab explaining propulsion, solar electric power, thermal radiation, tank shell mass, orbital mechanics and Lambert transfers with live calculations | Interactive lessons |
 | NASA historical orbit references | Load sampled spacecraft ephemeris from JPL Horizons through local Orekit service with 2D heliocentric projected trail, timeline and mission milestones | Requires Orekit and JPL internet availability |
+| Earth Observation One | Linked 3D spacecraft, instrument, radio, storage and launch configurations; resource margin bars and a seven-day scientific downlink simulation with debrief | Playable (game assumptions, fully browser-based) |
+| Unified Play Campaign / Engineering Lab | Shared persisted spacecraft design and launch config feed the same guided mission. Classic contracts remain separate | Playable |
 | NASA spacecraft heritage | Dawn, Psyche, New Horizons, Voyager reference technical profiles, image/model links | Reference library |
 | Orekit Lambert transfers | Optional local Java 17+ / Maven backend, solves Sun-centered impulsive transfer and draws conic, reports departure C3 and v-infinity at arrival | Implemented, requires separate service |
 | Fixed-date delta-V optimizer | Samples flight duration, refines best time to 1-day resolution, minimizes departure injection burn or ideal departure + capture burn at specified circular parking altitudes | Requires Orekit service |
