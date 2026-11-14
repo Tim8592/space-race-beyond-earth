@@ -8,8 +8,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "predev": "node scripts/fetch-mission-models.mjs --optional",
-    "models:fetch": "node scripts/fetch-mission-models.mjs"
+    "predev": "node scripts/prepare-3d-decoders.mjs && node scripts/fetch-mission-models.mjs --optional",
+    "models:fetch": "node scripts/fetch-mission-models.mjs",
+    "prebuild": "node scripts/prepare-3d-decoders.mjs"
   },
   "dependencies": {
     "react": "^19.2.0",

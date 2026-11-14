@@ -9,3 +9,6 @@ coverage/
 
 # NASA models downloaded locally from official sources
 public/models/*.glb
+
+# Draco files copied locally from the installed Three.js package
+public/draco/
