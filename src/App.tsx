@@ -1,4 +1,5 @@
 import SubsystemLab from './SubsystemLab';
+import OrbitalLab from './OrbitalLab';
 import { useEffect, useMemo, useState } from 'react';
 import {
   calculateVehicleMetrics,
@@ -154,6 +155,7 @@ export default function App() {
   const { game, vehicle, missionId } = snapshot;
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'research'>('missions');
   const contract = CONTRACTS.find((item) => item.id === missionId) ?? CONTRACTS[0];
   const metrics = useMemo(() => calculateVehicleMetrics(vehicle), [vehicle]);
   const buildCost = estimateBuildCostUsd(vehicle, game.engineBuildCounts[vehicle.engineId] ?? 0);
@@ -243,25 +245,29 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <div className="brand"><span className="brand-symbol"><span className="brand-orbit" /></span><div><strong>SPACE RACE</strong><small>BEYOND EARTH</small></div></div>
-          <nav aria-label="Primary"><a href="#mission-control" className="current">Mission Control</a><a href="#builder">Launch Builder</a><a href="#systems-lab">Spacecraft Systems</a><a href="#roadmap">Technology</a></nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.2</span></div>
+          <nav aria-label="Primary" className="game-tabs" role="tablist">
+              {([
+                ['missions','Mission Control'],['systems','Spacecraft Builder'],['orbits','Orbital Map'],['research','Research & Roadmap'],
+              ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>setActiveView(id)}>{label}</button>)}
+            </nav>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.3</span></div>
         </div>
       </header>
 
       <main className="main-content">
-        <section className="intro">
+        <section className={'intro '+(activeView==='missions'?'':'view-hidden')}>
           <div><div className="eyebrow"><span className="small-diamond" /> YOUR SPACE PROGRAM STARTS HERE</div><h1>Build the future.<br /><em>Beyond Earth.</em></h1><p>Design capable spacecraft, accept orbital contracts, and turn engineering decisions into a thriving space economy.</p></div>
           <div className="intro-right"><span>CAMPAIGN / EARTH ERA</span><div className="day-marker">DAY <strong>{game.day.toString().padStart(3, '0')}</strong></div><button className="ghost-button" onClick={passWeek}>Advance 7 days <span>→</span></button></div>
         </section>
 
-        <section className="kpi-grid" aria-label="Campaign overview">
+        <section className={'kpi-grid '+(activeView==='missions'?'':'view-hidden')} aria-label="Campaign overview">
           <div className="kpi"><span>AVAILABLE CAPITAL</span><strong>{usd(game.cash)}</strong><small className={game.cash < 0 ? 'danger-text' : ''}>Starting fund: {usd(INITIAL_CASH)}</small></div>
           <div className="kpi"><span>SUCCESSFUL MISSIONS</span><strong>{integer(successfulLaunches)} <i>/ {integer(game.launched)}</i></strong><small>Successful / attempted</small></div>
           <div className="kpi"><span>CARGO DELIVERED</span><strong>{integer(game.deliveredKg)} <i>kg</i></strong><small>Into Earth orbit</small></div>
           <div className="kpi"><span>TOTAL CONTRACT REVENUE</span><strong>{usd(game.revenue)}</strong><small>From completed missions</small></div>
         </section>
 
-        <div className="control-layout" id="mission-control">
+        <div className={'control-layout '+(activeView==='missions'?'':'view-hidden')} id="mission-control">
           <div className="left-column">
             <section className="panel" id="builder">
               <div className="panel-heading"><div><div className="eyebrow">01 / DESIGN LAB</div><h2>Spacecraft Builder</h2><p>Configure your launch vehicle and evaluate its performance.</p></div><div className="panel-glyph">◈</div></div>
@@ -282,7 +288,7 @@ export default function App() {
               <div className="blueprint-bar"><button className="secondary-button" onClick={saveBlueprint}>+ Save blueprint</button>{game.blueprints.length > 0 && <select aria-label="Load saved blueprint" value="" onChange={(event) => {const selected = game.blueprints.find((item) => item.name === event.target.value); if(selected) updateVehicle({ ...selected });}}><option value="">Load saved design…</option>{game.blueprints.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select>}</div>
             </section>
 
-            <SubsystemLab />
+             
 
             <section className="panel metrics-panel">
               <div className="panel-heading"><div><div className="eyebrow">02 / PERFORMANCE</div><h2>Engineering Analysis</h2><p>Live estimates using the ideal rocket equation.</p></div><span className="formula">Δv = Isp · g₀ · ln(m₀/mf)</span></div>
@@ -297,16 +303,6 @@ export default function App() {
               <div className="contract-list">{CONTRACTS.map((item) => <button key={item.id} className={'contract ' + (item.id === missionId ? 'selected' : '')} onClick={() => chooseContract(item.id)} aria-pressed={item.id === missionId}><div className="contract-dot">{item.id === missionId ? '●' : '○'}</div><div className="contract-main"><span>{item.kicker}</span><strong>{item.label}</strong><small>{item.description}</small></div><div className="contract-price">{usd(item.payoutUsd)}<small>REWARD</small></div></button>)}</div>
             </section>
 
-            <section className="panel map-panel">
-              <div className="map-top"><div><div className="eyebrow">ORBITAL OPERATIONS / EARTH</div><h2>{contract.altitudeKm} km orbit</h2></div><span className="map-status"><span className="live-dot" /> SIMULATION</span></div>
-              <div className="orbit-view"><svg viewBox="0 0 620 360" role="img" aria-label="Schematic circular Earth orbit diagram with spacecraft position; not drawn to scale">
-                <defs><radialGradient id="earthG" cx="30%" cy="26%"><stop offset="0%" stopColor="#77aace"/><stop offset="45%" stopColor="#28699b"/><stop offset="85%" stopColor="#103859"/><stop offset="100%" stopColor="#081d35"/></radialGradient><radialGradient id="glow"><stop offset="0%" stopColor="#1e77c6" stopOpacity=".28"/><stop offset="100%" stopColor="#1e77c6" stopOpacity="0"/></radialGradient></defs>
-                <circle cx="310" cy="183" r="180" fill="url(#glow)"/><circle cx="310" cy="183" r="165" fill="none" stroke="#30445c" strokeDasharray="3 9" strokeWidth="1"/><circle cx="310" cy="183" r="131" fill="none" stroke="#86bde8" strokeWidth="1.4" strokeDasharray="6 7" opacity=".8"/><circle cx="310" cy="183" r="88" fill="url(#earthG)" stroke="#5486a7" strokeWidth="1"/><path d="M277 105c3 14 35 11 39 27 4 16-12 25-2 39 8 11 33 11 27 29-6 19-30 20-33 40-3 15 13 19 17 28M251 162c19 7 23 25 38 26 13 1 14 18 0 24-8 3-9 18-3 22" stroke="#6db1af" strokeWidth="18" opacity=".36" fill="none" strokeLinecap="round"/><path d="M242 203c31-24 70 11 106-15 15-10 34-22 47-19" fill="none" stroke="#d9f3fa" strokeWidth="11" opacity=".27"/><text x="310" y="188" textAnchor="middle" fill="#eef8ff" fontSize="13" fontWeight="700" letterSpacing="3">EARTH</text><circle cx={satelliteX} cy={satelliteY} r="7" fill="#f4b76c" stroke="#ffdcae" strokeWidth="3"/><circle cx={satelliteX} cy={satelliteY} r="17" fill="none" stroke="#f4b76c" strokeOpacity=".23" strokeWidth="1"/><path d="M310 183 L441 183" stroke="#6e9bba" strokeWidth="1" strokeDasharray="2 5"/><text x="455" y="178" fill="#9cb7cd" fontSize="12">{contract.altitudeKm} km</text><text x="24" y="30" fill="#7b95ad" fontSize="11" letterSpacing="2">NOT TO SCALE</text><text x="24" y="338" fill="#7b95ad" fontSize="11" letterSpacing="1">SIMPLIFIED CIRCULAR ORBIT</text>
-              </svg></div>
-              <div className="orbit-details"><div><span>IDEAL ORBITAL SPEED</span><strong>{decimal(orbitSpeed, 2)} <small>km/s</small></strong></div><div><span>ORBITAL PERIOD</span><strong>{decimal(orbitPeriod, 1)} <small>min</small></strong></div><div><span>ALTITUDE</span><strong>{contract.altitudeKm} <small>km</small></strong></div></div>
-              <p className="map-footnote">Orbital speed and period use two-body equations and NASA/JPL Earth parameters. The satellite position is illustrative, not an ephemeris.</p>
-            </section>
-
             <section className="panel launch-panel">
               <div className="panel-heading compact-heading"><div><div className="eyebrow">04 / FLIGHT REVIEW</div><h2>Launch Readiness</h2></div><span className={'status-tag ' + (ready ? 'ready' : 'blocked')}>{ready ? '● DESIGN READY' : '● REVIEW REQUIRED'}</span></div>
               <div className="readiness-list"><div><span><CheckIcon good={payloadOK}/> Payload capacity</span><strong>{integer(vehicle.payloadMassKg)} / {integer(contract.requiredPayloadKg)} kg</strong></div><div><span><CheckIcon good={deltaVOK}/> ΔV capability</span><strong>{integer(metrics.deltaVms)} / {integer(contract.requiredDeltaVms)} m/s</strong></div><div><span><CheckIcon good={thrustOK}/> Initial thrust / weight</span><strong>{decimal(metrics.liftoffTwr, 2)} / {minimumTwr.toFixed(2)}</strong></div><div><span><CheckIcon good={sufficientCash}/> Budget available</span><strong>{usd(game.cash)} / {usd(buildCost)}</strong></div></div>
@@ -318,9 +314,11 @@ export default function App() {
           </div>
         </div>
 
-        <section className="bottom-grid" id="roadmap"><div className="panel roadmap"><div className="eyebrow">BEYOND THE PROTOTYPE</div><h2>Your next frontier</h2><div className="roadmap-items"><div><span className="road-icon">◎</span><strong>Earth orbit</strong><small>Playable now</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">◐</span><strong>Lunar economy</strong><small>Planned</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">✧</span><strong>Mars transfers</strong><small>Planned</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">✦</span><strong>Outer planets</strong><small>Vision</small></div></div><p>Next: technology research, spacecraft production learning curves, fuel depots, transfer windows, and a competing space program.</p></div><div className="panel history"><div className="eyebrow">FLIGHT LOG</div><h2>Recent missions</h2>{game.history.length === 0 ? <p>No launches yet. Build a spacecraft and accept your first contract.</p> : <div className="history-list">{game.history.slice(0, 4).map((item) => <div key={item.id}><span className={item.success ? 'success-dot' : 'failed-dot'}>●</span><div><strong>{item.contract}</strong><small>Day {item.day} · {item.craft}</small></div><strong className={item.success ? 'green' : 'danger-text'}>{item.success ? '+' + usd(item.payout - item.cost) : '-' + usd(item.cost)}</strong></div>)}</div>}</div></section>
+        {activeView==='systems' && <div className="single-tab-page"><SubsystemLab /></div>}
+        {activeView==='orbits' && <div className="single-tab-page"><OrbitalLab initialAltitudeKm={contract.altitudeKm} /></div>}
+        <section className={'bottom-grid '+(activeView==='research'?'':'view-hidden')} id="roadmap"><div className="panel roadmap"><div className="eyebrow">BEYOND THE PROTOTYPE</div><h2>Your next frontier</h2><div className="roadmap-items"><div><span className="road-icon">◎</span><strong>Earth orbit</strong><small>Playable now</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">◐</span><strong>Lunar economy</strong><small>Planned</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">✧</span><strong>Mars transfers</strong><small>Planned</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">✦</span><strong>Outer planets</strong><small>Vision</small></div></div><p>Next: technology research, spacecraft production learning curves, fuel depots, transfer windows, and a competing space program.</p></div><div className="panel history"><div className="eyebrow">FLIGHT LOG</div><h2>Recent missions</h2>{game.history.length === 0 ? <p>No launches yet. Build a spacecraft and accept your first contract.</p> : <div className="history-list">{game.history.slice(0, 4).map((item) => <div key={item.id}><span className={item.success ? 'success-dot' : 'failed-dot'}>●</span><div><strong>{item.contract}</strong><small>Day {item.day} · {item.craft}</small></div><strong className={item.success ? 'green' : 'danger-text'}>{item.success ? '+' + usd(item.payout - item.cost) : '-' + usd(item.cost)}</strong></div>)}</div>}</div></section>
         <footer><div><span>SPACE RACE: BEYOND EARTH</span> · NASA Space Apps Challenge 2026 · Independently created prototype</div><div><button onClick={() => setShowHelp(!showHelp)}>{showHelp ? 'Hide notes' : 'Model limitations & credits'}</button><button onClick={reset}>Reset campaign</button></div></footer>
-        {showHelp && <div className="help-notes"><p><strong>Model limits:</strong> Only a simplified one-stage launcher and fictional contracts are implemented. Earth orbital speed and period use JPL's Earth gravitational parameter and NASA's Earth radius. Engine performance, budgets, mission thresholds, and manufacturing discounts are invented and must not be treated as real mission values. No Mars transfer modeling, atmospheric flight, structural sizing, reliability, staging, or launch-window calculation is implemented in v0.1.</p><p><strong>AI-assisted work:</strong> Initial source code, interface copy, and documentation were drafted with ChatGPT. See README.md and docs/ATTRIBUTION.md for disclosures. No NASA logos or mission insignia are used.</p></div>}
+        {showHelp && <div className="help-notes"><p><strong>Model limits:</strong> Only a simplified one-stage launcher and fictional contracts are implemented. Earth orbital speed and period use JPL's Earth gravitational parameter and NASA's Earth radius. Engine performance, budgets, mission thresholds, and manufacturing discounts are invented and must not be treated as real mission values. v0.3 includes idealized spacecraft subsystem calculations and Keplerian orbit visualization. It does not yet implement mission transfers, launch-window optimization, atmospheric flight, staging, nuclear reactor integration, or mission qualification.</p><p><strong>AI-assisted work:</strong> Initial source code, interface copy, and documentation were drafted with ChatGPT. See README.md and docs/ATTRIBUTION.md for disclosures. No NASA logos or mission insignia are used.</p></div>}
       </main>
     </div>
   );

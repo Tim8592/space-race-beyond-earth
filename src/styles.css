@@ -42,3 +42,30 @@
 .sys-footer>span{font-size:10px;color:#819fb9;line-height:1.55;max-width:70%}
 .sys-footer button{white-space:normal}
 @media(max-width:750px){.sys-input-grid,.sys-result-grid{grid-template-columns:1fr}.sys-footer{flex-direction:column;align-items:stretch}.sys-footer>span{max-width:none}}
+
+
+/* v0.3 dedicated navigation and physics-oriented orbit map */
+.view-hidden,.sys-hidden{display:none!important}
+.topbar .game-tabs{display:flex;gap:9px;flex-wrap:wrap}
+.topbar .game-tabs button{border:1px solid transparent;background:transparent;color:#95b0c6;border-radius:8px;padding:10px 12px;font-weight:750;font-size:12px;white-space:nowrap}
+.topbar .game-tabs button.current{background:#19324a;color:#f1f6ff;border-color:#689ecb}
+.single-tab-page{padding:16px 0 35px}.single-tab-page>.sys-panel{margin-top:0}
+.sys-tab-strip,.orbit-tab-row{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0 16px}
+.sys-tab-strip button,.orbit-tab-row button{padding:11px 13px;color:#bfd5e5;border:1px solid #3d5269;border-radius:7px;background:#11243a;font-size:12px;font-weight:700}
+.sys-tab-strip button.selected,.orbit-tab-row button.selected{background:#2c5879;border-color:#91c9ed;color:#fff}
+.orbit-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:15px 0}
+.orbit-current-time{font-family:'Space Grotesk';font-variant-numeric:tabular-nums;color:#b4d8ef;margin-left:auto}
+.orbit-simulator-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:15px}
+.orbit-large-map{border:1px solid #395371;border-radius:10px;min-width:0;overflow:hidden;background:#081527}
+.orbit-large-map svg{display:block;width:100%;height:auto}
+.orbit-controls{background:#101e31;border:1px solid #344a65;border-radius:10px;padding:17px;display:flex;flex-direction:column;gap:19px}
+.orbit-controls label{display:flex;flex-direction:column;gap:8px;color:#e4edf9;font-size:12px;font-weight:700}
+.orbit-controls label strong{font-family:'Space Grotesk';font-size:12px;color:#a5d7f7}
+.orbit-controls input[type=range]{width:100%;accent-color:#77c5f1}
+.orbit-controls select{background:#081527;color:#f2f7fb;border:1px solid #456888;border-radius:6px;padding:10px;font-size:12px;width:100%}
+.orbit-data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.orbit-data-grid>div{border:1px solid #2b4863;border-radius:6px;background:#142740;display:flex;flex-direction:column;gap:7px;padding:12px}
+.orbit-data-grid span{color:#9cb6ca;font-size:10px}
+.orbit-data-grid strong{color:#e7f2fc;font-family:'Space Grotesk';font-size:14px}
+@media(max-width:1020px){.orbit-simulator-grid{grid-template-columns:1fr}.topbar .game-tabs{gap:2px}}
+@media(max-width:600px){.orbit-data-grid{grid-template-columns:1fr}.topbar .game-tabs button{font-size:11px;padding:8px}}
