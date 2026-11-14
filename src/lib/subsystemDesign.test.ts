@@ -81,6 +81,23 @@ describe('coupled in-space spacecraft engineering', () => {
     expect(nuclear.warnings.some(w => w.includes('Dedicated source heat rejection'))).toBe(true);
   });
 
+  it('counts simultaneous thrusters in power, thrust, burn time and dry mass', () => {
+    const one = sizeSubsystemDesign(DEFAULT_SUBSYSTEM_DESIGN);
+    const four = sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN, thrusterCount:4, cellAreaM2:20});
+    expect(four.engineThrustN).toBeCloseTo(one.engineThrustN*4);
+    expect(four.nominalThrusterPowerW).toBeCloseTo(one.nominalThrusterPowerW*4);
+    expect(four.idealBurnDays).toBeCloseTo(one.idealBurnDays/4);
+    expect(four.modeledDryMassKg).toBeGreaterThan(one.modeledDryMassKg);
+  });
+
+  it('wing and radiator counts change display and mount mass, not total area or generation', () => {
+    const base = sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN, solarWingCount:2, radiatorPanelCount:2});
+    const many = sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN, solarWingCount:8, radiatorPanelCount:6});
+    expect(many.sunlightPowerW).toBeCloseTo(base.sunlightPowerW);
+    expect(many.radiatorAreaM2).toBeCloseTo(base.radiatorAreaM2!);
+    expect(many.modeledDryMassKg).toBeGreaterThan(base.modeledDryMassKg);
+  });
+
   it('rejects nonphysical values rather than reporting plausible mass estimates', () => {
     expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, radiatorTemperatureK: -10 })).toThrow(RangeError);
     expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, propellantMassKg: 0 })).toThrow(RangeError);
