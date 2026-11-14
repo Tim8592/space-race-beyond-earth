@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import Spacecraft3D from './Spacecraft3D';
 import {
   BATTERY_PACKS, IN_SPACE_THRUSTERS, SOLAR_CELLS, THERMAL_SURFACES,
 } from './lib/spacecraftTechnology';
@@ -117,6 +118,8 @@ export default function SubsystemLab() {
         This is separate from the launch rocket above. Real published component examples are used where available;
         everything labeled <b>assumption</b> is an illustrative sizing input, not a NASA-certified design.
       </p>
+
+      <Spacecraft3D design={design} analysis={result}/>
 
       <div className="sys-tab-strip" role="tablist" aria-label="Spacecraft subsystem">
         {([
