@@ -133,7 +133,14 @@ async function postJSON<T>(path: string, payload: unknown): Promise<T> {
   } catch {
     throw new Error('Orekit is offline. Restart Start Orekit.command to load the new optimizer service.');
   }
-  const data = await response.json() as T & { error?: string };
+  let data: T & { error?: string };
+  try {
+    data = await response.json() as T & { error?: string };
+  } catch {
+    throw new Error(!response.ok
+      ? 'Orekit endpoint unavailable. Restart Start Orekit.command after pulling the update.'
+      : 'Orekit returned a response that was not valid JSON.');
+  }
   if (!response.ok) throw new Error(data.error || 'Orekit transfer solver error.');
   return data;
 }
@@ -302,21 +309,21 @@ export default function TransferPlanner({onSolved}:{onSolved:(solution:LambertSo
     {mode==='optimize'&&<>
       <div className="transfer-opt-inputs">
         <label>Minimum flight time (days)
-          <input type="number" min="3" max="3000" value={minDays} onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n))setMinDays(n)}}/>
+          <input type="number" min="3" max="3000" value={minDays} onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setMinDays(n);setOptResult(null)}}}/>
         </label>
         <label>Maximum flight time (days)
-          <input type="number" min="3" max="3000" value={maxDays} onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n))setMaxDays(n)}}/>
+          <input type="number" min="3" max="3000" value={maxDays} onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setMaxDays(n);setOptResult(null)}}}/>
         </label>
         <label>Coarse step (days)
-          <input type="number" min="1" max="100" value={stepDays} onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n))setStepDays(n)}}/>
+          <input type="number" min="1" max="100" value={stepDays} onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setStepDays(n);setOptResult(null)}}}/>
         </label>
         <label>Earth parking altitude (km)
           <input type="number" min="160" max="100000" step="50" value={earthAltitudeKm}
-            onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n))setEarthAltitudeKm(n)}}/>
+            onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setEarthAltitudeKm(n);setOptResult(null)}}}/>
         </label>
         <label>{target==='jupiter'?'Jupiter capture-orbit altitude (km)':'Target circular orbit altitude (km)'}
           <input type="number" min="150" max="1000000" step="100" value={arrivalAltitudeKm}
-            onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n))setArrivalAltitudeKm(n)}}/>
+            onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setArrivalAltitudeKm(n);setOptResult(null)}}}/>
         </label>
         <button type="button" className="launch-button" disabled={working} onClick={optimize}>
           {working?'Searching transfers…':'Find lowest Δv'} <span>↗</span>
