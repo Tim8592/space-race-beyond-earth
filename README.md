@@ -12,6 +12,16 @@ The goal is **not** to reproduce a professional flight dynamics package inside a
 
 Requirements: Node.js LTS with npm (Node 22+ supported).
 
+### macOS: double-click to play
+
+After cloning or pulling this repository, open the folder in **Finder** and double-click **`Start Space Race.command`**. It automatically installs dependencies on the first launch, starts the local game server, and opens the game in your default browser.
+
+Keep the Terminal window open while playing. To stop the game, select that window and press **Control+C**. On later launches, just double-click the file again.
+
+### Terminal: manual launch
+
+Open a terminal **in this repository folder**, then run:
+
 ```bash
 npm install
 npm run dev
