@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { planetAtDate, type PlanetId } from './lib/orbitalMechanics';
+import FieldHelp from './components/FieldHelp';
 
 const ENDPOINT = 'http://127.0.0.1:8787';
 const DAY = 86400000;
@@ -281,24 +282,24 @@ export default function TransferPlanner({onSolved}:{onSolved:(solution:LambertSo
       <button role="tab" aria-selected={mode==='optimize'} className={mode==='optimize'?'selected':''} onClick={()=>setMode('optimize')}>Optimize minimum Δv</button>
     </div>
     <div className="transfer-inputs">
-      <label>Destination
+      <label>Destination <FieldHelp term="Destination"/>
         <select value={target} onChange={e=>chooseTarget(e.target.value as 'venus'|'mars'|'jupiter')}>
           <option value="venus">Venus</option><option value="mars">Mars</option><option value="jupiter">Jupiter</option>
         </select>
       </label>
-      <label>Departure date (fixed, UTC)
+      <label>Departure date (fixed, UTC) <FieldHelp term="Departure date (fixed, UTC)"/>
         <input type="date" min="2026-11-14" max="2040-12-31" value={date}
           onChange={e=>{setDate(e.target.value);setResult(null);setOptResult(null);}}/>
       </label>
       {mode==='manual' ? <>
-        <label>Flight duration
+        <label>Flight duration <FieldHelp term="Flight duration"/>
           <input type="number" min="3" max="3000" step="5" value={flightDays}
             onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n))setFlightDays(Math.min(3000,Math.max(3,n)));setResult(null)}}/>
           <small>days (3–3000)</small>
         </label>
         <button type="button" className="launch-button" disabled={working} onClick={()=>solve()}>{working?'Computing…':'Solve with Orekit'} <span>↗</span></button>
       </> : <>
-        <label>Objective
+        <label>Objective <FieldHelp term="Objective"/>
           <select value={objective} onChange={e=>{setObjective(e.target.value as Objective);setOptResult(null);}}>
             <option value="total">Minimum departure + capture Δv</option>
             <option value="departure">Minimum Earth departure Δv</option>
@@ -308,20 +309,21 @@ export default function TransferPlanner({onSolved}:{onSolved:(solution:LambertSo
     </div>
     {mode==='optimize'&&<>
       <div className="transfer-opt-inputs">
-        <label>Minimum flight time (days)
+        <label>Minimum flight time (days) <FieldHelp term="Minimum flight time (days)"/>
           <input type="number" min="3" max="3000" value={minDays} onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setMinDays(n);setOptResult(null)}}}/>
         </label>
-        <label>Maximum flight time (days)
+        <label>Maximum flight time (days) <FieldHelp term="Maximum flight time (days)"/>
           <input type="number" min="3" max="3000" value={maxDays} onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setMaxDays(n);setOptResult(null)}}}/>
         </label>
-        <label>Coarse step (days)
+        <label>Coarse step (days) <FieldHelp term="Coarse step (days)"/>
           <input type="number" min="1" max="100" value={stepDays} onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setStepDays(n);setOptResult(null)}}}/>
         </label>
-        <label>Earth parking altitude (km)
+        <label>Earth parking altitude (km) <FieldHelp term="Earth parking altitude (km)"/>
           <input type="number" min="160" max="100000" step="50" value={earthAltitudeKm}
             onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setEarthAltitudeKm(n);setOptResult(null)}}}/>
         </label>
         <label>{target==='jupiter'?'Jupiter capture-orbit altitude (km)':'Target circular orbit altitude (km)'}
+          <FieldHelp term={target==='jupiter'?'Jupiter capture-orbit altitude (km)':'Target circular orbit altitude (km)'}/>
           <input type="number" min="150" max="1000000" step="100" value={arrivalAltitudeKm}
             onChange={e=>{const n=e.currentTarget.valueAsNumber;if(Number.isFinite(n)){setArrivalAltitudeKm(n);setOptResult(null)}}}/>
         </label>
