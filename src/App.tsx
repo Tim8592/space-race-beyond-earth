@@ -1,6 +1,9 @@
 import SubsystemLab from './SubsystemLab';
 import OrbitalLab from './OrbitalLab';
 import MissionLibrary from './MissionLibrary';
+import LearningLab from './LearningLab';
+import FieldHelp from './components/FieldHelp';
+import { descriptionFor } from './lib/fieldHelp';
 import { useEffect, useMemo, useState } from 'react';
 import {
   calculateVehicleMetrics,
@@ -141,9 +144,9 @@ function Field({
 }) {
   return (
     <label className="field">
-      <span className="field-header"><span>{title}</span><span className="field-current">{integer(value)} <small>{unit}</small></span></span>
+      <span className="field-header"><span>{title}<FieldHelp term={title}/></span><span className="field-current">{integer(value)} <small>{unit}</small></span></span>
       <input
-        type="range" min={min} max={max} step={step} value={value}
+        type="range" title={descriptionFor(title)} min={min} max={max} step={step} value={value}
         onChange={(event) => onChange(Number(event.target.value))}
       />
       <span className="field-limits"><span>{integer(min)} kg</span><span>{integer(max)} kg</span></span>
@@ -156,7 +159,7 @@ export default function App() {
   const { game, vehicle, missionId } = snapshot;
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'research'>('missions');
+  const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'>('missions');
   const contract = CONTRACTS.find((item) => item.id === missionId) ?? CONTRACTS[0];
   const metrics = useMemo(() => calculateVehicleMetrics(vehicle), [vehicle]);
   const buildCost = estimateBuildCostUsd(vehicle, game.engineBuildCounts[vehicle.engineId] ?? 0);
@@ -248,10 +251,10 @@ export default function App() {
           <div className="brand"><span className="brand-symbol"><span className="brand-orbit" /></span><div><strong>SPACE RACE</strong><small>BEYOND EARTH</small></div></div>
           <nav aria-label="Primary" className="game-tabs" role="tablist">
               {([
-                ['missions','Mission Control'],['systems','Spacecraft Builder'],['orbits','Orbital Map'],['library','Mission Library'],['research','Research & Roadmap'],
+                ['missions','Mission Control'],['systems','Spacecraft Builder'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>setActiveView(id)}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.5</span></div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.6</span></div>
         </div>
       </header>
 
@@ -318,9 +321,12 @@ export default function App() {
         {activeView==='systems' && <div className="single-tab-page"><SubsystemLab /></div>}
         {activeView==='orbits' && <div className="single-tab-page"><OrbitalLab initialAltitudeKm={contract.altitudeKm} /></div>}
         {activeView==='library' && <div className="single-tab-page"><MissionLibrary onOpenMap={()=>setActiveView('orbits')}/></div>}
+        {activeView==='learning' && <div className="single-tab-page">
+          <LearningLab onOpenBuilder={()=>setActiveView('systems')} onOpenOrbital={()=>setActiveView('orbits')}/>
+        </div>}
         <section className={'bottom-grid '+(activeView==='research'?'':'view-hidden')} id="roadmap"><div className="panel roadmap"><div className="eyebrow">BEYOND THE PROTOTYPE</div><h2>Your next frontier</h2><div className="roadmap-items"><div><span className="road-icon">◎</span><strong>Earth orbit</strong><small>Playable now</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">◐</span><strong>Lunar economy</strong><small>Planned</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">✧</span><strong>Mars transfers</strong><small>Planned</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">✦</span><strong>Outer planets</strong><small>Vision</small></div></div><p>Next: technology research, spacecraft production learning curves, fuel depots, transfer windows, and a competing space program.</p></div><div className="panel history"><div className="eyebrow">FLIGHT LOG</div><h2>Recent missions</h2>{game.history.length === 0 ? <p>No launches yet. Build a spacecraft and accept your first contract.</p> : <div className="history-list">{game.history.slice(0, 4).map((item) => <div key={item.id}><span className={item.success ? 'success-dot' : 'failed-dot'}>●</span><div><strong>{item.contract}</strong><small>Day {item.day} · {item.craft}</small></div><strong className={item.success ? 'green' : 'danger-text'}>{item.success ? '+' + usd(item.payout - item.cost) : '-' + usd(item.cost)}</strong></div>)}</div>}</div></section>
         <footer><div><span>SPACE RACE: BEYOND EARTH</span> · NASA Space Apps Challenge 2026 · Independently created prototype</div><div><button onClick={() => setShowHelp(!showHelp)}>{showHelp ? 'Hide notes' : 'Model limitations & credits'}</button><button onClick={reset}>Reset campaign</button></div></footer>
-        {showHelp && <div className="help-notes"><p><strong>Model limits:</strong> Only a simplified one-stage launcher and fictional contracts are implemented. Earth orbital speed and period use JPL's Earth gravitational parameter and NASA's Earth radius. Engine performance, budgets, mission thresholds, and manufacturing discounts are invented and must not be treated as real mission values. v0.3 includes idealized spacecraft subsystem calculations and Keplerian orbit visualization. It does not yet implement mission transfers, launch-window optimization, atmospheric flight, staging, nuclear reactor integration, or mission qualification.</p><p><strong>AI-assisted work:</strong> Initial source code, interface copy, and documentation were drafted with ChatGPT. See README.md and docs/ATTRIBUTION.md for disclosures. No NASA logos or mission insignia are used.</p></div>}
+        {showHelp && <div className="help-notes"><p><strong>Model limits:</strong> Only a simplified one-stage launcher and fictional contracts are implemented. Earth orbital speed and period use JPL's Earth gravitational parameter and NASA's Earth radius. Engine performance, budgets, mission thresholds, and manufacturing discounts are invented and must not be treated as real mission values. The in-space spacecraft lab includes approximate subsystem sizing, and the optional Orekit backend computes idealized impulsive planetary transfers. Historical mission tracks require a JPL Horizons connection. None of these models validate full mission feasibility, finite thrust, ascent, detailed shielding or actual flight hardware.</p><p><strong>AI-assisted work:</strong> Initial source code, interface copy, and documentation were drafted with ChatGPT. See README.md and docs/ATTRIBUTION.md for disclosures. No NASA logos or mission insignia are used.</p></div>}
       </main>
     </div>
   );
