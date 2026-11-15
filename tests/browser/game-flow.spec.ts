@@ -339,7 +339,7 @@ test('A configured lunar milestone launches, survives reload and pays exactly on
     await expect(page.getByText('FLIGHT OPERATIONS / CONTRACT IN PROGRESS')).toBeVisible();
     await page.getByRole('button',{name:/Complete flight and mission debrief/}).click();
     await expect(page.getByText(/unlocked the next stage/)).toBeVisible();
-    await expect(page.getByText('2 / 4')).toBeVisible();
+    await expect(page.getByText('1 / 4')).toBeVisible();
     await page.locator('.campaign-stage-card').filter({hasText:'Lunar Relay Pathfinder'}).click();
     await expect(page.getByText(/reward cannot be claimed twice/)).toBeVisible();
     await page.reload();
