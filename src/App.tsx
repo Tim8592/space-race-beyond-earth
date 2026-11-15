@@ -644,6 +644,9 @@ export default function App() {
       productionDiscount:missionTechnologyDiscount,
       completedWithLauncherEngine:game.engineBuildCounts[vehicle.engineId]??0,
       solvedTransfer:missionSolved,
+      launchService:game.rocketService,rocketProgramLevel:game.rocketProgramLevel,
+      orbitalAssemblyUnlocked:game.orbitalAssemblyUnlocked,
+      priorServiceFlights:game.rocketFlightCounts[game.rocketService]??0,
     });}catch{return null}
   },[campaignSelection.selected,game.day,campaignOptions,spacecraftDesign,vehicle,
     game.cash,game.engineBuildCounts,missionTechnologyDiscount,lastSolvedTransfer]);
