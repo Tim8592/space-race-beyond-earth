@@ -8,7 +8,9 @@ import ResearchLab from './ResearchLab';
 import References from './References';
 import {GAME_DAY_DURATION_MS,todayGameDay} from './lib/campaignClock';
 import CampaignMissions,{type CampaignRun,type CampaignDebrief} from './CampaignMissions';
-import {dateForGameDay,orbitalRoute,type CampaignDefinition,type MissionOptions,type SolvedCampaignTransfer} from './lib/campaignMissions';
+import {dateForGameDay,orbitalRoute,reviewCampaignMission,unlockedStage,DEFAULT_MISSION_OPTIONS,
+  type CampaignDefinition,type MissionOptions,type SolvedCampaignTransfer} from './lib/campaignMissions';
+import {resolveCampaignSelection} from './lib/campaignSelection';
 import type {LambertSolution} from './TransferPlanner';
 import {canResearch,TECHNOLOGIES, type TechnologyId,hasTechnology,
   THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,researchDiscount} from './lib/technologyTree';
@@ -204,6 +206,20 @@ export default function App() {
   const [observationResetKey,setObservationResetKey]=useState(0);
   const [secondsToNextDay,setSecondsToNextDay]=useState(Math.ceil(GAME_DAY_DURATION_MS/1000));
   const [spacecraftDesign,setSpacecraftDesign]=useState<SubsystemDesign>(readSubsystemDesign);
+  const [selectedCampaignId,setSelectedCampaignId]=useState(()=>{
+    try{return localStorage.getItem('space-race-selected-campaign-mission-v1')||'lunar'}
+    catch{return 'lunar'}
+  });
+  const [campaignOptions,setCampaignOptions]=useState<MissionOptions>(()=>{
+    try{
+      const saved=JSON.parse(localStorage.getItem('space-race-mission-workshop-v1')??'null') as Partial<MissionOptions>|null;
+      return {...DEFAULT_MISSION_OPTIONS,...saved};
+    }catch{return DEFAULT_MISSION_OPTIONS}
+  });
+  const unlockedCampaignStage=unlockedStage(game.storyCompleted,game.devMode);
+  const campaignSelection=useMemo(()=>resolveCampaignSelection(game.day,unlockedCampaignStage,
+    game.storyCompleted,selectedCampaignId),
+    [game.day,unlockedCampaignStage,game.storyCompleted,selectedCampaignId]);
   const contract = CONTRACTS.find((item) => item.id === missionId) ?? CONTRACTS[0];
   const metrics = useMemo(() => calculateVehicleMetrics(vehicle), [vehicle]);
   const buildCost = estimateBuildCostUsd(vehicle, game.engineBuildCounts[vehicle.engineId] ?? 0);
@@ -241,6 +257,12 @@ export default function App() {
     try { localStorage.setItem('space-race-systems-lab-v1',JSON.stringify(spacecraftDesign)); }
     catch { /* optional browser persistence */ }
   },[spacecraftDesign]);
+  useEffect(()=>{
+    try{
+      localStorage.setItem('space-race-selected-campaign-mission-v1',selectedCampaignId);
+      localStorage.setItem('space-race-mission-workshop-v1',JSON.stringify(campaignOptions));
+    }catch{/* storage optional */}
+  },[selectedCampaignId,campaignOptions]);
 
   function investResearch(id:TechnologyId){
     const tech=TECHNOLOGIES.find(t=>t.id===id);
@@ -377,6 +399,16 @@ export default function App() {
       arrivalVInfinityKmS:lastSolvedTransfer.arrivalVInfinityKmS,
       eccentricity:lastSolvedTransfer.eccentricity}:null;
 
+  const selectedCampaignReview=useMemo(()=>{
+    try{return reviewCampaignMission({
+      definition:campaignSelection.selected,day:game.day,options:campaignOptions,
+      spacecraft:spacecraftDesign,launcher:vehicle,capitalUsd:game.cash,
+      productionDiscount:missionTechnologyDiscount,
+      completedWithLauncherEngine:game.engineBuildCounts[vehicle.engineId]??0,
+      solvedTransfer:missionSolved,
+    });}catch{return null}
+  },[campaignSelection.selected,game.day,campaignOptions,spacecraftDesign,vehicle,
+    game.cash,game.engineBuildCounts,missionTechnologyDiscount,lastSolvedTransfer]);
   function startEarthObservation(costUsd:number){
     setSnapshot(previous=>({...previous,game:{
       ...previous.game,
@@ -422,6 +454,8 @@ export default function App() {
   function reset() {
     if (!window.confirm('Start over? This clears your locally saved campaign and blueprints.')) return;
     setSnapshot({ game: {...DEFAULT_GAME,day:todayGameDay()}, vehicle: INITIAL_VEHICLE, missionId: 'cargo' });
+    setSelectedCampaignId('lunar');
+    setCampaignOptions({...DEFAULT_MISSION_OPTIONS});
     try {localStorage.removeItem('space-race-observation-one-v1');
       localStorage.removeItem('space-race-mission-workshop-v1')}catch{/* optional storage */}
     setLastSolvedTransfer(null);
@@ -444,7 +478,7 @@ export default function App() {
                 ['missions','Play Campaign'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>setActiveView(id)}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.1</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.2</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
       </header>
 
@@ -463,7 +497,7 @@ export default function App() {
 
         {activeView==='missions'&&<div className="campaign-live-clock" role="status">
           <strong>LIVE AGENCY CLOCK</strong> · {dateForGameDay(game.day)}
-          <span>7 game days / minute · next day in {secondsToNextDay}s · pauses when hidden</span>
+          <span>1 game day / 2 minutes · next day in {secondsToNextDay}s · pauses when hidden</span>
         </div>}
         {activeView==='missions'&&<div className="campaign-switch" role="tablist" aria-label="Campaign mission mode">
           <button type="button" role="tab" aria-selected={campaignMode==='observation'}
@@ -486,7 +520,11 @@ export default function App() {
             lockedTechnologies={lockedLabParts}
             onComplete={completeEarthObservation}/>}
         {activeView==='missions'&&campaignMode==='progression'&&
-          <CampaignMissions day={game.day} cash={game.cash}
+          <CampaignMissions selected={campaignSelection.selected}
+            agencyOffers={campaignSelection.agency} scheduled={campaignSelection.special}
+            onSelectedIdChange={setSelectedCampaignId}
+            options={campaignOptions} onOptionsChange={setCampaignOptions}
+            day={game.day} cash={game.cash}
             completed={game.storyCompleted} devMode={game.devMode}
             spacecraft={spacecraftDesign} launcher={vehicle}
             productionDiscount={missionTechnologyDiscount}
@@ -546,12 +584,17 @@ export default function App() {
         </div>
 
         {activeView==='systems' && <div className="single-tab-page">
-          <div className="lab-back"><span>ENGINEERING LAB · same spacecraft as Earth Observation One</span>
+          <div className="lab-back"><span>ENGINEERING LAB · linked to {campaignSelection.selected.title}</span>
             <button className="secondary-button" onClick={()=>{
-              setActiveView('missions');setCampaignMode('observation');
-            }}>Return to mission design →</button>
+              setActiveView('missions');setCampaignMode('progression');
+            }}>Return to selected mission →</button>
           </div>
           <SubsystemLab design={spacecraftDesign} onDesignChange={setSpacecraftDesign}
+            mission={{definition:campaignSelection.selected,review:selectedCampaignReview,
+              stageUnlocked:unlockedCampaignStage,completed:game.storyCompleted.includes(campaignSelection.selected.id),
+              lockedTechnologyCount:lockedLabParts.length,
+              activeFlight:!!game.activeStoryRun,gameDay:game.day}}
+            onReturnToMission={()=>{setActiveView('missions');setCampaignMode('progression')}}
             unlockedTechnologies={effectiveUnlocks} devMode={game.devMode}/>
         </div>}
         {activeView==='orbits' && <div className="single-tab-page">
