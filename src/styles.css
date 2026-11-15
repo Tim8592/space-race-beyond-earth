@@ -369,3 +369,94 @@
 .heritage-concept-note p{font-size:12px;line-height:1.7;color:#b5cde0}
 @media(max-width:940px){.sys-live-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.sys-tank-grid{grid-template-columns:1fr}}
 @media(max-width:580px){.sys-live-strip,.sys-architecture,.sys-sensor-card{grid-template-columns:1fr}.sys-architecture p{grid-column:auto}.sys-sensor-numbers{border-left:0;border-top:1px solid #415970;padding:14px 0 0;grid-template-columns:repeat(3,1fr)}.sys-tank-card>div:not(.sys-chip){flex-wrap:wrap}}
+
+/* v0.9 — Research, agency progression and orbital flight animation */
+.research-lab{display:flex;flex-direction:column;gap:17px;margin-bottom:18px}
+.research-intro{display:flex;align-items:center;justify-content:space-between;gap:30px;background:linear-gradient(126deg,#142f49,#111e34);border-color:#4a7090}
+.research-intro h2,.research-missions h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(25px,3vw,36px);color:#f0f6ff;margin:10px 0}
+.research-intro p,.research-missions>p{font-size:13px;line-height:1.8;color:#aac6d9;max-width:780px;margin:0}
+.research-intro-side{display:grid;grid-template-columns:1fr;gap:6px;min-width:170px;padding:18px;border-radius:10px;background:#0b2036;border:1px solid #45647e}
+.research-intro-side span{color:#92b8cf;letter-spacing:1px;font-size:9px;font-weight:800}
+.research-intro-side strong{font-family:'Space Grotesk',sans-serif;color:#f1d1a1;font-size:23px;margin-bottom:9px;font-variant-numeric:tabular-nums}
+.research-dev-banner{display:flex;align-items:center;justify-content:space-between;gap:20px;background:linear-gradient(118deg,#1a293e,#182d45);border:1px solid #766851}
+.research-dev-banner h3{color:#ffe1ad;font-family:'Space Grotesk',sans-serif;margin:6px 0 9px;font-size:22px}
+.research-dev-banner p{font-size:11px;color:#c8d6e5;max-width:710px;line-height:1.8;margin:0}
+.research-dev-banner p strong{color:#efc997}
+.dev-toggle{border:1px solid #88a5b9;background:#263a50;border-radius:9px;padding:15px 24px;white-space:nowrap;font-size:13px;letter-spacing:.4px;font-weight:800;color:#e1edf8;transition:background .2s ease}
+.dev-toggle.enabled{background:#385d48;border-color:#7ccc9a;color:#e0ffe7;box-shadow:0 0 19px #77dcb01c}
+.dev-indicator{color:#a6f5b9;font-weight:900;font-size:9px;letter-spacing:.4px}
+.research-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0}
+.research-tabs button{background:#14293f;border:1px solid #38566f;border-radius:8px;padding:10px 16px;color:#bed5e5;font-size:12px;font-weight:800}
+.research-tabs button[aria-selected="true"]{background:#285379;color:#fff;border-color:#8dd0ed}
+.research-node-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.research-node{min-width:0;background:linear-gradient(147deg,#142840,#0d1f32);border:1px solid #355673;border-radius:12px;padding:19px;display:flex;flex-direction:column;gap:11px;position:relative}
+.research-node.locked{border-color:#3a4d61;opacity:.91}
+.research-node.researched{border-color:#638b85;background:linear-gradient(147deg,#1a3c4a,#102b3c)}
+.research-node-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.research-status{font-size:10px;font-weight:800;color:#d7b787}
+.research-node.researched .research-status{color:#9fe6c6}
+.research-node h3{font-family:'Space Grotesk';font-size:18px;color:#f2f5fa;margin:2px 0}
+.research-node>p{font-size:11px;line-height:1.65;color:#a9c3d6;margin:0}
+.research-economics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.research-economics>div{background:#0d1f31;border:1px solid #304961;border-radius:7px;padding:10px 7px;min-width:0;display:flex;flex-direction:column;gap:9px}
+.research-economics span{font-size:8px;color:#a1bdd1;line-height:1.35;font-weight:800;letter-spacing:.4px}
+.research-economics b{font-family:'Space Grotesk';color:#efd3a9;font-size:14px}
+.research-risk{display:flex;flex-direction:column;gap:6px;background:#253246;border-left:3px solid #d8b171;padding:9px 10px}
+.research-risk b{font-size:10px;color:#efcc99;text-transform:uppercase}
+.research-risk small{color:#bfd1df;font-size:10px;line-height:1.6}
+.research-unlocks{border-top:1px solid #34506a;padding-top:10px}
+.research-prereq{color:#e5c08d!important}
+.research-node>a{color:#a2d7fa;text-decoration:underline;font-size:11px}
+.research-node>.secondary-button{margin-top:auto;min-height:40px;font-size:11px}
+.research-node>.secondary-button:disabled{opacity:.5}
+.research-missions{background:#102840}
+.research-mission-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:20px}
+.research-mission-card{border:1px solid #435f79;border-radius:10px;background:#17293d;padding:15px;min-width:0}
+.research-mission-card.active{border-color:#83c5b5;background:#1d3e42}
+.research-mission-card>div{display:flex;flex-direction:column;gap:8px}
+.research-mission-card>div b{font-size:9px;color:#e8cd9f;letter-spacing:.4px}
+.research-mission-card>div span{font-size:9px;letter-spacing:.6px;color:#87b6cc}
+.research-mission-card h3{font-family:'Space Grotesk';font-size:16px;color:#eaf4fc;margin:15px 0 8px}
+.research-mission-card p{font-size:11px;color:#b5cdde;line-height:1.7}
+.research-mission-card small{display:block;font-size:10px;color:#85bad2;line-height:1.5;border-top:1px solid #34526a;padding-top:10px;margin-top:15px}
+.research-legal{font-size:10px;line-height:1.8;color:#90aec4;margin:0}
+.research-legal a{text-decoration:underline}
+.sys-reactor-thermal{margin:18px 0;border:1px solid #8c6445;background:linear-gradient(145deg,#2f2b30,#16263a);border-radius:12px;padding:20px}
+.sys-reactor-thermal h4{font-family:'Space Grotesk';font-size:22px;color:#ffe0ad;margin:8px 0}
+.sys-reactor-thermal>p{font-size:12px;line-height:1.75;color:#d1c0b0}
+.sys-reactor-ledger{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0}
+.sys-reactor-ledger>div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;background:#1b2d3d;border:1px solid #52616e;border-radius:8px;min-width:0}
+.sys-reactor-ledger span{font-size:10px;line-height:1.4;color:#bdd0dc}
+.sys-reactor-ledger strong{color:#f1d2a6;font-family:'Space Grotesk';font-size:15px;white-space:nowrap}
+.sys-reactor-ledger>div.over{background:#432e30;border-color:#ba7771}
+.sys-reactor-ledger>div.ok{background:#1e4039;border-color:#75b09c}
+.sys-reactor-ledger>div.unknown{border-color:#91866b}
+.ob-research-economics,.ob-risk-review{background:#11283e;border:1px solid #3a5974;border-radius:9px;padding:17px;margin:15px 0}
+.ob-research-economics>.eyebrow{margin-bottom:10px}
+.ob-research-economics>div:not(.eyebrow){display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #344d62;font-size:11px}
+.ob-research-economics span{color:#b4ccdd}
+.ob-research-economics strong{color:#f1d5a7;font-variant-numeric:tabular-nums}
+.ob-research-economics>div.total{font-weight:800;border:0;padding-top:14px}
+.ob-research-economics p,.ob-risk-review p{font-size:11px;line-height:1.7;color:#adc7d8}
+.ob-risk-review>div{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.ob-risk-review>div span{font-size:10px;letter-spacing:.8px;color:#a4c2d8;font-weight:900}
+.ob-risk-review>div strong{font-family:'Space Grotesk';font-size:17px;color:#eecb9f}
+.ob-risk-review small{font-size:10px;color:#8ca9c0;line-height:1.6}
+.ob-research-lock{border:1px solid #c27c70;border-radius:7px;padding:13px;background:#352a33;color:#ffc6ad;font-size:12px;line-height:1.55}
+.mission-orbit-scene{background:radial-gradient(ellipse at 35% 50%,#13334d,#081829 75%);border:1px solid #325875;border-radius:13px;overflow:hidden;margin:18px 0 23px}
+.mission-orbit-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:16px 22px 0}
+.mission-orbit-head h4{font-family:'Space Grotesk';color:#f1f6ff;font-size:20px;margin:7px 0}
+.orbit-live-pill{font-size:9px;font-weight:900;letter-spacing:1px;color:#a8e6d3;padding:8px;border:1px solid #387a6c;border-radius:7px;white-space:nowrap}
+.mission-orbit-svg{display:block;width:100%;height:auto;max-height:430px}
+.mission-orbit-rotor{animation:missionSatelliteOrbit 14s linear infinite}
+.mission-orbit-rotor.paused{animation-play-state:paused}
+.mission-imaging-cone{animation:missionCameraPulse 2s ease-in-out infinite}
+.mission-orbit-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-top:1px solid #24455e;padding:12px 21px;font-size:10px;color:#9dbece;letter-spacing:.4px}
+.mission-orbit-foot b{color:#efcfa0}
+.mission-orbit-pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:#6be7c5;box-shadow:0 0 10px #6be7c5;margin-right:5px}
+@keyframes missionSatelliteOrbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes missionCameraPulse{0%,100%{opacity:.2}50%{opacity:.55}}
+@media (max-width:1100px){.research-node-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.research-mission-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:700px){.research-node-grid,.sys-reactor-ledger{grid-template-columns:1fr}.research-intro,.research-dev-banner{flex-direction:column;align-items:stretch}.research-mission-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.research-mission-grid{grid-template-columns:1fr}.research-economics{grid-template-columns:1fr}.research-economics>div{flex-direction:row;align-items:center;justify-content:space-between}.mission-orbit-head{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.mission-orbit-rotor,.mission-imaging-cone{animation:none!important}}
