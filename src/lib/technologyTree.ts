@@ -3,7 +3,6 @@
  * a NASA-certified TRL rating for any particular hardware configuration.
  * NASA TRL definitions: https://www.nasa.gov/directorates/somd/space-communications-navigation-program/technology-readiness-levels/
  */
-import {researchPointsCost} from './programEconomy';
 export type TechnologyId =
   'precision-imaging'|'ion-electric'|'hall-power'|'advanced-ion'|'high-power-hall'|
   'radioisotope-power'|'fission-power'|'reactor-25kwe'|
@@ -86,6 +85,9 @@ export const INSTRUMENT_RESEARCH:Readonly<Record<string,TechnologyId|undefined>>
 };
 export function hasTechnology(id:TechnologyId|undefined,unlocked:readonly TechnologyId[],devMode:boolean):boolean {
   return !id||devMode||unlocked.includes(id);
+}
+export function researchPointsCost(researchUsd:number):number{
+  return Math.max(2,Math.ceil(researchUsd/4e6));
 }
 export function canResearch(id:TechnologyId,unlocked:readonly TechnologyId[],fundingUsd:number,researchPoints=Infinity):boolean {
   const tech=TECHNOLOGIES.find(x=>x.id===id);
