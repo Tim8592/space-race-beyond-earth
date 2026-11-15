@@ -24,13 +24,8 @@ import {resolveCampaignSelection} from './lib/campaignSelection';
 import type {LambertSolution} from './TransferPlanner';
 import {canResearch,TECHNOLOGIES, type TechnologyId,hasTechnology,
   THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,researchDiscount} from './lib/technologyTree';
-import FieldHelp from './components/FieldHelp';
-import { descriptionFor } from './lib/fieldHelp';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  calculateVehicleMetrics,
-  ENGINES,
-  estimateBuildCostUsd,
   INITIAL_VEHICLE,
   type EngineId,
   type Vehicle,
@@ -88,7 +83,6 @@ const CONTRACTS: Contract[] = [
 
 const INITIAL_CASH = 350_000_000;
 const STORAGE_KEY = 'space-race-v01-save';
-const minimumTwr = 1.15;
 
 type HistoryItem = {
   id: number;
@@ -228,31 +222,6 @@ function decimal(value: number, digits = 1) {
 function CheckIcon({ good }: { good: boolean }) {
   return <span className={good ? 'check yes' : 'check no'} aria-hidden="true">{good ? '✓' : '!'}</span>;
 }
-function Field({
-  title, value, unit, min, max, step, onChange,
-}: {
-  title: string; value: number; unit: string; min: number; max: number; step: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <label className="field">
-      <span className="field-header"><span>{title}<FieldHelp term={title}/></span><span className="field-current">{integer(value)} <small>{unit}</small></span></span>
-      <input
-        type="range" title={descriptionFor(title)} min={min} max={max} step={step} value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-      <span className="field-limits"><span>{integer(min)} kg</span><span>{integer(max)} kg</span></span>
-    </label>
-  );
-}
-
-function readObservationChoices():ObservationChoices{
-  try{
-    const saved=JSON.parse(localStorage.getItem('space-race-observation-one-v1')??'null') as
-      {choices?:Partial<ObservationChoices>}|null;
-    return {...DEFAULT_OBSERVATION,...saved?.choices};
-  }catch{return DEFAULT_OBSERVATION}
-}
 export default function App() {
   const [snapshot, setSnapshot] = useState<Snapshot>(loadSave);
   const { game, vehicle, missionId } = snapshot;
@@ -287,14 +256,16 @@ export default function App() {
     game.storyCompleted,selectedCampaignId),
     [game.day,unlockedCampaignStage,game.storyCompleted,selectedCampaignId]);
   const contract = CONTRACTS.find((item) => item.id === missionId) ?? CONTRACTS[0];
-  const metrics = useMemo(() => calculateVehicleMetrics(vehicle), [vehicle]);
-  const buildCost = estimateBuildCostUsd(vehicle, game.engineBuildCounts[vehicle.engineId] ?? 0);
-  const valid = [metrics.deltaVms, metrics.liftoffTwr, buildCost].every(Number.isFinite);
-  const payloadOK = valid && vehicle.payloadMassKg >= contract.requiredPayloadKg;
-  const deltaVOK = valid && metrics.deltaVms >= contract.requiredDeltaVms;
-  const thrustOK = valid && metrics.liftoffTwr >= minimumTwr;
-  const sufficientCash = game.cash >= buildCost;
-  const ready = payloadOK && deltaVOK && thrustOK;
+  const selectedServiceQuote=flightService({
+    service:game.rocketService,vehicle,tier:game.rocketProgramLevel,
+    priorFlights:game.rocketFlightCounts[game.rocketService]??0,
+    canadianSuccesses:game.canadianMissionSuccesses});
+  const buildCost=selectedServiceQuote.costUsd;
+  const valid=Number.isFinite(buildCost)&&selectedServiceQuote.available;
+  const payloadOK=valid&&selectedServiceQuote.capacityKg>=contract.requiredPayloadKg;
+  const sufficientCash=game.cash>=buildCost;
+  const ready=payloadOK&&sufficientCash&&
+    !game.activeStoryRun&&!game.activeMoonCargoRun&&!game.activeAssemblyProject;
   const successfulLaunches = game.completed;
   const latest = game.history[0];
   const dailyBudget=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject));
@@ -453,59 +424,51 @@ export default function App() {
     INSTRUMENT_RESEARCH[spacecraftDesign.payloadInstrumentId],
   ].filter((id):id is TechnologyId=>!!id&&!hasTechnology(id,game.researchUnlocked,game.devMode));
 
-  function updateVehicle(patch: Partial<Vehicle>) {
-    setSnapshot((previous) => ({ ...previous, vehicle: { ...previous.vehicle, ...patch } }));
-    setMessage(null);
-  }
   function chooseContract(id: MissionId) {
     setSnapshot((previous) => ({ ...previous, missionId: id }));
     setMessage(null);
   }
-  function saveBlueprint() {
-    if (!vehicle.name.trim()) return;
-    setSnapshot((previous) => ({
-      ...previous,
-      game: {
-        ...previous.game,
-        blueprints: [...previous.game.blueprints.filter((item) => item.name !== vehicle.name), { ...vehicle }].slice(-10),
-      },
-    }));
-    setMessage(`Blueprint “${vehicle.name}” saved locally. You can reload it at any time.`);
-  }
   function launch() {
-    if (!valid || !sufficientCash) return;
-    const success = ready;
-    const event: HistoryItem = {
-      id: Date.now(),
-      day: game.day,
-      contract: contract.label,
-      craft: vehicle.name || 'Unnamed vehicle',
-      success,
-      cost: buildCost,
-      payout: success ? contract.payoutUsd : 0,
-      deliveredKg: success ? vehicle.payloadMassKg : 0,
-    };
-    setSnapshot((previous) => ({
-      ...previous,
-      game: {
-        ...advanceProgramDay(previous.game,contract.durationDays),
-        cash:advanceProgramDay(previous.game,contract.durationDays).cash-buildCost+event.payout,
-        researchPoints:advanceProgramDay(previous.game,contract.durationDays).researchPoints+(success?2:0),
-        day:previous.game.day+contract.durationDays,
-        completed: previous.game.completed + Number(success),
-        launched: previous.game.launched + 1,
-        deliveredKg: previous.game.deliveredKg + event.deliveredKg,
-        revenue: previous.game.revenue + event.payout,
-        engineBuildCounts: {
-          ...previous.game.engineBuildCounts,
-          [vehicle.engineId]: (previous.game.engineBuildCounts[vehicle.engineId] ?? 0) + 1,
-        },
-        history: [event, ...previous.game.history].slice(0, 12),
-      },
-    }));
-    setMessage(success
-      ? `${contract.label} complete. ${integer(vehicle.payloadMassKg)} kg delivered; ${usd(contract.payoutUsd)} contract revenue received.`
-      : `Mission unsuccessful. Your design did not meet every requirement. ${usd(buildCost)} was spent on the attempt.`);
+    const quote=flightService({
+      service:game.rocketService,vehicle,tier:game.rocketProgramLevel,
+      priorFlights:game.rocketFlightCounts[game.rocketService]??0,
+      canadianSuccesses:game.canadianMissionSuccesses,
+    });
+    if(!quote.available||quote.capacityKg<contract.requiredPayloadKg||
+      game.cash<quote.costUsd||game.activeStoryRun||game.activeMoonCargoRun||
+      game.activeAssemblyProject)return;
+    setSnapshot(previous=>{
+      const g=previous.game;
+      if(g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject)return previous;
+      const selected=flightService({
+        service:g.rocketService,vehicle:previous.vehicle,tier:g.rocketProgramLevel,
+        priorFlights:g.rocketFlightCounts[g.rocketService]??0,
+        canadianSuccesses:g.canadianMissionSuccesses,
+      });
+      if(!selected.available||selected.capacityKg<contract.requiredPayloadKg||
+         g.cash<selected.costUsd)return previous;
+      const success=true;
+      const event:HistoryItem={
+        id:Date.now(),day:g.day,contract:contract.label,
+        craft:selected.label,success,cost:selected.costUsd,payout:contract.payoutUsd,
+        deliveredKg:contract.requiredPayloadKg,
+      };
+      const advanced=advanceProgramDay(g,contract.durationDays);
+      return {...previous,game:{...advanced,
+        cash:advanced.cash-selected.costUsd+contract.payoutUsd,
+        researchPoints:advanced.researchPoints+2+
+          (g.rocketService==='custom'?CANADIAN_RESEARCH_BONUS_RP:0),
+        canadianMissionSuccesses:g.canadianMissionSuccesses+(g.rocketService==='custom'?1:0),
+        launched:g.launched+1,completed:g.completed+1,
+        deliveredKg:g.deliveredKg+contract.requiredPayloadKg,
+        revenue:g.revenue+contract.payoutUsd,
+        rocketFlightCounts:{...g.rocketFlightCounts,
+          [g.rocketService]:(g.rocketFlightCounts[g.rocketService]??0)+1},
+        history:[event,...g.history].slice(0,12),
+      }};
+    });
+    setMessage(contract.label+' delivered. Launcher invoice charged, customer payout received. '+
+      (game.rocketService==='custom'?'Canadian rocket flight experience earned.':'No Canadian rocket development credit from external launch.'));
   }
   function startCampaignMission(run:CampaignRun){
     setSnapshot(previous=>{
@@ -864,33 +827,38 @@ export default function App() {
         <div className={'control-layout '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')} id="mission-control">
           <div className="left-column">
             <section className="panel" id="builder">
-              <div className="panel-heading"><div><div className="eyebrow">01 / LAUNCH VEHICLE DESIGN</div><h2>Launch Rocket Builder</h2><p>Configure the launch rocket that carries your spacecraft. This mass and engine selection also feed the guided Earth Observation mission.</p></div><div className="panel-glyph">◈</div></div>
-              <div className="builder-name"><label htmlFor="craft-name">VEHICLE NAME</label><input id="craft-name" value={vehicle.name} maxLength={40} onChange={(event) => updateVehicle({ name: event.target.value })}/></div>
-              <div className="section-label">PROPULSION SYSTEM <span>SELECT ONE</span></div>
-              <div className="engine-grid">
-                {(Object.keys(ENGINES) as EngineId[]).map((id) => {
-                  const engine = ENGINES[id];
-                  return <button key={id} className={'engine-card ' + (id === vehicle.engineId ? 'selected' : '')} onClick={() => updateVehicle({ engineId: id })} aria-pressed={id === vehicle.engineId}>
-                    <span className="engine-select">{id === vehicle.engineId ? '●' : '○'}</span><strong>{engine.label}</strong><small>{integer(engine.ispSeconds)} s Isp</small><span className="engine-subtitle">{engine.subtitle}</span>
-                  </button>;
-                })}
+              <div className="panel-heading"><div>
+                <div className="eyebrow">01 / FIXED LAUNCH SYSTEMS</div>
+                <h2>Rocket vehicle procurement</h2>
+                <p>Launcher mass and payload capacity are preset by the technology generation.
+                  Changing old saved rocket blueprint numbers cannot increase orbit capacity.
+                  Upgrade Canadian rockets in the fleet roadmap, or buy an external launch contract.</p>
+              </div></div>
+              <div className="rocket-return-stats">
+                <span>Selected vehicle <strong>{selectedServiceQuote.label}</strong></span>
+                <span>Modeled payload limit <strong>{integer(selectedServiceQuote.capacityKg)} kg LEO</strong></span>
+                <span>One actual launch invoice <strong>{usd(buildCost)}</strong></span>
+                <span>Canadian flight R&D <strong>{game.rocketService==='custom'?'Yes, on successful mission':'No'}</strong></span>
               </div>
-              <div className="section-label top-space">MASS CONFIGURATION <span>ADJUST PARAMETERS</span></div>
-              <Field title="Dry mass" value={vehicle.dryMassKg} unit="kg" min={5000} max={35000} step={500} onChange={(value) => updateVehicle({ dryMassKg: value })}/>
-              <Field title="Propellant mass" value={vehicle.propellantMassKg} unit="kg" min={80000} max={450000} step={5000} onChange={(value) => updateVehicle({ propellantMassKg: value })}/>
-              <Field title="Payload mass" value={vehicle.payloadMassKg} unit="kg" min={500} max={15000} step={500} onChange={(value) => updateVehicle({ payloadMassKg: value })}/>
-              <div className="blueprint-bar"><button className="secondary-button" onClick={saveBlueprint}>+ Save blueprint</button>{game.blueprints.length > 0 && <select aria-label="Load saved blueprint" value="" onChange={(event) => {const selected = game.blueprints.find((item) => item.name === event.target.value); if(selected) updateVehicle({ ...selected });}}><option value="">Load saved design…</option>{game.blueprints.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select>}</div>
+              <button type="button" className="secondary-button" style={{marginTop:15}}
+                onClick={()=>setActiveView('rockets')}>Select rocket and develop the Canadian fleet ↗</button>
             </section>
-
-             
-
             <section className="panel metrics-panel">
-              <div className="panel-heading"><div><div className="eyebrow">02 / PERFORMANCE</div><h2>Engineering Analysis</h2><p>Live estimates using the ideal rocket equation.</p></div><span className="formula">Δv = Isp · g₀ · ln(m₀/mf)</span></div>
-              <div className="metrics-grid"><div><span>AVAILABLE ΔV</span><strong>{integer(metrics.deltaVms)} <small>m/s</small></strong></div><div><span>LIFTOFF THRUST / WEIGHT</span><strong>{decimal(metrics.liftoffTwr, 2)} <small>TWR</small></strong></div><div><span>INITIAL MASS</span><strong>{integer(metrics.initialMassKg)} <small>kg</small></strong></div><div><span>SPECIFIC IMPULSE</span><strong>{integer(metrics.ispSeconds)} <small>s</small></strong></div></div>
-              <div className="engineering-note"><span>ℹ</span><p><strong>Engineering simplification:</strong> One idealized stage, constant Isp and thrust. ΔV uses Tsiolkovsky; mission thresholds include a rough gameplay allowance for ascent losses. Not a real flight feasibility prediction.</p></div>
+              <div className="panel-heading"><div>
+                <div className="eyebrow">02 / SERVICE CONTRACT</div>
+                <h2>Modeled transport constraints</h2>
+                <p>Orbital delivery is an assumed service capability capped by your
+                  selected generation—not a slider-controlled ideal rocket equation.</p></div></div>
+              <div className="metrics-grid">
+                <div><span>DELIVERY LIMIT</span><strong>{integer(selectedServiceQuote.capacityKg)} <small>kg</small></strong></div>
+                <div><span>PER LAUNCH COST</span><strong>{usd(buildCost)}</strong></div>
+              </div>
+              <div className="engineering-note"><span>ℹ</span><p>
+                Supplier payload capacities are planning assumptions or unproven
+                development targets, not flight-qualified ascent designs.
+                The spacecraft's actual wet mass is independently reviewed in Explore Further.</p></div>
             </section>
           </div>
-
           <div className="right-column">
             <section className="panel mission-panel">
               <div className="panel-heading"><div><div className="eyebrow">03 / MISSION CONTROL</div><h2>Available Contracts</h2><p>Earn funding by delivering payload to orbit.</p></div><div className="panel-glyph">⌁</div></div>
@@ -899,10 +867,16 @@ export default function App() {
 
             <section className="panel launch-panel">
               <div className="panel-heading compact-heading"><div><div className="eyebrow">04 / FLIGHT REVIEW</div><h2>Launch Readiness</h2></div><span className={'status-tag ' + (ready ? 'ready' : 'blocked')}>{ready ? '● DESIGN READY' : '● REVIEW REQUIRED'}</span></div>
-              <div className="readiness-list"><div><span><CheckIcon good={payloadOK}/> Payload capacity</span><strong>{integer(vehicle.payloadMassKg)} / {integer(contract.requiredPayloadKg)} kg</strong></div><div><span><CheckIcon good={deltaVOK}/> ΔV capability</span><strong>{integer(metrics.deltaVms)} / {integer(contract.requiredDeltaVms)} m/s</strong></div><div><span><CheckIcon good={thrustOK}/> Initial thrust / weight</span><strong>{decimal(metrics.liftoffTwr, 2)} / {minimumTwr.toFixed(2)}</strong></div><div><span><CheckIcon good={sufficientCash}/> Budget available</span><strong>{usd(game.cash)} / {usd(buildCost)}</strong></div></div>
+              <div className="readiness-list"><div><span><CheckIcon good={payloadOK}/> Provider payload allocation</span><strong>{integer(selectedServiceQuote.capacityKg)} / {integer(contract.requiredPayloadKg)} kg</strong></div>
+                <div><span><CheckIcon good={sufficientCash}/> Rocket invoice funded</span><strong>{usd(game.cash)} / {usd(buildCost)}</strong></div>
+                <div><span><CheckIcon good={!game.activeStoryRun&&!game.activeMoonCargoRun&&!game.activeAssemblyProject}/> Flight operations available</span><strong>{ready?'Ready':'Existing mission/assembly in progress'}</strong></div></div>
               <div className="financials"><div><span>EST. VEHICLE COST</span><strong>{usd(buildCost)}</strong></div><div><span>MISSION PAYOUT</span><strong className="green">+{usd(contract.payoutUsd)}</strong></div><div><span>EXPECTED MARGIN IF SUCCESSFUL</span><strong className={contract.payoutUsd >= buildCost ? 'green' : 'danger-text'}>{usd(contract.payoutUsd - buildCost)}</strong></div></div>
-              <button className="launch-button" onClick={launch} disabled={!valid || !sufficientCash}>{ready ? 'Launch mission' : 'Attempt mission anyway'}<span>↗</span></button>
-              {!ready && <p className="warning-caption">Attempting a mission below the requirements will spend the vehicle cost and fail. Adjust your design first.</p>}
+              <button className="launch-button" onClick={launch} disabled={!ready}>
+                {ready?'Purchase launch and deliver mission':'Increase launcher generation or funds first'}<span>↗</span>
+              </button>
+              {!ready&&<p className="warning-caption">This mission cannot be attempted
+                without its real mass allowance, an idle operations slot and enough cash.
+                Invest in Canadian rocket generations or choose a larger external service.</p>}
               {message && <div className={'feedback ' + (latest?.success && message.includes('complete') ? 'positive' : '')} role="status">{message}</div>}
             </section>
           </div>
