@@ -535,6 +535,17 @@ export default function App() {
             unlockedTechnologies={effectiveUnlocks} devMode={game.devMode}/>
         </div>}
         {activeView==='orbits' && <div className="single-tab-page">
+          {orbitalSelection&&<div className="campaign-orbit-return panel">
+            <div><div className="eyebrow">MISSION TRAJECTORY WORKSHOP</div>
+              <p>The selected departure is <strong>{dateForGameDay(orbitalSelection.day)}</strong>.
+                For Mars and Jupiter, solve or optimize an Orekit Lambert arc below to feed its
+                impulsive departure/arrival energy back into the live campaign feasibility review.
+                For Earth ellipse missions, the orbital elements use the same two-body Kepler model.</p>
+            </div>
+            <button className="secondary-button" onClick={()=>{setActiveView('missions');setCampaignMode('progression')}}>
+              Return to mission review →
+            </button>
+          </div>}
           <OrbitalLab key={orbitalSelection?orbitalSelection.day+'-'+orbitalSelection.mode:'default'}
             initialMode={orbitalSelection?.mode??'earth'}
             initialDayOffset={(orbitalSelection?.day??1)-1}
