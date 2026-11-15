@@ -1,10 +1,13 @@
 import {describe,it,expect} from 'vitest';
 import {TECHNOLOGIES,canResearch,hasTechnology,researchDiscount,missionRiskSummary} from './technologyTree';
 describe('research and risk economics',()=>{
-  it('requires prerequisites, available cash and a purchased node',()=>{
-    expect(canResearch('advanced-ion',[],100_000_000)).toBe(false);
-    expect(canResearch('advanced-ion',['ion-electric'],100_000_000)).toBe(true);
-    expect(canResearch('advanced-ion',['ion-electric'],1_000_000)).toBe(false);
+  it('requires prerequisites AND money AND sufficient research points',()=>{
+    expect(canResearch('advanced-ion',[],100_000_000,100)).toBe(false);
+    expect(canResearch('advanced-ion',['ion-electric'],100_000_000,100)).toBe(true);
+    expect(canResearch('advanced-ion',['ion-electric'],1_000_000,100)).toBe(false);
+    expect(canResearch('advanced-ion',['ion-electric'],100_000_000,0)).toBe(false);
+    expect(canResearch('advanced-ion',['ion-electric'],100_000_000,8)).toBe(false);
+    expect(canResearch('advanced-ion',['ion-electric'],100_000_000,9)).toBe(true);
   });
   it('temporary developer unlock does not mutate the permanent research tree',()=>{
     const saved:string[]=[];
