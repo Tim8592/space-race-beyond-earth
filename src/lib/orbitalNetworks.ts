@@ -3,7 +3,7 @@
  * All cash rates, hardware weights/costs, capacities, demand are GAME ASSUMPTIONS.
  * Real examples: Galaxia Onyx Edge, VSaS, OSPREY / Halifax Class and Kepler relay.
  */
-import {planLaunchManifest,type LauncherId,type LaunchManifest} from './launchLogistics';
+import {flightService,type LauncherId,type LaunchManifest,type LaunchBatch} from './launchLogistics';
 import {spacecraftHardwareEconomics} from './missionEconomics';
 import {sizeSubsystemDesign,type SubsystemDesign} from './subsystemDesign';
 import {ORBITAL_SERVICE_MODULES} from './orbitalServiceModules';
@@ -92,11 +92,41 @@ export function planNetworkDeployment(args:{
  const design={...args.design,distanceAu:1};
  const system=sizeSubsystemDesign(design);
  const totalWetKg=system.modeledWetMassKg*stage.additionalSatellites;
- const manifest=planLaunchManifest({
-   totalWetKg,service:args.service,vehicle:args.launcher,tier:args.tier,
-   assemblyUnlocked:args.assemblyUnlocked,priorFlights:args.priorServiceFlights,
-   canadianSuccesses:args.canadianSuccesses,
- });
+ // Constellation satellites are INDEPENDENT whole spacecraft; split launches
+ // into separate intact units. Unlike a single huge spacecraft, they do not
+ // require docking or in-space mechanical assembly to operate.
+ const reference=flightService({service:args.service,vehicle:args.launcher,
+   tier:args.tier,priorFlights:args.priorServiceFlights,
+   canadianSuccesses:args.canadianSuccesses});
+ const satellitesPerLaunch=Math.floor((reference.capacityKg+1e-6)/system.modeledWetMassKg);
+ const launchesNeeded=satellitesPerLaunch>0?
+   Math.ceil(stage.additionalSatellites/satellitesPerLaunch):0;
+ const flights:LaunchBatch[]=[];
+ let launchCostUsd=0;
+ if(launchesNeeded>0&&launchesNeeded<=12){
+   let remaining=stage.additionalSatellites;
+   for(let i=0;i<launchesNeeded;i++){
+     const count=Math.min(remaining,satellitesPerLaunch);
+     const quote=flightService({service:args.service,vehicle:args.launcher,
+       tier:args.tier,priorFlights:args.priorServiceFlights+i,
+       canadianSuccesses:args.canadianSuccesses});
+     flights.push({flight:i+1,massKg:system.modeledWetMassKg*count,
+       capacityKg:quote.capacityKg,serviceCostUsd:quote.costUsd});
+     launchCostUsd+=quote.costUsd;
+     remaining-=count;
+   }
+ }
+ const issue=satellitesPerLaunch<1?
+   'One complete satellite exceeds selected rocket capacity; use a stronger rocket.':
+   launchesNeeded>12?'More than 12 rocket launches; upgrade the lift generation.':null;
+ const manifest:LaunchManifest={
+   service:args.service,vehicleLabel:reference.label,requiredWetKg:totalWetKg,
+   manifestWetKg:totalWetKg,capacityKg:reference.capacityKg,
+   flightsRequired:launchesNeeded,flights,
+   launchCostUsd,assemblyCostUsd:0,assemblyHardwareKg:0,
+   feasible:issue===null,canAssemble:true,issue,programCostFactor:reference.costFactor,
+   actualCostPerKgUsd:issue?0:launchCostUsd/totalWetKg,
+ };
  const unitHardwareUsd=spacecraftHardwareEconomics(design,args.productionDiscount??0).afterDiscountUsd+
    // Additional integration, acceptance tests, shipping, launch adapter and wiring.
    2500000;
@@ -118,8 +148,8 @@ export function planNetworkDeployment(args:{
    description:'Required >=0.5 h stored-energy margin; automatically increases battery mass and launch wet mass.'},
   {name:'Engine mounts and bus physically fit',passed:system.engineMountsFit,
    description:'Scale structural frame to resolve collisions; additional structure increases wet mass.'},
-  {name:'Paid launcher capacity and orbital assembly',passed:manifest.feasible,
-   description:manifest.issue??manifest.flightsRequired+' separately invoiced delivery flight(s), with docking if needed.'},
+  {name:'Paid rocket capacity for intact individual satellites',passed:manifest.feasible,
+   description:manifest.issue??manifest.flightsRequired+' separately invoiced flights carrying intact whole spacecraft; no orbital docking of independent constellation nodes.'},
  ];
  const net=stage.grossDailyUsd-stage.operationsDailyUsd;
  return {stage,unitMassKg:system.modeledWetMassKg,totalWetKg,
