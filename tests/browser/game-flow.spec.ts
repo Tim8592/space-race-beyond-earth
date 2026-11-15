@@ -454,6 +454,7 @@ test('Heavy spacecraft launches rocket batches individually and assembles hardwa
     await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await page.getByRole('combobox',{name:'External kick stage'}).selectOption('cryogenic');
+    await page.locator('.campaign-optional-kit > summary').click();
     await page.getByRole('checkbox',{name:/Extended-duration energy module/}).check();
     await expect(page.locator('.campaign-logistics-breakdown')).toContainText('Rocket 2:');
     const launch=page.getByRole('button',{name:/Accept contract and launch/});
@@ -729,6 +730,7 @@ test('A configured lunar milestone launches, survives reload and pays exactly on
     await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await page.getByRole('combobox',{name:'External kick stage'}).selectOption('cryogenic');
+    await page.locator('.campaign-optional-kit > summary').click();
     await page.getByRole('checkbox',{name:/Extended-duration energy module/}).check();
     const go=page.getByRole('button',{name:/Accept contract and launch/});
     await expect(go).toBeEnabled();
@@ -762,5 +764,29 @@ test('A configured lunar milestone launches, survives reload and pays exactly on
     await page.reload();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await expect(page.locator('.campaign-stage-card').filter({hasText:'Lunar Relay Pathfinder'})).toContainText('COMPLETED');
+  });
+});
+
+test('Campaign draws its payload from Engineering Lab and keeps mission add-ons separate',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    const installed=page.locator('.campaign-installed-craft');
+    await expect(installed).toContainText('Generic science / cargo mass');
+    await expect(installed).toContainText('20 kg');
+    await page.getByRole('button',{name:/Edit installed payload and core systems in Engineering Lab/}).click();
+    await expect(page.getByRole('tab',{name:'Science payload'})).toHaveAttribute('aria-selected','true');
+    await page.locator('label.sys-field').filter({hasText:'Additional instruments / cargo mass'})
+      .locator('input').fill('100');
+    await page.getByRole('button',{name:/Return to selected mission/}).click();
+    await expect(page.locator('.campaign-installed-craft')).toContainText('100 kg');
+    const kit=page.locator('.campaign-optional-kit');
+    await expect(kit).not.toHaveAttribute('open');
+    await kit.locator('summary').click();
+    await page.getByRole('checkbox',{name:/Extended-duration energy module/}).check();
+    await expect(kit.locator('summary')).toContainText('energy reserve');
   });
 });
