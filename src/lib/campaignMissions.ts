@@ -1,6 +1,7 @@
 import {planetAtDate,earthOrbitAtTime,type PlanetId} from './orbitalMechanics';
 import {EARTH,STANDARD_GRAVITY_MS2} from './nasaData';
-import {ENGINES,estimateBuildCostUsd,type Vehicle} from './engineering';
+import {type Vehicle} from './engineering';
+import {planLaunchManifest,type LaunchManifest,type LauncherId} from './launchLogistics';
 import {type SubsystemDesign,sizeSubsystemDesign} from './subsystemDesign';
 import {SCIENCE_INSTRUMENTS,type ScienceInstrumentId} from './instrumentCatalog';
 import {spacecraftHardwareEconomics} from './missionEconomics';
@@ -237,6 +238,9 @@ export type MissionReview={
   route:OrbitalRoute;
   hardwareWetKg:number;
   launchCapacityKg:number;
+  launchManifest:LaunchManifest;
+  spacecraftProcurementUsd:number;
+  launchServicesUsd:number;
   boosterDeltaVms:number;
   busDeltaVms:number;
   busPropellantBurnedKg:number;
@@ -266,6 +270,10 @@ export function reviewCampaignMission(args:{
   spacecraft:SubsystemDesign;launcher:Vehicle;capitalUsd:number;
   productionDiscount:number;completedWithLauncherEngine?:number;
   solvedTransfer?:SolvedCampaignTransfer|null;
+  launchService?:LauncherId;
+  rocketProgramLevel?:number;
+  orbitalAssemblyUnlocked?:boolean;
+  priorServiceFlights?:number;
 }):MissionReview{
   const {definition:d,day,options:o,spacecraft,launcher,capitalUsd}=args;
   const destinationAu=d.target==='jupiter'?5.2029:d.target==='mars'?1.5237:
@@ -325,24 +333,32 @@ export function reviewCampaignMission(args:{
   const instrument=design.payloadInstrumentId==='none'?null:SCIENCE_INSTRUMENTS[design.payloadInstrumentId];
   const scienceMassKg=(instrument?.massKg??0)+design.payloadMassKg+
     extraModules.reduce((sum,m)=>sum+m.massKg,0)+(cubesat?.massKg??0);
-  const rocket=ENGINES[launcher.engineId];
-  const requiredRocketDv=9300; // educational LEO ascent requirement
-  const exponent=Math.expm1(requiredRocketDv/(rocket.ispSeconds*STANDARD_GRAVITY_MS2));
-  const idealPayload=launcher.propellantMassKg/exponent-launcher.dryMassKg;
-  const maxTwrPayload=rocket.thrustNewtons/(1.15*STANDARD_GRAVITY_MS2)-
-    launcher.dryMassKg-launcher.propellantMassKg;
-  const launchCapacityKg=Math.max(0,Math.min(launcher.payloadMassKg,idealPayload,maxTwrPayload));
-  const hardware=spacecraftHardwareEconomics(design,args.productionDiscount);
-  const costUsd=hardware.afterDiscountUsd+booster.costUsd+
+  // The *spacecraft* is procured once; transport is a separate cost
+  // for EACH real launcher in the mass-constrained manifest. Large designs
+  // require multiple launches and paid docking/integration hardware.
+  const launchManifest=planLaunchManifest({
+    totalWetKg:hardwareWetKg,service:args.launchService??'custom',
+    vehicle:launcher,tier:args.rocketProgramLevel??0,
+    assemblyUnlocked:args.orbitalAssemblyUnlocked??false,
+    priorFlights:args.priorServiceFlights??args.completedWithLauncherEngine??0,
+  });
+  const launchCapacityKg=launchManifest.capacityKg;
+  const spacecraftProcurementUsd=hardware.afterDiscountUsd+booster.costUsd+
     extraModules.reduce((s,m)=>s+m.costUsd,0)+cubesatCostUsd+
-    (instrument?.costUsd??0)+
-    estimateBuildCostUsd(launcher,args.completedWithLauncherEngine??0);
+    (instrument?.costUsd??0);
+  const launchServicesUsd=launchManifest.launchCostUsd+launchManifest.assemblyCostUsd;
+  const costUsd=spacecraftProcurementUsd+launchServicesUsd;
   const needsInstrument=d.acceptedInstruments.length>0;
   const flightPositive=route.flightDays<=d.durationDays+100||
     route.source==='Orekit Lambert';
   const checks=[
-    {label:'Rocket payload capacity',actual:format(hardwareWetKg,'kg',1),needed:format(launchCapacityKg,'kg',1),passed:hardwareWetKg<=launchCapacityKg,
-      detail:'Installed bus + spacecraft propellant + external modules + kick-stage propellant/dry mass vs actual launcher payload capacity'},
+    {label:'Rocket launch manifest / orbital assembly',
+      actual:launchManifest.flightsRequired+' flights · '+format(launchManifest.manifestWetKg,'kg',1),
+      needed:launchManifest.feasible?'Within per-launch capacity':(launchManifest.issue??'Valid launcher'),
+      passed:launchManifest.feasible,
+      detail:'Installed spacecraft, mission propulsion, full transfer-stage wet mass and integration hardware are actually divided among '+launchManifest.flightsRequired+
+        ' separately paid launches. Each flight must fit '+format(launchCapacityKg,'kg',1)+
+        '. Multiple flights require purchased docking/assembly capability.'},
     {label:'Transfer energy / onboard Δv',actual:format(totalDeltaVms,'m/s'),needed:format(requiredDeltaVms,'m/s'),passed:totalDeltaVms>=requiredDeltaVms,
       detail:'Vis-viva/Hohmann or Orekit impulsive demand versus staged kick-stage + time-limited bus propulsion. Five percent design allowance included'},
     {label:'Power at destination',actual:format(available,'W'),needed:format(Math.max(powerDemandW,d.minElectricW),'W'),passed:available>=Math.max(powerDemandW,d.minElectricW),
@@ -403,7 +419,7 @@ export function reviewCampaignMission(args:{
   if(route.source==='Hohmann approximation'&&route.phaseErrorDeg!==null&&route.phaseErrorDeg>30)
     findings.push('Orbital alignment is unfavorable for the simple Hohmann geometry; examine the date in Orbital Map and evaluate an Orekit Lambert solution.');
   if(system.massEstimateIncomplete)findings.push('Engineering mass has incomplete flight hardware allowances. This is a campaign-grade feasibility screen only, not flight qualification.');
-  return {route,hardwareWetKg,launchCapacityKg,boosterDeltaVms,busDeltaVms,
+  return {route,hardwareWetKg,launchCapacityKg,launchManifest,spacecraftProcurementUsd,launchServicesUsd,boosterDeltaVms,busDeltaVms,
     busPropellantBurnedKg:busBurn.burnedPropellantKg,
     busPropellantRemainingKg:busBurn.remainingPropellantKg,
     busBurnWindowDays:d.durationDays,
