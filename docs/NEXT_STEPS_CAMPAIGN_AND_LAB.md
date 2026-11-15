@@ -1,3 +1,5 @@
+> v0.9 update: A real Research & Roadmap technology tree with prerequisites, R&D spending, Dev Mode, cost savings, qualitative risk, next-mission preview, a shared-orbit animated mission scene and a conceptual fission radiator boom have been implemented. The detailed future items below still need work; do not describe them as playable missions.
+
 # Space Race — next prompt: Play Campaign × Engineering Lab
 
 Updated: November 14, 2026. This is the **planned next iteration**, not an implemented feature list.
@@ -63,3 +65,17 @@ Primary source: https://www.spaceappschallenge.org/2026/find-a-team/project_mora
 - Negative resource margin cuts operational science duty rather than instantly killing the spacecraft. This is educational game logic, not real fault protection.
 - Mission launch cost is deducted immediately; successful science-return payouts are credited at the debrief. Mission outcomes are deterministic forecasts, not stochastic event simulations.
 - Xenon, liquid and iodine hardware now have application-specific preliminary tank/feed allowances, but the gas EOS, structural qualification, PPU mass/power provenance, radiation and generator thermal integration remain incomplete. The 3D assembly is still schematic.
+
+## Post-demo v0.10 priorities
+
+**Reliability before spectacle:** A judge should finish Earth Observation One in a clean browser session using the starter design. Keep the 3D, GLB and optional Orekit features resilient and ensure that Dev Mode cannot be mistaken for physical feasibility.
+
+**First integration upgrade:** Convert the current one-day-lump science simulation into orbit-by-orbit time steps for sunlit/eclipsed battery charging, communications contact, instrument pointing and telemetry. Drive the displayed orbit animation from the same time-step state; the current animation is physically scaled for period but runs independently from daily resource bins.
+
+**TRL / risk mechanic:** Track game-assessed technology readiness and independent design risks (power, thermal, radiation, controls, launch, communications, schedule). Instead of inventing a universal failure percentage, tie risk to a test campaign (thermal vacuum, vibration, feed system endurance, redundancy qualification) and let paid testing retire identified failure modes. Interpret NASA's TRL definitions without assigning a NASA-issued score to each product.
+
+**Technology economy:** Show a bill of materials (hardware prices, assembly, qualification, launch and annual operations), supplier lead times, manufacturing learning and research budgets. Permit heritage technology to have lower integration costs than novel architecture while acknowledging that specific market prices are fictitious. Future game balance should avoid unrealistic economic loopholes.
+
+**Next missions, in development order:** Lunar communications relay (orbit capture, lunar eclipse and link budget), asteroid prospecting (ion-thrust and spectrometer science), Mars orbiter (Lambert window and finite propulsion feasibility), Jupiter icy-moon survey (radiation and fission/RTG trade-offs). Future missions should share the same spacecraft engineering state and debrief architecture, not become independent tools.
+
+**Nuclear technologies:** Keep fission-electric, nuclear-thermal and speculative fusion distinct. A realistic nuclear thermal option requires propellant/cryogenic tank sizing, hydrogen compatibility, reactor temperature, material limitations and pressure losses. Fusion/thermonuclear propulsion should remain a visually labeled future concept until credible system-level parameters can be modeled. For fission cooling add separation/shadow shields, two-sided radiative view factors, heat-pipe transport limits, truss mass, radiator temperature constraints and realistic shutdown margins. Neither current nuclear model is flight-qualifiable.

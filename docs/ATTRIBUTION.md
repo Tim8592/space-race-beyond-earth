@@ -1,6 +1,6 @@
 # Sources, tools, and SI/AI attribution
 
-This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.8**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
+This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.9**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
 
 ## NASA / JPL resources used in the application
 
@@ -117,6 +117,16 @@ This version dynamically partitions a player-specified total active cell area ov
 - [GAO Project Prometheus](https://www.gao.gov/products/gao-05-242) — independent government historical assessment of the project's changing goals and resource constraints
 
 **Clearly illustrative game assumptions:** all numerical mass, power, data rates, mission scores and prices in `src/lib/instrumentCatalog.ts`; assumed xenon bulk density, liquid propellant density, storage pressure choice, iodine packing, spherical tank fitting/feed mass and minimum wall thickness; electrical controller loads of 1.5 W per wing and 0.65 W per radiator panel, a 94% distribution efficiency, 88% PPU planning efficiency, and 2.5 kg/m² solar array are not product-certified performance claims. The user-entered tank strength is a conceptual allowable, and the spherical membrane pressure relationship **does not constitute ASME VIII compliance** or an appropriately safety-factored spacecraft pressure-vessel design. Radioisotope/fission generator waste heat and structural shielding are not completely modeled.
+
+## v0.9 economic research, technology maturity and reactor thermal architecture
+
+- Official NASA TRL 1–9 scale: https://www.nasa.gov/directorates/somd/space-communications-navigation-program/technology-readiness-levels/ — used to explain broad maturity and uncertainty. **The game does NOT assign certified TRL numbers to particular hardware.** The three qualitative maturity labels are game descriptions, not engineering certification.
+- NASA fission/nuclear propulsion primer: https://www.nasa.gov/space-technology-mission-directorate/tdm/space-nuclear-propulsion/ — distinction between fission-powered electric propulsion and fission-thermal rockets.
+- DARPA DRACO description: https://www.darpa.mil/research/programs/demonstration-rocket-for-agile-cislunar-operations — research-program context only; a proposed nuclear thermal rocket is NOT an operating engine in Space Race.
+- **Invented 25 kWe / 90 kWth / 1,200 kg fission-electric unit** is a wholly illustrative campaign concept, not a NASA hardware benchmark. Thermal is calculated as 90 kW − 25 kWe = 65 kW waste, with assumed 0.85 emissivity and approximate high-temperature radiator loss; shielding, heat pipes, reactor geometry and launch approval are not validated. The historical SNAP-10A and KRUSTY entries have their own limited primary references.
+- Assumed radiator branch truss/heat loop mass = 14 kg plus 7 kg/m² of hot radiator; assumed radiator pump/control electrical load = 8 W. These are educational parameters, not product specifications.
+- All twelve R&D expenditures, equipment procurement costs, annual operating costs, 12% manufacturing discount, qualitative risk labels and mission campaign order in `src/lib/technologyTree.ts`, `src/lib/missionEconomics.ts` and `src/ResearchLab.tsx` are **game economic assumptions**, not real quotes, NASA budget estimates or predictions.
+- Orbital animation uses the existing Earth radius/GM dataset and approximate two-body period; drawn scale and playback speed are not real-time ephemerides.
 
 ## Other frameworks and external sources
 
