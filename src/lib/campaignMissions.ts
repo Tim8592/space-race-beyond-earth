@@ -338,8 +338,11 @@ export function reviewCampaignMission(args:{
   const radiatorCapacityW=system.radiatorCapacityW;
   const heatDemandW=system.thermalLoadW+modulePower;
   const instrument=design.payloadInstrumentId==='none'?null:SCIENCE_INSTRUMENTS[design.payloadInstrumentId];
+  // Science/cargo quota is not fulfilled by shielding, antennas or reserve batteries:
+  // they are launch hardware and electrical loads, but not science payload.
+  // A separately installed CubeSat contributes only its payload, not dispenser dry mass.
   const scienceMassKg=(instrument?.massKg??0)+design.payloadMassKg+
-    extraModules.reduce((sum,m)=>sum+m.massKg,0)+(cubesat?.massKg??0);
+    (cubesat?.massKg??0);
   // The *spacecraft* is procured once; transport is a separate cost
   // for EACH real launcher in the mass-constrained manifest. Large designs
   // require multiple launches and paid docking/integration hardware.
@@ -379,7 +382,7 @@ export function reviewCampaignMission(args:{
     {label:'Bus heat rejection',actual:format(radiatorCapacityW,'W'),needed:format(heatDemandW,'W'),passed:radiatorCapacityW>=heatDemandW,
       detail:'Installed radiator area and selected solar absorptivity, not magically sized to the demand'},
     {label:'Payload / science mass',actual:format(scienceMassKg,'kg'),needed:format(d.requiredScienceKg,'kg'),passed:scienceMassKg>=d.requiredScienceKg,
-      detail:'Actually installed scientific instruments, cargo and external mission modules, not arbitrary launch allowance'},
+      detail:'Installed science sensor and generic cargo plus any separate CubeSat payload. Antennas, shielding, reserve batteries and dispenser hardware still count toward launch mass but do not satisfy a science-payload requirement'},
     {label:'Required science instrument',actual:instrument?.name??'No instrument',needed:needsInstrument?'Compatible instrument':'No special sensor required',
       passed:!needsInstrument||d.acceptedInstruments.includes(design.payloadInstrumentId as ScienceInstrumentId),
       detail:'Different mission objectives need a compatible sensor'},
