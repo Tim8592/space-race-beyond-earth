@@ -2,6 +2,7 @@
  * All values are deep-copied to make "Duplicate" genuinely non-destructive.
  */
 import {DEFAULT_SUBSYSTEM_DESIGN,sizeSubsystemDesign,type SubsystemDesign} from './subsystemDesign';
+import {ORBITAL_SERVICE_MODULES} from './orbitalServiceModules';
 export type SpacecraftBlueprint={
  id:string;name:string;description:string;
  design:SubsystemDesign;createdDay:number;lastUsedDay:number|null;
@@ -9,7 +10,10 @@ export type SpacecraftBlueprint={
 };
 export const MAX_SPACECRAFT_BLUEPRINTS=75;
 export function cloneSpacecraftDesign(design:SubsystemDesign):SubsystemDesign{
- return {...DEFAULT_SUBSYSTEM_DESIGN,...design};
+ const cloned={...DEFAULT_SUBSYSTEM_DESIGN,...design};
+ if(!cloned.orbitalServiceModuleId||!ORBITAL_SERVICE_MODULES[cloned.orbitalServiceModuleId])
+   cloned.orbitalServiceModuleId='none';
+ return cloned;
 }
 export function safeBlueprints(raw:unknown):SpacecraftBlueprint[]{
  if(!Array.isArray(raw))return [];
