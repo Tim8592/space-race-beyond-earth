@@ -5,12 +5,12 @@
  * installation masses. Reactor shielding / separation / heat rejection are mission
  * dependent and not fully sized here.
  */
-export type PowerSourceId = 'solar' | 'mmrtg' | 'mhw-rtg' | 'gphs-rtg' | 'snap10a' | 'krusty';
+export type PowerSourceId = 'solar' | 'mmrtg' | 'mhw-rtg' | 'gphs-rtg' | 'snap10a' | 'krusty' | 'reactor-25kwe';
 export type PowerSystem = {
   id: PowerSourceId;
   name: string;
   class: 'photovoltaic' | 'radioisotope' | 'fission';
-  heritage: 'flight-proven' | 'flight-demonstrated' | 'ground-demonstrated';
+  heritage: 'flight-proven' | 'flight-demonstrated' | 'ground-demonstrated' | 'concept-only';
   nominalElectricW: number;
   reportedSystemMassKg: number | null;
   reportedThermalW: number | null;
@@ -79,6 +79,19 @@ export const POWER_SYSTEMS: Record<PowerSourceId, PowerSystem> = {
     degradationPerYear: null,
     sourceUrl: 'https://ntrs.nasa.gov/api/citations/19650058959/downloads/19650058959.pdf',
     note: '500 W and 43 days flight demonstration; ~238 kg is a historical UNshielded system estimate. 40 kW thermal from heritage technical literature. Additional shields, standoffs, integration and radiator checks are unmodeled.',
+  },
+  'reactor-25kwe': {
+    id: 'reactor-25kwe',
+    name: '25 kWe fission-electric reactor (GAME CONCEPT)',
+    class: 'fission',
+    heritage: 'concept-only',
+    nominalElectricW: 25_000,
+    // ALL values below are illustrative campaign assumptions, NOT NASA specifications.
+    reportedSystemMassKg: 1200,
+    reportedThermalW: 90_000,
+    degradationPerYear: null,
+    sourceUrl: 'https://www.nasa.gov/space-technology-mission-directorate/tdm/space-nuclear-propulsion/',
+    note: 'FICTITIOUS design point: 25 kWe electric / 90 kWth / 1200 kg unshielded. NASA has not flown this particular reactor. Radiation shielding, truss, converter and safety analyses are unresolved; the user must size a separate remote cooling radiator.',
   },
   krusty: {
     id: 'krusty',
