@@ -1,5 +1,7 @@
 import {useMemo} from 'react';
 import CampaignOrbitMap from './CampaignOrbitMap';
+import MissionFlightViewer from './MissionFlightViewer';
+import {flightProgress,flightEta,DEFAULT_FLIGHT_VIEWER_MS} from './lib/flightProgress';
 import {earthOrbitAtTime} from './lib/orbitalMechanics';
 import {dateForGameDay,BOOSTERS,EXTERNAL_MODULES,
   STORY_MISSIONS,NASA_CUBESAT_REFERENCE,reviewCampaignMission,specialOfferStatus,
@@ -17,6 +19,7 @@ export type CampaignRun={
   route:MissionReview['route'];scienceKg:number;
   deltaVms:number;requiredDeltaVms:number;
   busPropellantBurnedKg?:number;busPropellantRemainingKg?:number;
+  startedAtMs?:number;viewerDurationMs?:number;orekitTrajectoryAu?:number[][];
 };
 export type CampaignDebrief={
   id:string;title:string;day:number;success:boolean;special:boolean;
@@ -108,6 +111,7 @@ export default function CampaignMissions({
   completedWithLauncherEngine=0,lockedTechnologies=[],run,debrief,
   solvedTransfer,onStart,onFinish,onGoToLab,onGoToRocket,onViewOrbital,
   selected,onSelectedIdChange,options,onOptionsChange,agencyOffers,scheduled,
+  nowMs,viewerOpen,onViewerOpenChange,
 }:{
   day:number;cash:number;completed:readonly string[];devMode:boolean;
   lockedTechnologies?:readonly string[];
@@ -121,6 +125,7 @@ export default function CampaignMissions({
   selected:CampaignDefinition;onSelectedIdChange:(id:string)=>void;
   options:MissionOptions;onOptionsChange:(next:MissionOptions)=>void;
   agencyOffers:readonly CampaignDefinition[];scheduled:CampaignDefinition|null;
+  nowMs:number;viewerOpen:boolean;onViewerOpenChange:(open:boolean)=>void;
 }){
   const stage=unlockedStage(completed,devMode);
   const originalAgency=useMemo(()=>agencyMissionDefinitions(),[]);
@@ -153,6 +158,8 @@ export default function CampaignMissions({
       busPropellantBurnedKg:review.busPropellantBurnedKg,
       busPropellantRemainingKg:review.busPropellantRemainingKg});
   }
+  const flightStatus=run?flightProgress(run.startedAtMs??nowMs,nowMs,
+    run.viewerDurationMs??DEFAULT_FLIGHT_VIEWER_MS):null;
   const activeMission=run?(
     STORY_MISSIONS.find(m=>m.id===run.id)??agencyOffers.find(m=>m.id===run.id)??(scheduled?.id===run.id?scheduled:null)??{
       ...selected,id:run.id,title:run.title,target:run.target,durationDays:run.durationDays,
@@ -232,10 +239,19 @@ export default function CampaignMissions({
     {run&&liveReview?<div className="panel campaign-flight">
       <div className="eyebrow">FLIGHT OPERATIONS / CONTRACT IN PROGRESS</div>
       <h2>{run.title}</h2>
-      <p>Launch accepted on Day {run.launchedDay}. Engineering feasibility was checked at departure,
-        and the mission’s {run.durationDays}-day operations are simulated as a single simplified
-        flight period. This view visualizes the modeled transfer, not a finite-thrust flight solution.</p>
-      <OrbitScene definition={activeMission} review={liveReview} progress={run.durationDays}/>
+      <p>Launch accepted on Day {run.launchedDay} for {activeMission.location}.
+        This fast-playback simulates the mission with a real countdown, while the actual
+        modeled flight has {run.durationDays} game days. Leave the viewer whenever you wish:
+        progress continues, and the persistent circular indicator reopens it.</p>
+      {viewerOpen?<><MissionFlightViewer run={run} nowMs={nowMs}/>
+        <button type="button" className="secondary-button"
+          onClick={()=>onViewerOpenChange(false)}>Exit flight viewer · keep mission running ↗</button></>:
+        <div className="campaign-viewer-minimized">
+          <strong>Flight viewer minimized · {Math.round((flightStatus?.fraction??0)*100)}%</strong>
+          <span>ETA {flightEta(flightStatus?.remainingMs??0)}</span>
+          <button type="button" className="secondary-button"
+            onClick={()=>onViewerOpenChange(true)}>Reopen flight viewer ↗</button>
+        </div>}
       <div className="campaign-flight-stats"><div><span>MISSION COST PAID</span><strong>{usd(run.costUsd)}</strong></div>
         <div><span>CONTRACT REWARD</span><strong>{usd(run.payoutUsd)}</strong></div>
         <div><span>EXPECTED SCIENCE / PAYLOAD</span><strong>{num(run.scienceKg)} kg</strong></div>
@@ -245,7 +261,9 @@ export default function CampaignMissions({
         {run.busPropellantRemainingKg!==undefined&&<div>
           <span>PROPELLANT STILL ONBOARD</span><strong>{num(run.busPropellantRemainingKg,2)} kg</strong>
         </div>}</div>
-      <button type="button" className="launch-button" onClick={onFinish}>Complete flight and mission debrief ↗</button>
+      <button type="button" className="launch-button" disabled={!flightStatus?.ready}
+        onClick={onFinish}>{flightStatus?.ready?'Complete flight and mission debrief ↗':
+        'Flight underway · ETA '+flightEta(flightStatus?.remainingMs??0)}</button>
     </div>:<>
       {debrief&&<div className="panel campaign-debrief">
         <div className="eyebrow">FLIGHT DEBRIEF / LAST MISSION</div>
@@ -260,9 +278,9 @@ export default function CampaignMissions({
       </div>}
       {stageIsLocked&&<div className="campaign-locked-overlay">
         <strong>Complete the preceding campaign missions to unlock {selected.title}.</strong>
-        <p>Developer Mode makes the implemented mission playable for demonstration, without marking prior stages as permanently complete.</p>
+        <p>Future missions reveal their trajectory and engineering constraints only after unlocking. Developer Mode previews implemented missions without crediting completed stages.</p>
       </div>}
-      <div className="campaign-workshop">
+      {!stageIsLocked&&<div className="campaign-workshop">
         <div className="panel campaign-workshop-controls">
           <div className="eyebrow">{selected.special?'SPECIAL CONTRACT':'CAMPAIGN MILESTONE 0'+selected.stage}</div>
           <h2>{selected.title}</h2>
@@ -356,7 +374,7 @@ export default function CampaignMissions({
             </p>}
           </>:<p role="alert">Cannot analyze the selected design: {draft.error}. Restore valid spacecraft parameters in Engineering Lab.</p>}
         </div>
-      </div>
+      </div>}
     </>}
     <div className="campaign-time-footer">
       <p><strong>Continuous campaign time:</strong> one game day passes every two real minutes
