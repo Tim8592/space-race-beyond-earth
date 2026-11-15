@@ -951,3 +951,8 @@
 @media(max-width:1000px){.nasa-intel-columns{grid-template-columns:1fr}}
 @media(max-width:700px){.nasa-intel-summary{grid-template-columns:1fr}.nasa-intel-connection{align-items:stretch}.nasa-intel-connection button{width:100%}}
 @media(max-width:430px){.nasa-asteroid-metrics{grid-template-columns:1fr}}
+
+.nasa-asteroid-scenario{display:flex;flex-direction:column;gap:5px;padding:10px 11px;border:1px solid #496879;border-radius:6px;background:#152e41}
+.nasa-asteroid-scenario small{font-size:9px;color:#a7cde0;letter-spacing:.6px}
+.nasa-asteroid-scenario strong{font:800 16px 'Space Grotesk',sans-serif;color:#f7d8a5}
+.nasa-asteroid-scenario span{font-size:10px;line-height:1.5;color:#c3d8e7}
