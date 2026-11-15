@@ -3,6 +3,8 @@ import {
 } from './spacecraftTechnology';
 import { getPowerOutput, POWER_SYSTEMS, type PowerSourceId } from './powerSources';
 import { getInstrument, type InstrumentSelection } from './instrumentCatalog';
+import {evaluatePropulsionBurn,type PropulsionBurnResult} from './propulsionBurn';
+import {extraFrameMassKg,minimumStructureScale} from './structureSizing';
 import { estimatePropellantTank, type TankReport, type PropellantKind } from './propellantTanks';
 import {
   idealDeltaVms, idealBurnDurationSeconds, solarArrayPowerW, batteryMassForEclipseKg,
@@ -19,6 +21,12 @@ export type SubsystemDesign = {
   secondaryThrusterCount:number;
   secondaryPropellantMassKg:number;
   burnOrder:'primary-first'|'secondary-first';
+  /** Multiplies the structural frame width/height, not engine mesh scaling. */
+  structureScale:number;
+  /** Days allowed for a finite-propellant, fixed-rated-Isp propulsion analysis. */
+  plannedBurnDays:number;
+  /** Fraction of wall-clock mission time for which the engines may fire. */
+  propulsionDutyFraction:number;
   solarWingCount:number;
   radiatorPanelCount:number;
   installedRadiatorAreaM2:number;
@@ -59,6 +67,7 @@ export const DEFAULT_SUBSYSTEM_DESIGN:SubsystemDesign={
   secondaryThrusterCount:1,
   secondaryPropellantMassKg:1,
   burnOrder:'primary-first',
+  structureScale:1,plannedBurnDays:90,propulsionDutyFraction:.85,
   solarWingCount:2,
   radiatorPanelCount:2,
   installedRadiatorAreaM2:.45,
@@ -156,6 +165,12 @@ export type SystemResults={
   idealDeltaVms:number;
   idealBurnDays:number;
   lowThrustAccelerationMmS2:number;
+  /** Change in launchable dry mass from expanded bus structure. */
+  extraStructureMassKg:number;
+  requiredStructureScale:number;
+  engineMountsFit:boolean;
+  /** Exact constant-Isp integral with decreasing mass, constrained by power and burn time. */
+  burnPreview:PropulsionBurnResult;
   massEstimateIncomplete:boolean;
   warnings:string[];
   /** New automatic, traceable systems ledger. */
@@ -234,6 +249,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     design.liquidDensityKgM3,design.tankPressureBar,design.xenonStoragePressureBar,
     design.tankAllowableStressMpa,design.tankMetalDensityKgM3,
     design.infraredEmissivity,design.radiatorTemperatureK,design.radiatorSunIncidence,
+    design.structureScale,design.plannedBurnDays,design.propulsionDutyFraction,
   ];
   if(inputNumbers.some(n=>!Number.isFinite(n)) || design.distanceAu<=0 ||
     design.busDryMassKg<=0||design.cellAreaM2<0||
@@ -246,6 +262,9 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     design.infraredEmissivity<=0||design.infraredEmissivity>1||
     design.radiatorSunIncidence<0||design.radiatorSunIncidence>1||
     design.radiatorTemperatureK<=0||
+    design.structureScale<1||design.structureScale>3||
+    design.plannedBurnDays<0||design.plannedBurnDays>50_000||
+    design.propulsionDutyFraction<=0||design.propulsionDutyFraction>1||
     ![design.thrusterCount,design.secondaryThrusterCount,
       design.solarWingCount,design.radiatorPanelCount].every(n=>Number.isInteger(n)&&n>=1&&n<=8)||
     !Number.isInteger(design.powerSourceCount)||
@@ -353,7 +372,11 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     (s?hwMass(s,design.secondaryThrusterCount):0);
   const totalTankHardwareMassKg=tankReports.reduce((v,t)=>v+t.totalHardwareKg,0);
   const instrumentMassKg=instrument?.massKg??0;
-  const modeledDryMassKg=design.busDryMassKg+design.payloadMassKg+instrumentMassKg+
+  const requiredStructureScale=minimumStructureScale(design.thrusterCount,
+    secondaryEnabled?design.secondaryThrusterCount:0);
+  const engineMountsFit=design.structureScale+1e-8>=requiredStructureScale;
+  const extraStructureMassKg=extraFrameMassKg(design.structureScale);
+  const modeledDryMassKg=design.busDryMassKg+extraStructureMassKg+design.payloadMassKg+instrumentMassKg+
     arrayMassKg+batteryMassKg+(radiatorMassKg??0)+radiatorMountMassKg+
     engineHardwareMassKg+totalTankHardwareMassKg+(power.installedGeneratorMassKg??0)+
     reactorCoolingMassKg;
@@ -385,8 +408,31 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     design.propellantMassKg,pt,pp);
   const secondaryMode=s&&st?makeMode(design.secondaryThrusterId as ThrusterId,s,
     design.secondaryThrusterCount,additionalFuel,st,sp):null;
+  const burnSequence=design.burnOrder==='secondary-first'&&secondaryMode?
+    [secondaryMode,primaryMode]:[primaryMode,...(secondaryMode?[secondaryMode]:[])];
+  const burnPreview=evaluatePropulsionBurn({
+    initialWetMassKg:modeledWetMassKg,
+    windowDays:design.plannedBurnDays,
+    dutyFraction:design.propulsionDutyFraction,
+    powerBudgetW:Math.max(0,totalAvailablePowerW-housekeepingPowerW),
+    modes:burnSequence.map(mode=>({
+      id:mode.id,name:mode.name,installedEngines:mode.count,
+      thrustPerEngineN:mode.thrustN/mode.count,ispSeconds:mode.ispSeconds,
+      propellantKg:mode.propellantKg,
+      busPowerPerEngineW:mode.completePropulsionPowerW/mode.count,
+    })),
+  });
 
   const warnings:string[]=[];
+  if(!engineMountsFit)warnings.push(
+    'Thruster mount packing needs a structural frame scale of at least '+
+    requiredStructureScale.toFixed(2)+'× for '+(design.thrusterCount+
+      (secondaryEnabled?design.secondaryThrusterCount:0))+
+    ' nozzles. Increase bus structure size in Propulsion; added structure increases dry mass.');
+  if(burnPreview.deliveredDeltaVms+1e-6<burnPreview.idealDeltaVms)
+    warnings.push('Propulsion window and available electrical power limit delivered Δv. Ideal total Δv assumes all propellant can be used with unlimited time and sufficient power.');
+  if(burnPreview.phases.some(phase=>phase.activeEngines<phase.installedEngines))
+    warnings.push('Power limits the number of thrusters that can fire at their published operating point. Additional installed engines add mass but not necessarily usable thrust.');
   const isElectric=p.isElectric||!!s?.isElectric;
   const massEstimateIncomplete=isElectric||radiatorMassKg===null||
     power.installedGeneratorMassKg===null||POWER_SYSTEMS[design.powerSourceId].class==='fission';
@@ -420,6 +466,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
 
   const massBreakdown=[
     {label:'Bus and other cargo',massKg:design.busDryMassKg+design.payloadMassKg},
+    {label:'Expanded structural frame',massKg:extraStructureMassKg},
     {label:'Selected science instrument',massKg:instrumentMassKg},
     {label:'Solar arrays + deployable mounts',massKg:arrayMassKg},
     {label:'Eclipse battery',massKg:batteryMassKg},
@@ -451,6 +498,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     modeledDryMassKg,modeledWetMassKg,idealDeltaVms:idealDeltaV,
     idealBurnDays:idealBurnSeconds/86400,
     lowThrustAccelerationMmS2:primaryMode.thrustN/modeledWetMassKg*1000,
+    extraStructureMassKg,requiredStructureScale,engineMountsFit,burnPreview,
     massEstimateIncomplete,warnings,primaryMode,secondaryMode,tankReports,
     totalPropellantKg,arrayMassKg,radiatorMountMassKg,instrumentMassKg,
     instrumentPowerW,baseBusPowerW,wingControlPowerW,radiatorControlPowerW,
