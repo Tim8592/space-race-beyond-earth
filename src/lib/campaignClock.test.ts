@@ -5,9 +5,9 @@ describe('Continuous mission calendar',()=>{
     expect(todayGameDay(new Date(2026,10,14))).toBe(1);
     expect(todayGameDay(new Date(2026,10,21))).toBe(8);
   });
-  it('passes seven days per real minute, with no day-skipping click',()=>{
-    expect(elapsedGameDays(59_999)).toBe(6);
-    expect(elapsedGameDays(60_000)).toBe(7);
+  it('passes one day per two real minutes, with no day-skipping click',()=>{
+    expect(elapsedGameDays(119_999)).toBe(0);
+    expect(elapsedGameDays(120_000)).toBe(1);
     expect(elapsedGameDays(GAME_DAY_DURATION_MS-.1)).toBe(0);
     expect(elapsedGameDays(GAME_DAY_DURATION_MS)).toBe(1);
   });
