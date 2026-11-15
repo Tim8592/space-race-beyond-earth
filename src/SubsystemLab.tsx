@@ -11,7 +11,7 @@ import { POWER_SYSTEMS, type PowerSourceId } from './lib/powerSources';
 import { SCIENCE_INSTRUMENTS, type InstrumentSelection } from './lib/instrumentCatalog';
 import {ORBITAL_SERVICE_MODULES,type OrbitalServiceModuleId} from './lib/orbitalServiceModules';
 import type { ThrusterId } from './lib/subsystemDesign';
-import {hasTechnology,THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,
+import {hasTechnology,THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,SERVICE_MODULE_RESEARCH,
   type TechnologyId} from './lib/technologyTree';
 import {
   DEFAULT_SUBSYSTEM_DESIGN, DESTINATIONS, sizeSubsystemDesign,
@@ -128,6 +128,7 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
   const installedLocked=[
     THRUSTER_RESEARCH[design.thrusterId],THRUSTER_RESEARCH[design.secondaryThrusterId],
     POWER_RESEARCH[design.powerSourceId],INSTRUMENT_RESEARCH[design.payloadInstrumentId],
+    SERVICE_MODULE_RESEARCH[design.orbitalServiceModuleId],
   ].filter(id=>id&&!unlocked(id));
   const isFission=POWER_SYSTEMS[design.powerSourceId].class==='fission';
 
@@ -468,8 +469,9 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
             <select aria-label="On-orbit service payload" value={design.orbitalServiceModuleId}
               onChange={e=>change('orbitalServiceModuleId',e.currentTarget.value as OrbitalServiceModuleId)}>
               {Object.values(ORBITAL_SERVICE_MODULES).map(module=><option key={module.id}
-                value={module.id}>{module.name} · {module.massKg} kg ·
-                  {module.activePowerW} W</option>)}
+                value={module.id} disabled={!unlocked(SERVICE_MODULE_RESEARCH[module.id])}>
+                 {module.name} · {module.massKg} kg · {module.activePowerW} W
+                 {!unlocked(SERVICE_MODULE_RESEARCH[module.id])?' · RESEARCH LOCKED':''}</option>)}
             </select>
           </label>
           {design.orbitalServiceModuleId!=='none'&&<div className="sys-auto-ledger">
