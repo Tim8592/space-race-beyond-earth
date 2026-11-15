@@ -27,6 +27,7 @@ import {canResearch,TECHNOLOGIES, type TechnologyId,hasTechnology,
 import { useEffect, useMemo, useState } from 'react';
 import {
   INITIAL_VEHICLE,
+  ENGINES,
   type EngineId,
   type Vehicle,
 } from './lib/engineering';
@@ -178,7 +179,8 @@ function loadSave(): Snapshot {
       orbitalAssemblyUnlocked:parsed.game.orbitalAssemblyUnlocked===true,
       canadianMissionSuccesses:Number.isInteger(parsed.game.canadianMissionSuccesses)?
         Math.max(0,parsed.game.canadianMissionSuccesses):0,
-      observationLaunchService:['custom','falcon9','falconHeavy','starship'].includes(parsed.game.observationLaunchService)?
+      observationLaunchService:typeof parsed.game.observationLaunchService==='string'&&
+        ['custom','falcon9','falconHeavy','starship'].includes(parsed.game.observationLaunchService)?
         parsed.game.observationLaunchService:null,
       rocketFlightCounts:Object.assign(
         {custom:0,falcon9:0,falconHeavy:0,starship:0},
@@ -216,11 +218,15 @@ function usd(amount: number) {
 function integer(value: number) {
   return Number.isFinite(value) ? Math.round(value).toLocaleString('en-US') : '—';
 }
-function decimal(value: number, digits = 1) {
-  return Number.isFinite(value) ? value.toFixed(digits) : '—';
-}
 function CheckIcon({ good }: { good: boolean }) {
   return <span className={good ? 'check yes' : 'check no'} aria-hidden="true">{good ? '✓' : '!'}</span>;
+}
+function readObservationChoices():ObservationChoices{
+  try{
+    const saved=JSON.parse(localStorage.getItem('space-race-observation-one-v1')??'null')
+      as {choices?:Partial<ObservationChoices>}|null;
+    return {...DEFAULT_OBSERVATION,...saved?.choices};
+  }catch{return {...DEFAULT_OBSERVATION};}
 }
 export default function App() {
   const [snapshot, setSnapshot] = useState<Snapshot>(loadSave);
