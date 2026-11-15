@@ -1,4 +1,5 @@
 import {TECHNOLOGIES,type TechnologyId} from './technologyTree';
+export {researchPointsCost} from './technologyTree';
 /**
  * Fictional game economics in USD per GAME day; not NASA budgets or lunar
  * revenue forecasts. Centralized so ticking and mission time skips agree.
@@ -20,9 +21,6 @@ export function lunarEconomics(level:number){
   const active=MOON_BASE_LEVELS.slice(0,level);
   return {grossDailyUsd:active.reduce((a,x)=>a+x.dailyRevenueUsd,0),
     expensesDailyUsd:active.reduce((a,x)=>a+x.dailyOperationsUsd,0)};
-}
-export function researchPointsCost(researchUsd:number):number{
-  return Math.max(2,Math.ceil(researchUsd/4e6));
 }
 export function dailyEconomics(researchUnlocked:readonly TechnologyId[],moonBaseLevel:number,
   activeFlight=false){
