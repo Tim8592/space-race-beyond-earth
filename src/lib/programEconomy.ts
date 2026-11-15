@@ -1,4 +1,5 @@
 import {TECHNOLOGIES,type TechnologyId} from './technologyTree';
+import {networkEconomics,EMPTY_ORBITAL_NETWORKS,type OrbitalNetworkLevels} from './orbitalNetworks';
 export {researchPointsCost} from './technologyTree';
 /**
  * Fictional game economics in USD per GAME day; not NASA budgets or lunar
@@ -23,28 +24,34 @@ export function lunarEconomics(level:number){
     expensesDailyUsd:active.reduce((a,x)=>a+x.dailyOperationsUsd,0)};
 }
 export function dailyEconomics(researchUnlocked:readonly TechnologyId[],moonBaseLevel:number,
-  activeFlight=false){
+  activeFlight=false,networks:OrbitalNetworkLevels=EMPTY_ORBITAL_NETWORKS){
   const lunar=lunarEconomics(moonBaseLevel);
+  const orbital=networkEconomics(networks);
   const researchOperationsUsd=TECHNOLOGIES.filter(t=>researchUnlocked.includes(t.id))
     .reduce((sum,t)=>sum+t.operationalCostUsdPerYear/365,0);
   const flightOperationsUsd=activeFlight?110_000:0;
   const expensesUsd=DAILY_BASE_OPERATIONS_USD+researchOperationsUsd+
-    lunar.expensesDailyUsd+flightOperationsUsd;
-  const revenueUsd=lunar.grossDailyUsd;
+    lunar.expensesDailyUsd+orbital.expensesDailyUsd+flightOperationsUsd;
+  const revenueUsd=lunar.grossDailyUsd+orbital.grossDailyUsd;
   return {expensesUsd,revenueUsd,netUsd:revenueUsd-expensesUsd,
     baseUsd:DAILY_BASE_OPERATIONS_USD,researchOperationsUsd,flightOperationsUsd,
-    lunarOperatingUsd:lunar.expensesDailyUsd,lunarRevenueUsd:lunar.grossDailyUsd};
+    lunarOperatingUsd:lunar.expensesDailyUsd,lunarRevenueUsd:lunar.grossDailyUsd,
+    orbitalOperatingUsd:orbital.expensesDailyUsd,orbitalRevenueUsd:orbital.grossDailyUsd,
+    orbitalSatellites:orbital.operationalSatellites};
 }
 export function advanceProgramDay<T extends {
   day:number;cash:number;researchPoints:number;researchUnlocked:TechnologyId[];
-  moonBaseLevel:number;activeStoryRun:unknown;activeMoonCargoRun?:unknown;activeAssemblyProject?:unknown;
+  moonBaseLevel:number;networkLevels?:OrbitalNetworkLevels;
+  activeStoryRun:unknown;activeMoonCargoRun?:unknown;activeAssemblyProject?:unknown;
+  activeNetworkRun?:unknown;
   operatingSpentUsd:number;passiveRevenueUsd:number;
 }>(game:T,days:number):T{
   if(!Number.isInteger(days)||days<0||days>10000)
     throw new RangeError('Invalid elapsed game days');
   if(!days)return game;
   const costs=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,
-    !!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject));
+    !!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject||game.activeNetworkRun),
+    game.networkLevels??EMPTY_ORBITAL_NETWORKS);
   const earnedRP=Math.floor((game.day-1+days)/RESEARCH_POINT_EVERY_DAYS)-
     Math.floor((game.day-1)/RESEARCH_POINT_EVERY_DAYS);
   return {...game,day:game.day+days,
