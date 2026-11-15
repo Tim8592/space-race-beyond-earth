@@ -1158,7 +1158,13 @@ export default function App() {
           onLoad={loadWorkingSpacecraft} onDuplicate={duplicateWorkingSpacecraft}
           onRename={renameWorkingSpacecraft} onRemove={deleteWorkingSpacecraft}
           onOpenEngineering={()=>setActiveView('systems')}
-          onOpenCampaign={()=>{setCampaignMode('progression');setActiveView('missions')}}/>}
+          onUseInMission={id=>{
+            const saved=game.spacecraftBlueprints.find(x=>x.id===id);
+            if(!saved)return;
+            setSpacecraftDesign(cloneSpacecraftDesign(saved.design));
+            setCampaignMode('progression');setActiveView('missions');
+            setMessage('Loaded '+saved.name+' as your current mission spacecraft. Saved original remains unchanged.');
+          }}/>}
         {activeView==='moon'&&<MoonBase cash={game.cash} level={game.moonBaseLevel}
           unlocked={game.storyCompleted.includes('lunar')||game.devMode} devMode={game.devMode}
           cargoDeliveredLevel={game.moonCargoDeliveredLevel}
