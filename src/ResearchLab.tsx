@@ -6,17 +6,17 @@ export const FUTURE_MISSIONS=[
   {name:'Earth Observation One',phase:'PLAYABLE NOW',region:'Earth orbit',
     goal:'Return scientific imagery through a communications bottleneck',
     tech:'Imaging, solar panels, batteries, launch and data downlink',className:'active'},
-  {name:'Lunar Relay Pathfinder',phase:'NEXT CAMPAIGN MISSION',region:'Moon',
+  {name:'Lunar Relay Pathfinder',phase:'PLAYABLE AFTER EARTH OBSERVATION',region:'Moon',
     goal:'Deliver a lunar communications relay and maintain a workable link budget',
     tech:'Transfer Δv, capture burns, lunar comm windows and eclipse survival',className:'future'},
-  {name:'Asteroid Prospecting',phase:'PLANNED',region:'Near-Earth asteroid',
+  {name:'Asteroid Prospecting',phase:'PLAYABLE AFTER LUNAR RELAY',region:'Near-Earth asteroid',
     goal:'Use onboard magnetometer and spectroscopy data to map an asteroid',
     tech:'Power at distance, solar-electric or chemical correction, long science campaigns',className:'future'},
-  {name:'Mars Orbiter',phase:'PLANNED',region:'Mars',
+  {name:'Mars Orbiter',phase:'PLAYABLE AFTER ASTEROID',region:'Mars',
     goal:'Choose a transfer window, handle capture and operate an instrument around Mars',
     tech:'Lambert/trajectory interface, propulsion feasibility, thermal and comm delay',className:'future'},
-  {name:'Jupiter Icy-Moons Survey',phase:'CONCEPT TRACK',region:'Jupiter',
-    goal:'Design a large power-limited explorer, manage radiation and reject reactor heat',
+  {name:'Jovian Flyby Survey',phase:'PLAYABLE AFTER MARS ORBITER',region:'Jupiter',
+    goal:'Engineer a high-energy Jupiter-system flyby; radiation, distance-dependent power and communications',
     tech:'RTG or research fission electric, long-duration thrust, thermal management',className:'future'},
 ] as const;
 
@@ -75,7 +75,7 @@ export default function ResearchLab({cash,unlocked,devMode,onToggleDevMode,onRes
       <div><div className="eyebrow">PRESENTATION CONTROLS</div><h3>Developer / Demo Mode</h3>
         <p>Temporarily unlock every cataloged research technology for tomorrow’s demonstration.
           No R&D money is spent. Turn it off to restore your actual progression.
-          <strong> Future missions marked planned are previews only, not playable.</strong></p></div>
+          <strong> It also opens all implemented campaign milestones for inspection; it does not bypass their physics checks.</strong></p></div>
       <button type="button" className={'dev-toggle '+(devMode?'enabled':'')} aria-pressed={devMode}
         onClick={onToggleDevMode}>{devMode?'DEV MODE: ON':'DEV MODE: OFF'}</button>
     </div>
@@ -91,8 +91,11 @@ export default function ResearchLab({cash,unlocked,devMode,onToggleDevMode,onRes
     <div className="panel research-missions">
       <div className="eyebrow">CAMPAIGN EVOLUTION / PLANNED STORY ARC</div>
       <h2>From Earth orbit to Jupiter</h2>
-      <p>Later missions will unlock in order as actual objective, trajectory and science models are implemented.
-        Developer Mode does not falsely mark these future simulations as complete.</p>
+      <p>The lunar, asteroid, Mars and Jupiter-flyby contracts are now playable,
+        and unlock in sequence after Earth Observation One. Special time-limited
+        high-apogee contracts rotate with the game calendar. These simplified
+        mission models use first-order trajectory and spacecraft feasibility checks;
+        finite-thrust mission navigation and detailed mission operations remain future work.</p>
       <div className="research-mission-grid">{FUTURE_MISSIONS.map((mission,i)=>
         <div className={'research-mission-card '+mission.className} key={mission.name}>
           <div><b>{String(i+1).padStart(2,'0')} / {mission.region}</b><span>{mission.phase}</span></div>

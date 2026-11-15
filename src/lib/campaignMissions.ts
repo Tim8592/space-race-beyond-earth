@@ -1,6 +1,6 @@
 import {planetAtDate,earthOrbitAtTime,type PlanetId} from './orbitalMechanics';
 import {EARTH,STANDARD_GRAVITY_MS2} from './nasaData';
-import {ENGINES,type Vehicle} from './engineering';
+import {ENGINES,estimateBuildCostUsd,type Vehicle} from './engineering';
 import {type SubsystemDesign,sizeSubsystemDesign} from './subsystemDesign';
 import {SCIENCE_INSTRUMENTS,type ScienceInstrumentId} from './instrumentCatalog';
 import {spacecraftHardwareEconomics} from './missionEconomics';
@@ -248,7 +248,8 @@ function busBurnDeltaV(wet:number,design:SubsystemDesign,
 export function reviewCampaignMission(args:{
   definition:CampaignDefinition;day:number;options:MissionOptions;
   spacecraft:SubsystemDesign;launcher:Vehicle;capitalUsd:number;
-  productionDiscount:number;solvedTransfer?:SolvedCampaignTransfer|null;
+  productionDiscount:number;completedWithLauncherEngine?:number;
+  solvedTransfer?:SolvedCampaignTransfer|null;
 }):MissionReview{
   const {definition:d,day,options:o,spacecraft,launcher,capitalUsd}=args;
   const destinationAu=d.target==='jupiter'?5.2029:d.target==='mars'?1.5237:
@@ -292,9 +293,7 @@ export function reviewCampaignMission(args:{
   const costUsd=hardware.afterDiscountUsd+booster.costUsd+
     extraModules.reduce((s,m)=>s+m.costUsd,0)+
     (instrument?.costUsd??0)+
-    // Launch rocket cost; same campaign engine production count ignored here
-    // for simplicity; no price discount double-counted.
-    35_000_000;
+    estimateBuildCostUsd(launcher,args.completedWithLauncherEngine??0);
   const needsInstrument=d.acceptedInstruments.length>0;
   const flightPositive=route.flightDays<=d.durationDays+100||
     route.source==='Orekit Lambert';

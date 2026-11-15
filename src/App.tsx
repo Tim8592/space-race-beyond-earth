@@ -470,6 +470,7 @@ export default function App() {
             completed={game.storyCompleted} devMode={game.devMode}
             spacecraft={spacecraftDesign} launcher={vehicle}
             productionDiscount={missionTechnologyDiscount}
+            completedWithLauncherEngine={game.engineBuildCounts[vehicle.engineId]??0}
             lockedTechnologies={lockedLabParts}
             run={game.activeStoryRun} debrief={game.lastStoryDebrief}
             solvedTransfer={missionSolved}

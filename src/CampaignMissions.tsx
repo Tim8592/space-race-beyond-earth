@@ -107,11 +107,13 @@ function OptionCheck({label,checked,onChange,note}:{label:string;checked:boolean
   </label>;
 }
 export default function CampaignMissions({
-  day,cash,completed,devMode,spacecraft,launcher,productionDiscount,lockedTechnologies=[],run,debrief,
+  day,cash,completed,devMode,spacecraft,launcher,productionDiscount,
+  completedWithLauncherEngine=0,lockedTechnologies=[],run,debrief,
   solvedTransfer,onStart,onFinish,onGoToLab,onGoToRocket,onViewOrbital,onAdvance,
 }:{
   day:number;cash:number;completed:readonly string[];devMode:boolean;
   lockedTechnologies?:readonly string[];
+  completedWithLauncherEngine?:number;
   spacecraft:SubsystemDesign;launcher:Vehicle;productionDiscount:number;
   run:CampaignRun|null;debrief:CampaignDebrief|null;
   solvedTransfer?:SolvedCampaignTransfer|null;
@@ -134,10 +136,11 @@ export default function CampaignMissions({
   const draft=useMemo(()=>{
     try{return {review:reviewCampaignMission({
       definition:selected,day,options,spacecraft,launcher,capitalUsd:cash,
-      productionDiscount,solvedTransfer,
+      productionDiscount,completedWithLauncherEngine,solvedTransfer,
     }),error:''};}
     catch(e){return {review:null,error:e instanceof Error?e.message:String(e)}}
-  },[selected,day,options,spacecraft,launcher,cash,productionDiscount,solvedTransfer]);
+  },[selected,day,options,spacecraft,launcher,cash,productionDiscount,
+    completedWithLauncherEngine,solvedTransfer]);
   const review=draft.review;
   const canStart=stage>=selected.stage&&!completedMission&&
     review?.feasible===true&&!run&&lockedTechnologies.length===0&&
@@ -261,7 +264,7 @@ export default function CampaignMissions({
                 value={options.perigeeKm} onChange={e=>change('perigeeKm',Number(e.target.value))}/>
             </label>
             <label>Eccentricity · {options.eccentricity.toFixed(2)}
-              <input type="range" aria-label="Mission eccentricity" min="0" max=".86" step=".01"
+              <input type="range" aria-label="Mission eccentricity" min="0" max=".8" step=".01"
                 value={options.eccentricity} onChange={e=>change('eccentricity',Number(e.target.value))}/>
             </label>
           </div>}
