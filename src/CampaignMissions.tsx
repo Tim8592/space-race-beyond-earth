@@ -1,6 +1,7 @@
 import {useMemo} from 'react';
 import CampaignOrbitMap from './CampaignOrbitMap';
 import MissionFlightViewer from './MissionFlightViewer';
+import LaunchWindowForecast from './LaunchWindowForecast';
 import type {LauncherId,LaunchBatch} from './lib/launchLogistics';
 import {flightProgress,flightEta,DEFAULT_FLIGHT_VIEWER_MS} from './lib/flightProgress';
 import {earthOrbitAtTime} from './lib/orbitalMechanics';
@@ -122,7 +123,7 @@ export default function CampaignMissions({
   selected,onSelectedIdChange,options,onOptionsChange,agencyOffers,scheduled,
   nowMs,viewerOpen,onViewerOpenChange,
   launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,logisticsInProgress,
-  canadianSuccesses,nasaNeoOffer,weatherReserveHours,
+  canadianSuccesses,nasaNeoOffer,weatherReserveHours,dailyNetUsd=0,onGoToBlueprints,
   assembly,onLaunchAssemblyFlight,onFinalizeAssembly,onCancelAssembly,
 }:{
   day:number;cash:number;completed:readonly string[];devMode:boolean;
@@ -145,6 +146,7 @@ export default function CampaignMissions({
   orbitalAssemblyUnlocked:boolean;priorServiceFlights:number;logisticsInProgress:boolean;
   canadianSuccesses:number;
   nasaNeoOffer:CampaignDefinition|null;weatherReserveHours:number;
+  dailyNetUsd?:number;onGoToBlueprints?:()=>void;
 }){
   const stage=unlockedStage(completed,devMode);
   const originalAgency=useMemo(()=>agencyMissionDefinitions(),[]);
@@ -462,6 +464,7 @@ export default function CampaignMissions({
           <div className="campaign-workshop-actions">
             <button type="button" className="secondary-button" onClick={onGoToLab}>Engineering Lab / installed equipment ↗</button>
             <button type="button" className="secondary-button" onClick={onGoToRocket}>Rocket Fleet / Launch Logistics ↗</button>
+            {onGoToBlueprints&&<button type="button" className="secondary-button" onClick={onGoToBlueprints}>Load / duplicate a saved spacecraft ↗</button>}
             <button type="button" className="secondary-button"
               onClick={()=>onViewOrbital(selected,options)}>Analyze this orbit in Orbital Map ↗</button>
           </div>
@@ -477,6 +480,9 @@ export default function CampaignMissions({
             <div className="campaign-system-checks">
               {review.checks.map((c,i)=><Check key={i} {...c}/>)}
             </div>
+            <LaunchWindowForecast target={selected.target} day={day} options={options}
+              review={review} netDailyUsd={dailyNetUsd} cashUsd={cash}
+              onOpenOrbital={()=>onViewOrbital(selected,options)}/>
             <div className="campaign-logistics-breakdown" aria-label="Paid launch services and orbital assembly plan">
               <div className="eyebrow">ACTUAL LAUNCH LOGISTICS · SEPARATE FROM SATELLITE DESIGN</div>
               <h3>{review.launchManifest.vehicleLabel}</h3>
