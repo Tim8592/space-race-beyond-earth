@@ -98,6 +98,29 @@ describe('Next chapter campaign and orbit integrations',()=>{
     expect(noReserve.checks.find(c=>c.label==='Power interruption reserve')?.passed).toBe(false);
     expect(reserve.checks.find(c=>c.label==='Power interruption reserve')?.passed).toBe(true);
   });
+  it('NASA CubeSat 101 form factors influence installed payload, launch mass, power and cost',()=>{
+    const zero=reviewCampaignMission({...referenceArgs,options:{...DEFAULT_MISSION_OPTIONS,cubesatUnits:0}});
+    const one=reviewCampaignMission({...referenceArgs,options:{...DEFAULT_MISSION_OPTIONS,cubesatUnits:1}});
+    const three=reviewCampaignMission({...referenceArgs,options:{...DEFAULT_MISSION_OPTIONS,cubesatUnits:3}});
+    expect(one.hardwareWetKg).toBeGreaterThan(zero.hardwareWetKg);
+    expect(three.hardwareWetKg).toBeGreaterThan(one.hardwareWetKg);
+    expect(three.powerDemandW).toBeGreaterThan(one.powerDemandW);
+    expect(three.costUsd).toBeGreaterThan(one.costUsd);
+    const requires3U={...luna,special:true,id:'nasa-cubesat-test',
+      requiredCubeSatUnits:3 as const,windowStartDay:8,windowEndDay:29};
+    const incompatible=reviewCampaignMission({...referenceArgs,definition:requires3U,
+      options:{...DEFAULT_MISSION_OPTIONS,cubesatUnits:1}});
+    const installed=reviewCampaignMission({...referenceArgs,definition:requires3U,
+      options:{...DEFAULT_MISSION_OPTIONS,cubesatUnits:3}});
+    expect(incompatible.checks.find(c=>c.label.includes('NASA CubeSat 101'))?.passed).toBe(false);
+    expect(installed.checks.find(c=>c.label.includes('NASA CubeSat 101'))?.passed).toBe(true);
+  });
+  it('campaign special requirements increase with unlocked level',()=>{
+    const early=nextSpecialOffer(8,1)!;
+    const late=nextSpecialOffer(8,4)!;
+    expect(late.requiredScienceKg).toBeGreaterThan(early.requiredScienceKg);
+    expect(late.minElectricW).toBeGreaterThan(early.minElectricW);
+  });
   it('booster ideal delta-V accounts for attached spacecraft and jettisoned dry stage',()=>{
     const booster=BOOSTERS.storable;
     const review=reviewCampaignMission(referenceArgs);
