@@ -69,6 +69,7 @@ export type ObservationConfig = {
   rocketProgramLevel?:number;
   orbitalAssemblyUnlocked?:boolean;
   priorServiceFlights?:number;
+  canadianSuccesses?:number;
 };
 export type Capacity = {name:string;used:number;limit:number;unit:string;context:string;hard:boolean};
 export type DayReport = {
@@ -142,6 +143,7 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
     tier:config.rocketProgramLevel??0,
     assemblyUnlocked:config.orbitalAssemblyUnlocked??false,
     priorFlights:config.priorServiceFlights??config.completedWithEngine,
+    canadianSuccesses:config.canadianSuccesses??0,
   });
   const custom=launchService==='custom';
   const launchCapacityKg=Math.max(0,Math.min(
