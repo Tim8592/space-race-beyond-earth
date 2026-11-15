@@ -10,7 +10,8 @@ import ResearchLab from './ResearchLab';
 import MoonBase from './MoonBase';
 import RocketFleet from './RocketFleet';
 import {FLEET_UPGRADES,ORBITAL_ASSEMBLY_UPGRADE_USD,planMoonShipment,
-  planLaunchManifest,type LauncherId,type MoonCargoRun} from './lib/launchLogistics';
+  planLaunchManifest,flightService,canadianProgramReadiness,CANADIAN_RESEARCH_BONUS_RP,
+  type LauncherId,type MoonCargoRun} from './lib/launchLogistics';
 import {advanceProgramDay,dailyEconomics,MOON_BASE_LEVELS,RESEARCH_POINTS_START,
   researchPointsCost} from './lib/programEconomy';
 import {flightProgress,DEFAULT_FLIGHT_VIEWER_MS,flightEta} from './lib/flightProgress';
@@ -116,6 +117,7 @@ type Game = {
   operatingSpentUsd:number;passiveRevenueUsd:number;
   rocketService:LauncherId;rocketProgramLevel:number;
   rocketFlightCounts:Record<LauncherId,number>;orbitalAssemblyUnlocked:boolean;
+  canadianMissionSuccesses:number;observationLaunchService:LauncherId|null;
   moonCargoDeliveredLevel:number;activeMoonCargoRun:MoonCargoRun|null;
   activeAssemblyProject:CampaignAssemblyProject|null;
   devMode: boolean;
@@ -141,6 +143,7 @@ const DEFAULT_GAME: Game = {
   rocketService:'custom',rocketProgramLevel:0,
   rocketFlightCounts:{custom:0,falcon9:0,falconHeavy:0,starship:0},
   orbitalAssemblyUnlocked:false,moonCargoDeliveredLevel:0,activeMoonCargoRun:null,
+  canadianMissionSuccesses:0,observationLaunchService:null,
   activeAssemblyProject:null,
   devMode: false,
   storyCompleted: [],
@@ -179,6 +182,10 @@ function loadSave(): Snapshot {
       rocketProgramLevel:Number.isInteger(parsed.game.rocketProgramLevel)?
         Math.max(0,Math.min(3,parsed.game.rocketProgramLevel)):0,
       orbitalAssemblyUnlocked:parsed.game.orbitalAssemblyUnlocked===true,
+      canadianMissionSuccesses:Number.isInteger(parsed.game.canadianMissionSuccesses)?
+        Math.max(0,parsed.game.canadianMissionSuccesses):0,
+      observationLaunchService:['custom','falcon9','falconHeavy','starship'].includes(parsed.game.observationLaunchService)?
+        parsed.game.observationLaunchService:null,
       rocketFlightCounts:Object.assign(
         {custom:0,falcon9:0,falconHeavy:0,starship:0},
         parsed.game.rocketFlightCounts??{}),
@@ -354,12 +361,17 @@ export default function App() {
   }
   function buyFleetUpgrade(){
     setSnapshot(previous=>{
-      const next=FLEET_UPGRADES[previous.game.rocketProgramLevel];
-      if(!next||previous.game.cash<next.costUsd)return previous;
-      return {...previous,game:{...previous.game,
-        cash:previous.game.cash-next.costUsd,
-        rocketProgramLevel:previous.game.rocketProgramLevel+1}};
+      const g=previous.game,next=FLEET_UPGRADES[g.rocketProgramLevel];
+      if(!next||g.cash<next.costUsd)return previous;
+      const gate=canadianProgramReadiness({
+        tier:g.rocketProgramLevel,day:g.day,
+        canadianSuccesses:g.canadianMissionSuccesses,
+        researchUnlocked:g.researchUnlocked,devMode:g.devMode});
+      if(!gate.ready)return previous;
+      return {...previous,game:{...g,cash:g.cash-next.costUsd,
+        rocketProgramLevel:g.rocketProgramLevel+1}};
     });
+    setMessage('Canadian launch program advanced after research, testing and infrastructure funding.');
   }
   function buyOrbitalAssembly(){
     setSnapshot(previous=>{
@@ -379,7 +391,8 @@ export default function App() {
       const logistics=planMoonShipment({stageIndex:stage,
         service:g.rocketService,vehicle:previous.vehicle,
         tier:g.rocketProgramLevel,assemblyUnlocked:g.orbitalAssemblyUnlocked,
-        priorFlights:g.rocketFlightCounts[g.rocketService]??0});
+        priorFlights:g.rocketFlightCounts[g.rocketService]??0,
+        canadianSuccesses:g.canadianMissionSuccesses});
       if(!logistics.manifest.feasible||g.cash<logistics.totalCostUsd)return previous;
       const cargo:MoonCargoRun={id:'moon-cargo-stage-'+stage,title:logistics.blueprint.name,
         stageIndex:stage,target:'lunar',durationDays:8,
@@ -412,7 +425,9 @@ export default function App() {
         activeMoonCargoRun:null,
         moonCargoDeliveredLevel:Math.max(g.moonCargoDeliveredLevel,run.stageIndex+1),
         completed:g.completed+1,deliveredKg:g.deliveredKg+run.payloadKg,
-        researchPoints:advanced.researchPoints+2,
+        researchPoints:advanced.researchPoints+2+
+          (run.service==='custom'?CANADIAN_RESEARCH_BONUS_RP:0),
+        canadianMissionSuccesses:g.canadianMissionSuccesses+(run.service==='custom'?1:0),
         history:[event,...g.history].slice(0,12)}};
     });
     setMessage('Lunar cargo delivered. The associated surface facility can now be constructed.');
@@ -504,6 +519,7 @@ export default function App() {
         vehicle:previous.vehicle,tier:g.rocketProgramLevel,
         assemblyUnlocked:g.orbitalAssemblyUnlocked,
         priorFlights:g.rocketFlightCounts[g.rocketService]??0,
+        canadianSuccesses:g.canadianMissionSuccesses,
       });
       if(!manifest.feasible||manifest.flightsRequired!==run.launchCount||
          manifest.flights.length!==run.launchInvoices.length)return previous;
@@ -591,7 +607,10 @@ export default function App() {
       return {...previous,game:{...advanced,
         cash:advanced.cash+run.payoutUsd,
         researchPoints:advanced.researchPoints+5+
-          (run.target==='jupiter'?12:run.target==='mars'?9:run.target==='asteroid'?7:4),
+          (run.target==='jupiter'?12:run.target==='mars'?9:run.target==='asteroid'?7:4)+
+          (run.launchService==='custom'?CANADIAN_RESEARCH_BONUS_RP:0),
+        canadianMissionSuccesses:previous.game.canadianMissionSuccesses+
+          (run.launchService==='custom'?1:0),
         day:advanced.day,
         completed:previous.game.completed+1,
         deliveredKg:previous.game.deliveredKg+run.payloadKg,
