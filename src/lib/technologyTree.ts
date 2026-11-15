@@ -89,7 +89,7 @@ export function hasTechnology(id:TechnologyId|undefined,unlocked:readonly Techno
 export function researchPointsCost(researchUsd:number):number{
   return Math.max(2,Math.ceil(researchUsd/4e6));
 }
-export function canResearch(id:TechnologyId,unlocked:readonly TechnologyId[],fundingUsd:number,researchPoints=Infinity):boolean {
+export function canResearch(id:TechnologyId,unlocked:readonly TechnologyId[],fundingUsd:number,researchPoints:number):boolean {
   const tech=TECHNOLOGIES.find(x=>x.id===id);
   return !!tech&&!unlocked.includes(id)&&fundingUsd>=tech.researchUsd &&
     researchPoints>=researchPointsCost(tech.researchUsd) &&
