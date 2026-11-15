@@ -63,8 +63,10 @@ export default function MissionFlightViewer({run,nowMs}:Props){
  const start=points[0],end=points[points.length-1];
  const targetName=target==='lunar'?'MOON':target==='ellipse'?'HIGH EARTH ORBIT':
    target==='mars'?'MARS':target==='jupiter'?'JUPITER':'ASTEROID SURVEY';
- const fallbackMessage=target==='lunar'||target==='ellipse'
-    ?'Orekit elliptical viewer not available — using an illustrative Earth-orbit transfer animation.'
+ const fallbackMessage=target==='lunar'
+    ?'Orekit elliptical viewer not available — using a schematic Earth-to-Moon transfer rather than a solved three-body trajectory.'
+    :target==='ellipse'
+    ?'Orekit elliptical viewer not available — using an illustrative Earth-orbit conic animation.'
     :target==='asteroid'
     ?'Orekit trajectory unavailable for synthetic asteroid — showing an illustrative survey transfer.'
     :checking?'Checking local Orekit Lambert service…'
