@@ -133,8 +133,14 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   ));
   const liftoff=calculateVehicleMetrics({...launcher,payloadMassKg:massKg});
   const launcherDeltaVMs=liftoff.deltaVms,launcherTwr=liftoff.liftoffTwr;
+  const fissionDesign=POWER_SYSTEMS[spacecraft.powerSourceId].class==='fission';
+  const unverifiedReactorCooling=fissionDesign&&(
+    missionResult.powerSystemMassKg===null||
+    missionResult.reactorThermalMarginW===null||
+    missionResult.reactorThermalMarginW<0);
   const launchReady=massKg<=launchCapacityKg &&
-    launcherDeltaVMs>=requiredLaunchDeltaVMs && launcherTwr>=MIN_TWR;
+    launcherDeltaVMs>=requiredLaunchDeltaVMs&&launcherTwr>=MIN_TWR&&
+    !unverifiedReactorCooling;
 
   const orbitRadiusKm=EARTH.equatorialRadiusKm+choices.orbitAltitudeKm;
   const orbitPeriodHours=2*Math.PI*Math.sqrt(orbitRadiusKm**3/EARTH.gravitationalParameterKm3PerS2)/3600;
@@ -201,14 +207,17 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   });
   const warnings:string[]=[];
   if(missionResult.massEstimateIncomplete)warnings.push('Spacecraft wet mass is a PARTIAL estimate; electric propellant storage and some reactor equipment may be missing.');
-  if(!launchReady)warnings.push('Launch payload exceeds the allocation or ideal rocket performance. Increase mass allowance or redesign.');
+  if(!launchReady)warnings.push('Launch is blocked by payload/rocket capability or unverified reactor cooling. Review mass, Δv, TWR and nuclear heat rejection.');
+  if(unverifiedReactorCooling)warnings.push('Fission reactor mass/thermal margin is incomplete or heat rejection is below demand. Add a verified thermal architecture before committing this spacecraft.');
   if(powerLoadW>powerCapacityW)warnings.push('Sunlit power deficit throttles instrument operations. Increase solar area or reduce loads.');
   if(thermalLoadW>thermalCapacityW)warnings.push('Insufficient modeled radiator heat rejection reduces camera duty cycle.');
   if(eclipseRequiredWh>batteryUsableWh)warnings.push('Battery cannot cover the worst-case eclipse. Some observation time is lost to recovery.');
   if(dataMbPerDay>downlinkMbPerDay)warnings.push('Data generation exceeds daily contact capacity; stored images can accumulate.');
   if(missionCostUsd>OBSERVATION_BUDGET_USD)warnings.push('Mission exceeds the program brief budget.');
   if(missionResult.powerSystemWasteHeatW!==null&&missionResult.powerSystemWasteHeatW>0)
-    warnings.push('Radioisotope/reactor waste heat and integration are not fully captured by the bus radiator budget.');
+    warnings.push(fissionDesign
+      ?'Fission waste heat is assigned to the separate conceptual high-temperature radiator branch; real shield, coolant and coupling physics remain unqualified.'
+      :'Radioisotope waste heat is not allocated to the bus radiator; isolated source cooling remains to be engineered.');
   return {missionResult,massKg,launcherDeltaVMs,launcherTwr,launchCapacityKg,requiredLaunchDeltaVMs,
     launchReady,missionCostUsd,spacecraftProcurement,riskReview,
     powerLoadW,powerCapacityW,thermalLoadW,thermalCapacityW,
