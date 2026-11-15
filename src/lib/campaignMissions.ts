@@ -275,6 +275,7 @@ export function reviewCampaignMission(args:{
   orbitalAssemblyUnlocked?:boolean;
   priorServiceFlights?:number;
   canadianSuccesses?:number;
+  weatherReserveHours?:number;
 }):MissionReview{
   const {definition:d,day,options:o,spacecraft,launcher,capitalUsd}=args;
   const destinationAu=d.target==='jupiter'?5.2029:d.target==='mars'?1.5237:
@@ -303,8 +304,13 @@ export function reviewCampaignMission(args:{
   // An instrument/relay must tolerate a defined temporary loss of solar
   // generation, or rely on non-solar baseload. This is a GAME contingency
   // duration, not a computed orbital-eclipse geometry.
-  const interruptionHours=d.target==='lunar'?3:d.target==='asteroid'?2:
-    d.target==='mars'?2.5:d.target==='jupiter'?5:1.5;
+  // DONKI observations influence only Earth/lunar operations when the GAME
+  // date overlaps actual observations, never a fabricated future forecast.
+  const liveWeatherHours=d.target==='lunar'||d.target==='ellipse'?
+    Math.min(2,Math.max(0,Number.isFinite(args.weatherReserveHours)?
+      args.weatherReserveHours??0:0)):0;
+  const interruptionHours=(d.target==='lunar'?3:d.target==='asteroid'?2:
+    d.target==='mars'?2.5:d.target==='jupiter'?5:1.5)+liveWeatherHours;
   const backupUsableWh=(system.storedBatteryEnergyWh+(o.reserveBattery?6000:0))*.8*.9;
   const backupRequiredWh=Math.max(0,powerDemandW-system.generatorElectricPowerW)*interruptionHours;
   // Sequential, finite-fuel rocket-equation burn: at most one propulsion
@@ -390,6 +396,13 @@ export function reviewCampaignMission(args:{
     {label:'Flight-time envelope',actual:format(route.flightDays,'days'),needed:format(d.durationDays+100,'days'),
       passed:flightPositive,detail:'An impulsive transfer is not a finite-thrust propagation; conservative game cruise-time gate'},
   ];
+  if(liveWeatherHours>0)checks.push({
+    label:'NASA DONKI · observed-weather contingency',
+    actual:format(backupUsableWh,'Wh'),needed:format(backupRequiredWh,'Wh'),
+    passed:backupUsableWh>=backupRequiredWh,
+    detail:'Real recent NASA DONKI observations overlap the in-game calendar. +'+liveWeatherHours+
+      ' game-estimated outage reserve hour(s) added for near-Earth/lunar operations. This is NOT an official forecast or modeled radiation exposure. Use spacecraft batteries or the external reserve module.'
+  });
   if(d.special){
     if(d.requiredCubeSatUnits)checks.push({
       label:'NASA CubeSat 101 · dispenser interface',
