@@ -6,7 +6,7 @@ import MissionLibrary from './MissionLibrary';
 import LearningLab from './LearningLab';
 import ResearchLab from './ResearchLab';
 import CampaignMissions,{type CampaignRun,type CampaignDebrief} from './CampaignMissions';
-import {dateForGameDay,type CampaignDefinition,type MissionOptions,type SolvedCampaignTransfer} from './lib/campaignMissions';
+import {dateForGameDay,orbitalRoute,type CampaignDefinition,type MissionOptions,type SolvedCampaignTransfer} from './lib/campaignMissions';
 import type {LambertSolution} from './TransferPlanner';
 import {canResearch,TECHNOLOGIES, type TechnologyId,hasTechnology,
   THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,researchDiscount} from './lib/technologyTree';
@@ -345,7 +345,7 @@ export default function App() {
       definition.target==='asteroid'?'heliocentric':'earth',
       day:game.day,target:definition.target==='jupiter'?'jupiter':'mars',
       perigee:options.perigeeKm,eccentricity:definition.target==='ellipse'?options.eccentricity:
-        definition.target==='lunar'?0.72:0.25});
+        definition.target==='lunar'?orbitalRoute('lunar',game.day,options).eccentricity:0.25});
     setActiveView('orbits');
   }
   const missionSolved: SolvedCampaignTransfer|null=lastSolvedTransfer&&

@@ -59,7 +59,7 @@ export function earthOrbitAtTime(
 ): OrbitState {
   if (![perigeeAltitudeKm, eccentricity, elapsedMinutes, argumentPeriapsisDeg].every(Number.isFinite) ||
       perigeeAltitudeKm < 150 || perigeeAltitudeKm > 100000 ||
-      eccentricity < 0 || eccentricity >= 0.95) {
+      eccentricity < 0 || eccentricity >= 0.985) {
     throw new RangeError('Orbit inputs outside supported range');
   }
   const rp = EARTH_RADIUS_KM + perigeeAltitudeKm;

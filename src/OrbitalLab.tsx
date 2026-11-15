@@ -27,7 +27,7 @@ export default function OrbitalLab({
 }) {
   const [mode,setMode] = useState<'earth'|'heliocentric'>(initialMode);
   const [perigeeKm,setPerigeeKm] = useState(Math.max(180,Math.min(1500,initialAltitudeKm)));
-  const [eccentricity,setEccentricity] = useState(Math.max(0,Math.min(.8,initialEccentricity)));
+  const [eccentricity,setEccentricity] = useState(Math.max(0,Math.min(.98,initialEccentricity)));
   const [periapsisAngle,setPeriapsisAngle] = useState(20);
   const [elapsedMinutes,setElapsedMinutes] = useState(0);
   const [dayOffset,setDayOffset] = useState(Math.max(0,Math.min(3200,initialDayOffset)));
@@ -160,7 +160,7 @@ export default function OrbitalLab({
         <div className="orbit-controls">
           {mode==='earth'?<>
             <label>Perigee altitude <FieldHelp term="Perigee altitude"/> <strong>{formatted(perigeeKm,0)} km</strong><input type="range" min="180" max="10000" step="20" value={perigeeKm} onChange={e=>{setPerigeeKm(Number(e.target.value));setElapsedMinutes(0);}}/></label>
-            <label>Eccentricity <FieldHelp term="Eccentricity"/> <strong>{eccentricity.toFixed(2)}</strong><input type="range" min="0" max="0.8" step="0.01" value={eccentricity} onChange={e=>{setEccentricity(Number(e.target.value));setElapsedMinutes(0);}}/></label>
+            <label>Eccentricity <FieldHelp term="Eccentricity"/> <strong>{eccentricity.toFixed(2)}</strong><input type="range" min="0" max="0.98" step="0.005" value={eccentricity} onChange={e=>{setEccentricity(Number(e.target.value));setElapsedMinutes(0);}}/></label>
             <label>Periapsis orientation <FieldHelp term="Periapsis orientation"/> <strong>{formatted(periapsisAngle,0)}°</strong><input type="range" min="0" max="360" step="5" value={periapsisAngle} onChange={e=>setPeriapsisAngle(Number(e.target.value))}/></label>
             <label>Elapsed time (one period) <FieldHelp term="Elapsed time (one period)"/> <strong>{formatted((elapsedMinutes%earthState.periodMinutes+earthState.periodMinutes)%earthState.periodMinutes,0)} min</strong><input type="range" min="0" max={earthState.periodMinutes} step="0.5" value={(elapsedMinutes%earthState.periodMinutes+earthState.periodMinutes)%earthState.periodMinutes} onChange={e=>{setElapsedMinutes(Number(e.target.value));setRunning(false);}}/></label>
             <div className="orbit-data-grid">
