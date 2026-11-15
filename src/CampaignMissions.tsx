@@ -16,11 +16,13 @@ export type CampaignRun={
   target:CampaignDefinition['target'];options:MissionOptions;
   route:MissionReview['route'];scienceKg:number;
   deltaVms:number;requiredDeltaVms:number;
+  busPropellantBurnedKg?:number;busPropellantRemainingKg?:number;
 };
 export type CampaignDebrief={
   id:string;title:string;day:number;success:boolean;special:boolean;
   costUsd:number;payoutUsd:number;durationDays:number;deltaVms:number;
   neededDeltaVms:number;scienceKg:number;
+  busPropellantBurnedKg?:number;busPropellantRemainingKg?:number;
 };
 const num=(n:number,nDigits=0)=>Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:nDigits}):'—';
 const usd=(n:number)=>'$'+(n/1e6).toFixed(1)+'M';
@@ -147,7 +149,9 @@ export default function CampaignMissions({
       durationDays:selected.durationDays,launchedDay:day,departureDate:dateForGameDay(day),
       costUsd:review.costUsd,payoutUsd:selected.payoutUsd,payloadKg:review.hardwareWetKg,
       scienceKg:review.scienceMassKg,target:selected.target,options:{...options},
-      route:review.route,deltaVms:review.totalDeltaVms,requiredDeltaVms:review.requiredDeltaVms});
+      route:review.route,deltaVms:review.totalDeltaVms,requiredDeltaVms:review.requiredDeltaVms,
+      busPropellantBurnedKg:review.busPropellantBurnedKg,
+      busPropellantRemainingKg:review.busPropellantRemainingKg});
   }
   const activeMission=run?(
     STORY_MISSIONS.find(m=>m.id===run.id)??agencyOffers.find(m=>m.id===run.id)??(scheduled?.id===run.id?scheduled:null)??{
@@ -234,7 +238,13 @@ export default function CampaignMissions({
       <OrbitScene definition={activeMission} review={liveReview} progress={run.durationDays}/>
       <div className="campaign-flight-stats"><div><span>MISSION COST PAID</span><strong>{usd(run.costUsd)}</strong></div>
         <div><span>CONTRACT REWARD</span><strong>{usd(run.payoutUsd)}</strong></div>
-        <div><span>EXPECTED SCIENCE / PAYLOAD</span><strong>{num(run.scienceKg)} kg</strong></div></div>
+        <div><span>EXPECTED SCIENCE / PAYLOAD</span><strong>{num(run.scienceKg)} kg</strong></div>
+        {run.busPropellantBurnedKg!==undefined&&<div>
+          <span>MODELED PROPELLANT CONSUMED</span><strong>{num(run.busPropellantBurnedKg,2)} kg</strong>
+        </div>}
+        {run.busPropellantRemainingKg!==undefined&&<div>
+          <span>PROPELLANT STILL ONBOARD</span><strong>{num(run.busPropellantRemainingKg,2)} kg</strong>
+        </div>}</div>
       <button type="button" className="launch-button" onClick={onFinish}>Complete flight and mission debrief ↗</button>
     </div>:<>
       {debrief&&<div className="panel campaign-debrief">
@@ -243,6 +253,10 @@ export default function CampaignMissions({
         <p>Mission finished on Day {debrief.day}. The campaign advanced {debrief.durationDays} days.
           {debrief.success?' Your delivered mission hardware met the model requirements and unlocked the next stage.':' Review the engineering constraints before another attempt.'}</p>
         <div><strong>Contract result</strong><span>{usd(debrief.payoutUsd-debrief.costUsd)} modeled net campaign cash</span></div>
+        {debrief.busPropellantBurnedKg!==undefined&&<div>
+          <strong>Modeled onboard propellant usage</strong>
+          <span>{num(debrief.busPropellantBurnedKg,2)} kg consumed · {num(debrief.busPropellantRemainingKg??0,2)} kg left</span>
+        </div>}
       </div>}
       {stageIsLocked&&<div className="campaign-locked-overlay">
         <strong>Complete the preceding campaign missions to unlock {selected.title}.</strong>
