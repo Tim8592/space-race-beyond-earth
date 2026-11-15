@@ -812,7 +812,11 @@ export default function App() {
   },[campaignSelection.selected,game.day,campaignOptions,spacecraftDesign,vehicle,
     game.cash,game.engineBuildCounts,missionTechnologyDiscount,lastSolvedTransfer,
     game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses,nasaWeather.reserveHours]);
-  function startEarthObservation(costUsd:number){
+  function startEarthObservation(costUsd:number,instrument:ObservationChoices['instrument']){
+    // Guided flight replaces the Lab science sensor and generic cargo for this
+    // one mission. Save the actual flown configuration, not unused Lab payload.
+    const flownDesign={...spacecraftDesign,payloadInstrumentId:instrument,
+      payloadMassKg:0,distanceAu:1};
     setSnapshot(previous=>{
       const g=previous.game;
       if(g.cash<costUsd||g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject||g.activeNetworkRun)return previous;
@@ -822,7 +826,7 @@ export default function App() {
       launched:g.launched+1,
       observationLaunchService:g.rocketService,
       spacecraftBlueprints:markSpacecraftDeployed(g.spacecraftBlueprints,
-        'Earth Observation One · flown',spacecraftDesign,'Earth Observation One',g.day),
+        'Earth Observation One · flown',flownDesign,'Earth Observation One',g.day),
       rocketFlightCounts:{...g.rocketFlightCounts,
         [g.rocketService]:(g.rocketFlightCounts[g.rocketService]??0)+1},
       engineBuildCounts:{...previous.game.engineBuildCounts,
