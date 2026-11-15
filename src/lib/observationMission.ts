@@ -2,6 +2,7 @@ import { calculateVehicleMetrics, ENGINES, estimateBuildCostUsd, type Vehicle } 
 import { STANDARD_GRAVITY_MS2, EARTH } from './nasaData';
 import { sizeSubsystemDesign, type SubsystemDesign, type SystemResults } from './subsystemDesign';
 import { BATTERY_PACKS } from './spacecraftTechnology';
+import { SCIENCE_INSTRUMENTS } from './instrumentCatalog';
 
 /**
  * Earth Observation One: a deterministic seven-day educational campaign.
@@ -22,10 +23,12 @@ const EXTRA_RADIATOR_USDM2 = 600_000;
 const EXTRA_BATTERY_USDWH = 450;
 const MIN_TWR = 1.15;
 
-export const INSTRUMENTS = {
-  compact: {name:'Compact Earth imager',massKg:8, powerW:45,dataMbps:0.025,sciencePerHour:1.2,costUsd:3_000_000,detail:'Low mass / modest images'},
-  multispectral: {name:'Multispectral camera',massKg:26,powerW:110,dataMbps:0.12,sciencePerHour:2.5,costUsd:14_000_000,detail:'Balanced science / data volume'},
-  hyperspectral: {name:'Hyperspectral mapper',massKg:70,powerW:240,dataMbps:0.4,sciencePerHour:4.5,costUsd:32_000_000,detail:'High-value / high-bandwidth payload'},
+/** All player instruments use the shared spacecraft instrument catalog. */
+export const INSTRUMENTS={
+  compact:{...SCIENCE_INSTRUMENTS.compact,detail:'Low mass / modest images'},
+  multispectral:{...SCIENCE_INSTRUMENTS.multispectral,detail:'Balanced science / data volume'},
+  hyperspectral:{...SCIENCE_INSTRUMENTS.hyperspectral,detail:'High-value / high-bandwidth payload'},
+  thermal:{...SCIENCE_INSTRUMENTS.thermal,detail:'Thermal surface monitoring'},
 } as const;
 export const RADIOS = {
   uhf: {name:'Basic UHF downlink',massKg:4,powerW:16,rateMbps:0.09,costUsd:1_800_000},
@@ -103,7 +106,8 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   }
   // The lab's generic science payload mass slot is REPLACED by the chosen
   // instrument. Earth orbit is at ~1 AU regardless of lab's heliocentric preset.
-  const missionDesign={...spacecraft,payloadMassKg:instrument.massKg,distanceAu:1};
+  const missionDesign={...spacecraft,payloadMassKg:0,
+    payloadInstrumentId:choices.instrument,distanceAu:1};
   const missionResult=sizeSubsystemDesign(missionDesign);
   const pack=BATTERY_PACKS.find(b=>b.id===spacecraft.batteryPackId);
   if(!pack)throw new Error('Unknown battery pack');
@@ -133,21 +137,23 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   const eclipseFraction=Math.asin(EARTH.equatorialRadiusKm/orbitRadiusKm)/Math.PI;
   const sunlitFraction=1-eclipseFraction;
   const eclipseDurationHours=orbitPeriodHours*eclipseFraction;
-  const eclipseRequiredWh=Math.max(0,spacecraft.busElectricalPowerW-
+  // No instrument activity during eclipse in this first-order mission.
+  const instrumentWithHarnessW=instrument.powerW/0.94;
+  const baseHousekeepingW=missionResult.housekeepingPowerW-instrumentWithHarnessW;
+  const eclipseRequiredWh=Math.max(0,baseHousekeepingW-
     missionResult.generatorElectricPowerW)*eclipseDurationHours;
   const batteryUsableWh=(missionResult.storedBatteryEnergyWh+choices.batteryExtraWh)*BATTERY_DOD*BATTERY_EFF;
   // Thrusters do not fire during routine Earth imaging. Their physical mass
   // remains in the launcher payload, but their rated electric power is not
   // continuously charged to imaging/communications.
   const powerCapacityW=missionResult.totalAvailablePowerW;
-  const powerLoadW=spacecraft.busElectricalPowerW+radio.powerW+instrument.powerW;
-  const heatBase=spacecraft.busElectricalPowerW+radio.powerW;
-  const thermalLoadW=heatBase+instrument.powerW;
+  const heatBase=baseHousekeepingW+radio.powerW/0.94;
+  const powerLoadW=heatBase+instrumentWithHarnessW;
+  const thermalLoadW=powerLoadW;
   const thermalCapacityW=Math.max(0,missionResult.radiatorNetFluxWm2)*
     ((missionResult.radiatorAreaM2??0)+choices.radiatorExtraAreaM2);
-  const effectPower=Math.min(1,Math.max(0,(powerCapacityW-
-    spacecraft.busElectricalPowerW-radio.powerW)/instrument.powerW));
-  const effectThermal=Math.min(1,Math.max(0,(thermalCapacityW-heatBase)/instrument.powerW));
+  const effectPower=Math.min(1,Math.max(0,(powerCapacityW-heatBase)/instrumentWithHarnessW));
+  const effectThermal=Math.min(1,Math.max(0,(thermalCapacityW-heatBase)/instrumentWithHarnessW));
   const effectEclipse=eclipseRequiredWh<=0?1:
     Math.min(1,batteryUsableWh/eclipseRequiredWh);
   const dutyFactor=effectPower*effectThermal*effectEclipse;
@@ -155,7 +161,7 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   const activeHours=availableSunHours*dutyFactor;
   const dataMbPerDay=activeHours*instrument.dataMbps*3600;
   const accessHoursPerDay=choices.orbitAltitudeKm===400?1.3:1.85; // simplified single station
-  const radioPowerFactor=powerCapacityW>=spacecraft.busElectricalPowerW+radio.powerW?1:0;
+  const radioPowerFactor=powerCapacityW>=heatBase?1:0;
   const downlinkMbPerDay=radio.rateMbps*accessHoursPerDay*3600*GROUND_EFFICIENCY*radioPowerFactor;
   const scienceRatePerMb=instrument.sciencePerHour/(instrument.dataMbps*3600);
   const scienceGeneratedPotential=availableSunHours*instrument.sciencePerHour*OBSERVATION_DAYS;
@@ -167,7 +173,7 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
     {name:'Launch payload',used:massKg,limit:launchCapacityKg,unit:'kg',hard:true,
       context:'Actual wet spacecraft mass vs reserved slot and rocket capability'},
     {name:'Sunlit electrical demand',used:powerLoadW,limit:powerCapacityW,unit:'W',hard:false,
-      context:'Housekeeping + radio + instrument, excluding idle thrusters'},
+      context:'Automatic avionics, wing/radiator controls, wiring, radio and instrument; thrusters idle'},
     {name:'Radiator heat rejection',used:thermalLoadW,limit:thermalCapacityW,unit:'W',hard:false,
       context:'Peak electronics heat vs modeled radiative rejection'},
     {name:'Eclipse energy',used:eclipseRequiredWh,limit:batteryUsableWh,unit:'Wh',hard:false,
