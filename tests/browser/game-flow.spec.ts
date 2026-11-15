@@ -100,7 +100,7 @@ test('Learning tab and Mission Library survive real navigation',async({page})=>{
     await page.goto('/');
     await page.getByRole('tab',{name:'Learn Physics'}).click();
     await expect(page.getByRole('heading',{name:'The physics behind your spacecraft'})).toBeVisible();
-    await page.getByRole('tab',{name:'Electrical power'}).click();
+    await page.getByRole('tab',{name:'Power'}).click();
     await expect(page.getByRole('heading',{name:/How much power can sunlight provide/})).toBeVisible();
     await page.getByRole('tab',{name:'Mission Library'}).click();
     await expect(page.getByRole('heading',{name:'Learn from flown missions and unfinished ambitions.'})).toBeVisible();
@@ -620,7 +620,7 @@ test('Actual compute node needs module/power/radiator/rocket, and only earns dai
     await expect(page.locator('.orbital-business-stats')).toContainText('$0M');
     await expect(page.locator('.orbital-checks')).toContainText('Correct installed orbital-service module');
     await page.getByRole('tab',{name:'Engineering Lab'}).click();
-    await page.getByRole('tab',{name:'Scientific payload'}).click();
+    await page.getByRole('tab',{name:'Science payload'}).click();
     await page.getByRole('combobox',{name:'On-orbit service payload'}).selectOption('compute');
     await page.getByRole('tab',{name:'Electrical power'}).click();
     await page.locator('label.sys-field').filter({hasText:'Active solar cell area'})
