@@ -1,0 +1,106 @@
+import {useState} from 'react';
+import {TECHNOLOGIES,canResearch,formatMillions,hasTechnology,
+  type TechnologyId,type TechnologyNode} from './lib/technologyTree';
+
+export const FUTURE_MISSIONS=[
+  {name:'Earth Observation One',phase:'PLAYABLE NOW',region:'Earth orbit',
+    goal:'Return scientific imagery through a communications bottleneck',
+    tech:'Imaging, solar panels, batteries, launch and data downlink',className:'active'},
+  {name:'Lunar Relay Pathfinder',phase:'NEXT CAMPAIGN MISSION',region:'Moon',
+    goal:'Deliver a lunar communications relay and maintain a workable link budget',
+    tech:'Transfer Δv, capture burns, lunar comm windows and eclipse survival',className:'future'},
+  {name:'Asteroid Prospecting',phase:'PLANNED',region:'Near-Earth asteroid',
+    goal:'Use onboard magnetometer and spectroscopy data to map an asteroid',
+    tech:'Power at distance, solar-electric or chemical correction, long science campaigns',className:'future'},
+  {name:'Mars Orbiter',phase:'PLANNED',region:'Mars',
+    goal:'Choose a transfer window, handle capture and operate an instrument around Mars',
+    tech:'Lambert/trajectory interface, propulsion feasibility, thermal and comm delay',className:'future'},
+  {name:'Jupiter Icy-Moons Survey',phase:'CONCEPT TRACK',region:'Jupiter',
+    goal:'Design a large power-limited explorer, manage radiation and reject reactor heat',
+    tech:'RTG or research fission electric, long-duration thrust, thermal management',className:'future'},
+] as const;
+
+function TechCard({item,unlocked,devMode,cash,onResearch}:{
+  item:TechnologyNode;unlocked:readonly TechnologyId[];devMode:boolean;
+  cash:number;onResearch:(id:TechnologyId)=>void;
+}){
+  const permanentlyUnlocked=unlocked.includes(item.id);
+  const available=hasTechnology(item.id,unlocked,devMode);
+  const researchable=canResearch(item.id,unlocked,cash)&&!devMode;
+  const missing=item.prerequisites.filter(id=>!unlocked.includes(id));
+  const maturity=item.gameMaturity;
+  return <article className={'research-node '+(available?'researched':'locked')}>
+    <div className="research-node-top"><span className="sys-chip">{item.branch}</span>
+      <span className="research-status">{permanentlyUnlocked?'RESEARCHED':devMode?'DEV UNLOCK':'LOCKED'}</span></div>
+    <h3>{item.label}</h3>
+    <p>{item.description}</p>
+    <div className="research-economics">
+      <div><span>R&D INVESTMENT</span><b>{formatMillions(item.researchUsd)}</b></div>
+      <div><span>REFERENCE HARDWARE</span><b>{formatMillions(item.hardwareCostUsd)}</b></div>
+      <div><span>ASSUMED ANNUAL OPEX</span><b>{formatMillions(item.operationalCostUsdPerYear)}</b></div>
+    </div>
+    <div className="research-risk"><b>Game maturity: {maturity}</b><small>Design risk: {item.riskNote}</small></div>
+    <p className="research-unlocks"><strong>Unlocks:</strong> {item.unlocks}</p>
+    {missing.length>0&&!devMode&&
+      <p className="research-prereq">Requires {missing.map(id=>TECHNOLOGIES.find(t=>t.id===id)?.label??id).join(' + ')}</p>}
+    {item.sourceUrl&&<a href={item.sourceUrl} target="_blank" rel="noreferrer">Technical reference ↗</a>}
+    <button className="secondary-button" type="button" disabled={!researchable||permanentlyUnlocked}
+      onClick={()=>onResearch(item.id)}>
+      {permanentlyUnlocked?'Already researched':devMode?'Available for demo':
+      !researchable?'Prerequisite / funds required':'Invest '+formatMillions(item.researchUsd)+' →'}
+    </button>
+  </article>;
+}
+
+export default function ResearchLab({cash,unlocked,devMode,onToggleDevMode,onResearch}:{
+  cash:number;unlocked:readonly TechnologyId[];devMode:boolean;
+  onToggleDevMode:()=>void;onResearch:(id:TechnologyId)=>void;
+}){
+  const [branch,setBranch]=useState<'All'|TechnologyNode['branch']>('All');
+  const visible=branch==='All'?TECHNOLOGIES:TECHNOLOGIES.filter(t=>t.branch===branch);
+  const displayedUnlocked=TECHNOLOGIES.filter(t=>hasTechnology(t.id,unlocked,devMode)).length;
+  return <section className="research-lab" aria-label="Agency research and progression">
+    <div className="panel research-intro">
+      <div><div className="eyebrow">TECHNOLOGY DIRECTORATE / ECONOMIC STRATEGY</div>
+        <h2>Research the next frontier.</h2>
+        <p>Invest contract proceeds into new spacecraft architectures. Compare development cost,
+          conceptual hardware procurement, operating burden and engineering maturity before choosing a path.</p>
+      </div>
+      <div className="research-intro-side">
+        <span>AGENCY CAPITAL</span><strong>{formatMillions(cash)}</strong>
+        <span>TECHNOLOGIES AVAILABLE</span><strong>{displayedUnlocked} / {TECHNOLOGIES.length}</strong>
+      </div>
+    </div>
+    <div className="panel research-dev-banner">
+      <div><div className="eyebrow">PRESENTATION CONTROLS</div><h3>Developer / Demo Mode</h3>
+        <p>Temporarily unlock every cataloged research technology for tomorrow’s demonstration.
+          No R&D money is spent. Turn it off to restore your actual progression.
+          <strong> Future missions marked planned are previews only, not playable.</strong></p></div>
+      <button type="button" className={'dev-toggle '+(devMode?'enabled':'')} aria-pressed={devMode}
+        onClick={onToggleDevMode}>{devMode?'DEV MODE: ON':'DEV MODE: OFF'}</button>
+    </div>
+    <div className="research-tabs" role="tablist" aria-label="Technology research branches">
+      {(['All','Propulsion','Power','Thermal','Science','Economics'] as const).map(b=>
+        <button type="button" role="tab" aria-selected={branch===b} key={b}
+          onClick={()=>setBranch(b)}>{b}</button>)}
+    </div>
+    <div className="research-node-grid">
+      {visible.map(item=><TechCard key={item.id} item={item} unlocked={unlocked}
+        devMode={devMode} cash={cash} onResearch={onResearch}/>)}
+    </div>
+    <div className="panel research-missions">
+      <div className="eyebrow">CAMPAIGN EVOLUTION / PLANNED STORY ARC</div>
+      <h2>From Earth orbit to Jupiter</h2>
+      <p>Later missions will unlock in order as actual objective, trajectory and science models are implemented.
+        Developer Mode does not falsely mark these future simulations as complete.</p>
+      <div className="research-mission-grid">{FUTURE_MISSIONS.map((mission,i)=>
+        <div className={'research-mission-card '+mission.className} key={mission.name}>
+          <div><b>{String(i+1).padStart(2,'0')} / {mission.region}</b><span>{mission.phase}</span></div>
+          <h3>{mission.name}</h3><p>{mission.goal}</p><small>{mission.tech}</small>
+        </div>)}</div>
+    </div>
+    <p className="research-legal">Economic amounts, game maturity categories and design-risk summaries are invented
+      campaign planning assumptions, not NASA technology-specific TRL certification, supplier prices, mission insurance
+      rates, or actual probabilities of failure. See <a href="https://www.nasa.gov/directorates/somd/space-communications-navigation-program/technology-readiness-levels/" target="_blank" rel="noreferrer">NASA's official TRL definitions</a>.</p>
+  </section>;
+}
