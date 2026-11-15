@@ -215,6 +215,8 @@ export type MissionReview={
   requiredDeltaVms:number;
   powerAvailableW:number;
   powerDemandW:number;
+  backupUsableWh:number;
+  backupRequiredWh:number;
   thermalCapacityW:number;
   heatDemandW:number;
   scienceMassKg:number;
@@ -272,7 +274,13 @@ export function reviewCampaignMission(args:{
       (hardwareWetKg-booster.propKg)):0;
   const available=system.totalAvailablePowerW;
   const powerDemandW=system.housekeepingPowerW+modulePower;
-  const powerMargin=available-powerDemandW;
+  // An instrument/relay must tolerate a defined temporary loss of solar
+  // generation, or rely on non-solar baseload. This is a GAME contingency
+  // duration, not a computed orbital-eclipse geometry.
+  const interruptionHours=d.target==='lunar'?3:d.target==='asteroid'?2:
+    d.target==='mars'?2.5:d.target==='jupiter'?5:1.5;
+  const backupUsableWh=(system.storedBatteryEnergyWh+(o.reserveBattery?6000:0))*.8*.9;
+  const backupRequiredWh=Math.max(0,powerDemandW-system.generatorElectricPowerW)*interruptionHours;
   const poweredThrusters=system.primaryMode.canPowerAtRatedPoint&&
     (!system.secondaryMode||system.secondaryMode.canPowerAtRatedPoint);
   const busDeltaVms=busBurnDeltaV(busWet,design,system,d.durationDays,poweredThrusters);
@@ -304,6 +312,10 @@ export function reviewCampaignMission(args:{
       detail:'Vis-viva/Hohmann or Orekit impulsive demand versus staged kick-stage + time-limited bus propulsion. Five percent design allowance included'},
     {label:'Power at destination',actual:format(available,'W'),needed:format(Math.max(powerDemandW,d.minElectricW),'W'),passed:available>=Math.max(powerDemandW,d.minElectricW),
       detail:'Solar power decreases with inverse-square Sun distance; power generators and science/module loads included'},
+    {label:'Power interruption reserve',
+      actual:format(backupUsableWh,'Wh'),needed:format(backupRequiredWh,'Wh'),
+      passed:backupUsableWh>=backupRequiredWh,
+      detail:'Game contingency: '+interruptionHours+' hours of load during solar generation outage; installed pack + optional 6 kWh module at 80% DoD and 90% discharge efficiency'},
     {label:'Bus heat rejection',actual:format(radiatorCapacityW,'W'),needed:format(heatDemandW,'W'),passed:radiatorCapacityW>=heatDemandW,
       detail:'Installed radiator area and selected solar absorptivity, not magically sized to the demand'},
     {label:'Payload / science mass',actual:format(scienceMassKg,'kg'),needed:format(d.requiredScienceKg,'kg'),passed:scienceMassKg>=d.requiredScienceKg,
@@ -342,6 +354,7 @@ export function reviewCampaignMission(args:{
   if(system.massEstimateIncomplete)findings.push('Engineering mass has incomplete flight hardware allowances. This is a campaign-grade feasibility screen only, not flight qualification.');
   return {route,hardwareWetKg,launchCapacityKg,boosterDeltaVms,busDeltaVms,
     totalDeltaVms,requiredDeltaVms,powerAvailableW:available,powerDemandW,
+    backupUsableWh,backupRequiredWh,
     thermalCapacityW:radiatorCapacityW,heatDemandW,scienceMassKg,
     costUsd,rewardUsd:d.payoutUsd,
     feasible:checks.every(c=>c.passed),checks,findings};

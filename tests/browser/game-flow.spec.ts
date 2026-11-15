@@ -329,6 +329,7 @@ test('A configured lunar milestone launches, survives reload and pays exactly on
     await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await page.getByRole('combobox',{name:'External kick stage'}).selectOption('cryogenic');
+    await page.getByRole('checkbox',{name:/Extended-duration energy module/}).check();
     const go=page.getByRole('button',{name:/Accept contract and launch/});
     await expect(go).toBeEnabled();
     await go.click();

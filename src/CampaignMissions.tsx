@@ -255,7 +255,7 @@ export default function CampaignMissions({
             <OptionCheck label={EXTERNAL_MODULES.radiationShield.name} checked={options.radiationShield}
               note="95 kg / 12 W / $18M" onChange={v=>change('radiationShield',v)}/>
             <OptionCheck label={EXTERNAL_MODULES.reserveBattery.name} checked={options.reserveBattery}
-              note="35 kg / 4 W / $4M; reserve is a mission allowance" onChange={v=>change('reserveBattery',v)}/>
+              note="35 kg / 4 W / $4M; adds 6 kWh nameplate reserve" onChange={v=>change('reserveBattery',v)}/>
           </div>
           {selected.target==='ellipse'&&<div className="campaign-orbital-inputs">
             <div className="eyebrow">ELLIPTICAL EARTH ORBIT / ACTUAL KEPLER ELEMENTS</div>
