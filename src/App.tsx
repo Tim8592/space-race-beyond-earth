@@ -1107,7 +1107,8 @@ export default function App() {
               activeFlight:!!game.activeStoryRun,gameDay:game.day}}
             observation={campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
               {forecast:observationLabForecast,requiredScience:SCIENCE_GOAL,cash:game.cash,
-               lockedTechnologyCount:lockedLabParts.length}:undefined}
+               lockedTechnologyCount:lockedLabParts.length,
+               instrumentId:labObservationChoices.instrument}:undefined}
             onReturnToMission={()=>{setActiveView('missions')}}
             unlockedTechnologies={effectiveUnlocks} devMode={game.devMode}/>
         </div>}
