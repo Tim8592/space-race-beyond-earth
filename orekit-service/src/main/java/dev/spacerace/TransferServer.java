@@ -115,6 +115,31 @@ public final class TransferServer {
                 exchange.close();
             }
         });
+        server.createContext("/api/departure-window", exchange -> {
+            addCors(exchange);
+            try {
+                if (exchange.getRequestMethod().equals("OPTIONS")) {
+                    exchange.sendResponseHeaders(204,-1);
+                } else if (!exchange.getRequestMethod().equals("POST")) {
+                    response(exchange,405,Map.of("error","POST required"));
+                } else {
+                    final byte[] payload=exchange.getRequestBody().readNBytes(262145);
+                    if(payload.length>262144)response(exchange,413,Map.of("error","Launch window request too large"));
+                    else{
+                        try {
+                            LaunchWindowMath.Request req=JSON.readValue(payload,LaunchWindowMath.Request.class);
+                            response(exchange,200,LaunchWindowMath.solve(req));
+                        } catch(IllegalArgumentException e){
+                            response(exchange,422,Map.of("error",
+                                e.getMessage()==null?"Invalid departure window":e.getMessage()));
+                        } catch(Exception e){
+                            System.err.println("Departure window failed: "+e.getMessage());
+                            response(exchange,422,Map.of("error","Orekit could not compute these departure dates"));
+                        }
+                    }
+                }
+            }finally{exchange.close();}
+        });
         server.createContext("/api/optimize", exchange -> {
             addCors(exchange);
             try {
@@ -175,6 +200,6 @@ public final class TransferServer {
         });
         server.start();
         System.out.println("Space Race Orekit transfer server listening on http://127.0.0.1:"+port);
-        System.out.println("GET /health, POST /api/lambert, POST /api/earth-orbit, POST /api/optimize, GET /api/heritage-track; Control+C to stop.");
+        System.out.println("GET /health, POST /api/lambert, POST /api/earth-orbit, POST /api/departure-window, POST /api/optimize, GET /api/heritage-track; Control+C to stop.");
     }
 }
