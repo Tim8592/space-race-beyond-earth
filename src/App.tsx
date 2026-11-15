@@ -631,8 +631,12 @@ export default function App() {
       choices:labObservationChoices,spacecraft:spacecraftDesign,launcher:vehicle,
       completedWithEngine:game.engineBuildCounts[vehicle.engineId]??0,
       technologyDiscount:missionTechnologyDiscount,
+      launchService:game.rocketService,rocketProgramLevel:game.rocketProgramLevel,
+      orbitalAssemblyUnlocked:game.orbitalAssemblyUnlocked,
+      priorServiceFlights:game.rocketFlightCounts[game.rocketService]??0,
     });}catch{return null}
-  },[labObservationChoices,spacecraftDesign,vehicle,game.engineBuildCounts,missionTechnologyDiscount]);
+  },[labObservationChoices,spacecraftDesign,vehicle,game.engineBuildCounts,missionTechnologyDiscount,
+    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts]);
   const selectedCampaignReview=useMemo(()=>{
     try{return reviewCampaignMission({
       definition:campaignSelection.selected,day:game.day,options:campaignOptions,
@@ -644,13 +648,18 @@ export default function App() {
   },[campaignSelection.selected,game.day,campaignOptions,spacecraftDesign,vehicle,
     game.cash,game.engineBuildCounts,missionTechnologyDiscount,lastSolvedTransfer]);
   function startEarthObservation(costUsd:number){
-    setSnapshot(previous=>({...previous,game:{
-      ...previous.game,
-      cash:previous.game.cash-costUsd,
-      launched:previous.game.launched+1,
+    setSnapshot(previous=>{
+      const g=previous.game;
+      if(g.cash<costUsd||g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject)return previous;
+      return {...previous,game:{
+      ...g,
+      cash:g.cash-costUsd,
+      launched:g.launched+1,
+      rocketFlightCounts:{...g.rocketFlightCounts,
+        [g.rocketService]:(g.rocketFlightCounts[g.rocketService]??0)+1},
       engineBuildCounts:{...previous.game.engineBuildCounts,
-        [previous.vehicle.engineId]:(previous.game.engineBuildCounts[previous.vehicle.engineId]??0)+1},
-    }}));
+        [previous.vehicle.engineId]:(g.engineBuildCounts[previous.vehicle.engineId]??0)+1},
+    }};});
   }
   function completeEarthObservation(outcome:{
     success:boolean; missionCostUsd:number; payoutUsd:number;
@@ -782,8 +791,12 @@ export default function App() {
         {activeView==='missions'&&campaignMode==='observation'&&
           <EarthObservationMission key={observationResetKey} spacecraft={spacecraftDesign} launcher={vehicle}
             cash={game.cash} completedWithEngine={game.engineBuildCounts[vehicle.engineId]??0}
+            launchService={game.rocketService} rocketProgramLevel={game.rocketProgramLevel}
+            orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
+            priorServiceFlights={game.rocketFlightCounts[game.rocketService]??0}
+            otherMissionActive={!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject)}
             onEditSpacecraft={()=>{setLabObservationChoices(readObservationChoices());setActiveView('systems')}}
-            onEditLauncher={()=>{setActiveView('missions');setCampaignMode('contracts')}}
+            onEditLauncher={()=>setActiveView('rockets')}
             onStart={startEarthObservation}
             technologyDiscount={missionTechnologyDiscount}
             lockedTechnologies={lockedLabParts}
