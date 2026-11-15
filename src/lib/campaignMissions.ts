@@ -239,6 +239,9 @@ export type MissionReview={
   launchCapacityKg:number;
   boosterDeltaVms:number;
   busDeltaVms:number;
+  busPropellantBurnedKg:number;
+  busPropellantRemainingKg:number;
+  busBurnWindowDays:number;
   totalDeltaVms:number;
   requiredDeltaVms:number;
   powerAvailableW:number;
@@ -401,6 +404,9 @@ export function reviewCampaignMission(args:{
     findings.push('Orbital alignment is unfavorable for the simple Hohmann geometry; examine the date in Orbital Map and evaluate an Orekit Lambert solution.');
   if(system.massEstimateIncomplete)findings.push('Engineering mass has incomplete flight hardware allowances. This is a campaign-grade feasibility screen only, not flight qualification.');
   return {route,hardwareWetKg,launchCapacityKg,boosterDeltaVms,busDeltaVms,
+    busPropellantBurnedKg:busBurn.burnedPropellantKg,
+    busPropellantRemainingKg:busBurn.remainingPropellantKg,
+    busBurnWindowDays:d.durationDays,
     totalDeltaVms,requiredDeltaVms,powerAvailableW:available,powerDemandW,
     backupUsableWh,backupRequiredWh,
     thermalCapacityW:radiatorCapacityW,heatDemandW,scienceMassKg,
