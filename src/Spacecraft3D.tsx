@@ -6,14 +6,15 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { inspectGlb } from './lib/glbDiagnostics';
 import type { SubsystemDesign, SystemResults } from './lib/subsystemDesign';
+import {engineMounts,type EngineMount} from './lib/structureSizing';
 
 export type PartName = 'bus' | 'power' | 'radiator' | 'tank' | 'propulsion' | 'antenna' | 'payload';
 const PART_DETAILS: Record<PartName, string> = {
-  bus: 'Structural spacecraft body: currently a visual envelope. Dry bus mass is entered in the engineering panel.',
+  bus: 'Structural spacecraft bus: the selected structure scale changes actual modeled dry mass and fits more engine mounts. The shape remains conceptual rather than verified flight CAD.',
   power: 'Solar wings: the number of panels follows the Power tab; individual wing area changes with the total active cell area. Generator count is also shown for radioisotope/fission options.',
   radiator: 'Bus radiators and, for fission concepts, a separate deployable hot radiator branch. Installed area controls panel mass and cooling power; heat pipe transport and shielding remain first-order assumptions.',
   tank: 'Separate colored tank/reservoir shapes match selected propellant families; mass, pressure and spherical tmin estimates are in Tanks. This is schematic geometry, not flight CAD.',
-  propulsion: 'Primary and optional secondary thruster sets appear separately. They use independent propellant stores and a sequential idealized burn model; no finite-thrust trajectory is simulated.',
+  propulsion: 'Each primary/secondary thruster receives its own non-overlapping rear mount. Nominal mass flow and a power/time constrained propellant burn are evaluated in the Propulsion tab; no finite-thrust trajectory is implied.',
   antenna: 'Communications dish: visual placeholder. Link-budget and pointing constraints are future engineering features.',
   payload: 'Selected catalog science instrument: illustrative camera/sensor envelope, whose mass and electrical power appear in the live subsystem ledger.',
 };
@@ -43,18 +44,19 @@ function Metal({ color = '#b4c9d8' }: {color?: string}) {
   return <meshStandardMaterial color={color} metalness={0.7} roughness={0.35}/>;
 }
 
-function PanelWing({ side, index, rowCount, areaM2 }: { side: -1 | 1; index: number; rowCount:number; areaM2: number }) {
+function PanelWing({ side, index, rowCount, areaM2,structureScale }: { side: -1 | 1; index: number; rowCount:number; areaM2: number;structureScale:number }) {
   // Schematic geometry: panel envelope scales with the square root of its
   // allocation of total active cell area, not with physical 1:1 CAD units.
   const areaScale = Math.sqrt(Math.max(0.01, areaM2));
   const length = Math.max(0.55, Math.min(3.8, 0.65 + areaScale * 0.92));
   const width = Math.max(0.42, Math.min(1.45, 0.3 + areaScale * 0.45));
-  const centerX = side * (1.03 + length / 2);
+  const wingRoot=.875*structureScale+.20;
+  const centerX = side * (wingRoot + length / 2);
   const offsetZ = (index - (rowCount - 1)/2) * 0.78;
   const columns = Math.max(2, Math.min(10, Math.ceil(3.1 * areaScale)));
   const rows = Math.max(2, Math.min(5, Math.ceil(2 * areaScale)));
   return <group position={[0, 0, offsetZ]}>
-    <mesh position={[side*1.08,0,0]} rotation={[0,0,Math.PI/2]}>
+    <mesh position={[side*(wingRoot+.05),0,0]} rotation={[0,0,Math.PI/2]}>
       <cylinderGeometry args={[0.05,0.05,0.5,10]}/><Metal color="#8295aa"/>
     </mesh>
     <mesh position={[centerX,0,0]}>
@@ -96,26 +98,23 @@ function RadiatorPanels({ areaM2, count }: {areaM2:number;count:number}) {
   </group>;
 }
 
-function ThrusterCluster({ count, electric, ready }: {count:number;electric:boolean;ready:boolean}) {
-  const columns = Math.min(3,count);
-  const rows = Math.ceil(count/columns);
-  return <group position={[0,-.1,-1.15]}>
-    {Array.from({length:count},(_,i)=>{
-      const row=Math.floor(i/columns), col=i%columns;
-      const numberOnRow=Math.min(columns,count-row*columns);
-      const x=(col-(numberOnRow-1)/2)*.62;
-      const y=(row-(rows-1)/2)*.62;
-      return <group key={i} position={[x,y,0]} rotation={[Math.PI/2,0,0]}>
-        <mesh><cylinderGeometry args={[.18,.27,.41,20]}/><Metal color="#607489"/></mesh>
-        <mesh position={[0,-.24,0]}><torusGeometry args={[.2,.033,9,20]}/><Metal color="#bfd0e4"/></mesh>
-        <mesh position={[0,-.255,0]}><circleGeometry args={[.169,20]}/>
-          <meshBasicMaterial color={electric&&ready?'#7aafff':'#28303a'}/></mesh>
-        {electric&&ready&&<mesh position={[0,-.56,0]} rotation={[Math.PI,0,0]}>
-          <coneGeometry args={[.12,.53,18,1,true]}/>
-          <meshBasicMaterial color="#68b2ff" transparent opacity={.35} depthWrite={false}/>
-        </mesh>}
-      </group>;
-    })}
+function ThrusterBank({mounts,electric,ready}:{
+  mounts:EngineMount[];electric:boolean;ready:boolean;
+}) {
+  // One layout for BOTH propulsion families. A unique grid point is assigned
+  // to every nozzle so secondary pods cannot stack on primary nozzles.
+  return <group position={[0,0,-1.22]}>
+    {mounts.map(mount=><group key={mount.id}
+      position={[mount.x,mount.y,0]} rotation={[Math.PI/2,0,0]}>
+      <mesh><cylinderGeometry args={[.18,.27,.41,20]}/><Metal color={mount.family==='secondary'?'#877b8f':'#607489'}/></mesh>
+      <mesh position={[0,-.24,0]}><torusGeometry args={[.2,.033,9,20]}/><Metal color="#bfd0e4"/></mesh>
+      <mesh position={[0,-.255,0]}><circleGeometry args={[.169,20]}/>
+        <meshBasicMaterial color={electric&&ready?'#7aafff':'#28303a'}/></mesh>
+      {electric&&ready&&<mesh position={[0,-.56,0]} rotation={[Math.PI,0,0]}>
+        <coneGeometry args={[.12,.53,18,1,true]}/>
+        <meshBasicMaterial color="#68b2ff" transparent opacity={.35} depthWrite={false}/>
+      </mesh>}
+    </group>)}
   </group>;
 }
 
@@ -147,22 +146,25 @@ export function ModularSpacecraft({
     design.powerSourceId==='krusty'||design.powerSourceId==='reactor-25kwe';
   const hotBranchArea=isFission?design.reactorRadiatorAreaM2:0;
   const wingCount = design.cellAreaM2 > 0 ? design.solarWingCount : 0;
+  const structureScale=design.structureScale??1;
+  const mounts=engineMounts(design.thrusterCount,
+    design.secondaryThrusterId==='none'?0:design.secondaryThrusterCount);
   return <group rotation={[.12,.1,0]}>
     <Pick part="bus" selected={selected} onSelect={onSelect}>
-      <mesh><boxGeometry args={[1.75,1.8,1.65]}/>
+      <mesh><boxGeometry args={[1.75*structureScale,1.8*structureScale,1.65]}/>
         <meshStandardMaterial color="#b4ac82" metalness={.3} roughness={.72}/></mesh>
-      <mesh position={[0,0,0.836]}><boxGeometry args={[1.72,1.76,.02]}/>
+      <mesh position={[0,0,0.836]}><boxGeometry args={[1.72*structureScale,1.76*structureScale,.02]}/>
         <meshStandardMaterial color="#d8b85f" metalness={.3} roughness={.58}/></mesh>
-      {[-.65,.65].map(x=><mesh key={x} position={[x,0,.855]}>
-        <boxGeometry args={[.04,1.77,.025]}/><Metal color="#747f87"/>
+      {[-.65,.65].map(x=><mesh key={x} position={[x*structureScale,0,.855]}>
+        <boxGeometry args={[.04,1.77*structureScale,.025]}/><Metal color="#747f87"/>
       </mesh>)}
-      <mesh position={[0,.88,0]}><boxGeometry args={[1.78,.08,1.73]}/><Metal color="#c4d5e4"/></mesh>
+      <mesh position={[0,.88*structureScale,0]}><boxGeometry args={[1.78*structureScale,.08,1.73]}/><Metal color="#c4d5e4"/></mesh>
     </Pick>
     {wingCount>0&&<Pick part="power" selected={selected} onSelect={onSelect}>
       {Array.from({length:wingCount},(_,i)=>
         <PanelWing key={i} side={i%2===0?-1:1}
           index={Math.floor(i/2)} rowCount={Math.ceil(wingCount/2)}
-          areaM2={design.cellAreaM2/wingCount}/>)}
+          areaM2={design.cellAreaM2/wingCount} structureScale={structureScale}/>)}
     </Pick>}
     {isNuclear&&<Pick part="power" selected={selected} onSelect={onSelect}>
       {Array.from({length:design.powerSourceCount},(_,i)=>(
@@ -227,17 +229,17 @@ export function ModularSpacecraft({
       </group>}
     </Pick>
     <Pick part="propulsion" selected={selected} onSelect={onSelect}>
-      <group position={design.secondaryThrusterId==='none'?[0,0,0]:[-.39,0,0]}>
-        <ThrusterCluster count={design.thrusterCount}
-          electric={design.thrusterId!=='mono-reference'}
-          ready={analysis?.primaryMode.canPowerAtRatedPoint??false}/>
-      </group>
+      <mesh position={[0,0,-.995]}>
+        <boxGeometry args={[1.72*structureScale,1.73*structureScale,.16]}/>
+        <Metal color="#455c71"/>
+      </mesh>
+      <ThrusterBank mounts={mounts.filter(m=>m.family==='primary')}
+        electric={design.thrusterId!=='mono-reference'}
+        ready={analysis?.primaryMode.canPowerAtRatedPoint??false}/>
       {design.secondaryThrusterId!=='none'&&
-        <group position={[.55,0,.25]} scale={.75}>
-          <ThrusterCluster count={design.secondaryThrusterCount}
-            electric={design.secondaryThrusterId!=='mono-reference'}
-            ready={analysis?.secondaryMode?.canPowerAtRatedPoint??false}/>
-        </group>}
+        <ThrusterBank mounts={mounts.filter(m=>m.family==='secondary')}
+          electric={design.secondaryThrusterId!=='mono-reference'}
+          ready={analysis?.secondaryMode?.canPowerAtRatedPoint??false}/>}
     </Pick>
     {design.payloadInstrumentId!=='none'&&<Pick part="payload" selected={selected} onSelect={onSelect}>
       <group position={[0,.2,.93]}>
@@ -250,7 +252,9 @@ export function ModularSpacecraft({
         </mesh>
       </group>
     </Pick>}
-    <Pick part="antenna" selected={selected} onSelect={onSelect}><Dish/></Pick>
+    <Pick part="antenna" selected={selected} onSelect={onSelect}>
+      <group position={[0,1.12*(structureScale-1),0]}><Dish/></group>
+    </Pick>
     <mesh position={[0,-1.7,0]} rotation={[-Math.PI/2,0,0]}>
       <ringGeometry args={[.95,1.0,48]}/>
       <meshBasicMaterial color="#2c607d" transparent opacity={.25} side={2}/>
@@ -418,6 +422,6 @@ export default function Spacecraft3D({
         If it reports a decoder or extension error, share this exact message so the 3D loader can be updated.
         Click <b>Retry NASA 3D model</b> to perform a fresh request.
       </p>}
-    <p className="craft-disclaimer">SCHEMATIC GEOMETRY. Tank colors indicate propellant class; separate nozzle clusters indicate independent propulsion systems. Solar array mass grows with active area and wing mounts. Import a self-contained .glb from Onshape or FreeCAD for viewing. Engineering calculations use independent mass/geometry inputs, not mesh triangles; parametric CAD coupling is future work.</p>
+    <p className="craft-disclaimer">SCHEMATIC GEOMETRY. Engine mounts are allocated from one grid; increasing the bus frame size incurs a modeled structural mass and game procurement cost. Tank colors indicate propellant class; separate nozzle clusters indicate independent propulsion systems. Solar array mass grows with active area and wing mounts. Import a self-contained .glb from Onshape or FreeCAD for viewing. Engineering calculations use independent mass/geometry inputs, not mesh triangles; parametric CAD coupling is future work.</p>
   </div>;
 }
