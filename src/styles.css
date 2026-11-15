@@ -565,3 +565,33 @@
 .campaign-orbit-return strong{color:#f2d6a0}
 .campaign-orbit-return button{flex-shrink:0}
 @media(max-width:720px){.campaign-orbit-return{flex-direction:column;align-items:stretch}}
+
+
+/* v1.1 — visible-session campaign clock, real-mission milestones and data provenance */
+.campaign-live-clock{display:flex;align-items:center;flex-wrap:wrap;gap:7px 13px;margin:12px 0;padding:10px 14px;border-radius:10px;border:1px solid #548777;background:linear-gradient(100deg,#183e3e,#112b3c);color:#e4eee9;font-size:12px}
+.campaign-live-clock strong{color:#a2e1b6;letter-spacing:1.2px;font-size:10px}
+.campaign-live-clock span{color:#aac9cf;font-size:11px;margin-left:auto}
+.game-clock-caption{font-size:11px;color:#a5d8d2}
+.campaign-agency-calendar{background:linear-gradient(138deg,#18374b,#15293d);border-color:#4d7393}
+.campaign-agency-calendar h3{font:700 21px 'Space Grotesk',sans-serif;color:#e9f7ff;margin:7px 0}
+.campaign-agency-calendar>p{font-size:12px;line-height:1.75;color:#b9d1e0}
+.campaign-agency-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:16px}
+.campaign-agency-offer{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:7px;padding:15px;border:1px solid #416781;border-radius:9px;color:#e4eff9;background:linear-gradient(132deg,#153149,#0d2336);cursor:pointer}
+.campaign-agency-offer:hover,.campaign-agency-offer.selected{border-color:#d3b37e;background:#284359}
+.campaign-agency-offer small{font-size:10px;line-height:1.5;color:#a9c8db}
+.campaign-agency-offer strong{font:700 16px 'Space Grotesk',sans-serif;color:#f0f6fa;line-height:1.3}
+.campaign-agency-offer span{font-size:10px;font-weight:800;letter-spacing:.6px;color:#f1d196}
+.campaign-agency-links a,.references-card a{color:#e8bf86;text-decoration:underline;text-underline-offset:3px}
+.references-view{display:flex;flex-direction:column;gap:22px;margin:16px 0 30px}
+.references-intro{background:linear-gradient(130deg,#1b3e51,#142638)}
+.references-intro h2{color:#f2f8ff;font:700 clamp(24px,2.8vw,34px) 'Space Grotesk',sans-serif;margin:10px 0 12px}
+.references-intro p,.references-section>p{color:#c4d7e2;font-size:13px;line-height:1.8;max-width:980px}
+.references-data-highlight{display:flex;flex-direction:column;gap:9px;background:#0c3036;border:1px solid #64ac98;border-radius:10px;padding:17px;margin:17px 0}
+.references-data-highlight strong{color:#b6f0d7;font-size:14px}
+.references-data-highlight span{color:#d2e9e6;font-size:12px;line-height:1.7}
+.references-section h3{font:700 22px 'Space Grotesk',sans-serif;color:#e7f3fd;margin:7px 0 14px}
+.references-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.references-card h3,.references-card h4{font:700 17px 'Space Grotesk',sans-serif;color:#edf5fc;margin:7px 0 9px}
+.references-card p{font-size:12px;line-height:1.75;color:#bbd3df}
+.references-card a{font-size:12px;font-weight:700}
+@media(max-width:760px){.campaign-agency-grid,.references-grid{grid-template-columns:1fr}.campaign-live-clock span{margin-left:0}}
