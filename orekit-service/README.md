@@ -65,6 +65,29 @@ Returns a plotted transfer arc in heliocentric AU, Earth/target relative hyperbo
 
 **Critical caveats:** Departure v-infinity is NOT the actual delta-V needed from a low Earth parking orbit. Arrival v-infinity is NOT a capture burn. No gravity assists, staged launch trajectory, finite-thrust solar-electric integration, thrust duty cycle, n-body perturbations, eclipse, atmosphere, power-vs-distance optimization or launch authorization are handled. Numerical results are not valid for flight design or certification.
 
+## Launch departure-date window scan (v1.9)
+
+The flight-review panel in **Play Campaign → Explore Further → Mars Orbiter or Jupiter Flyby** now makes a batched `POST http://127.0.0.1:8787/api/departure-window` request to the local Orekit service. The request holds the player's mission transfer flight duration fixed, and supplies up to 80 individual candidate future launch dates. Each trial includes the same position/velocity vector fields as `/api/lambert`, plus an ISO `departureDate`:
+
+```json
+{
+  "target":"mars",
+  "earthParkingAltitudeKm":400,
+  "targetParkingAltitudeKm":300,
+  "trials":[{"departureDate":"2027-01-01","transfer":{
+    "departurePositionAu":[1,0,0],
+    "arrivalPositionAu":[-1.3,0.8,0],
+    "departureVelocityAuPerDay":[0,0.0172,0],
+    "arrivalVelocityAuPerDay":[-0.0073,-0.0118,0],
+    "flightDays":260,"prograde":true,"samples":160
+  }}]
+}
+```
+
+Each trial is actually solved by Orekit, validated against its arrival endpoint, and scored using a simple impulsive patched-conic departure from circular LEO plus hypothetical 300-km Mars capture. For Jupiter *flyby*, capture is **zero**. The server returns `points` (sorted, with date, departure/capture, combined Δv, explicit extra 5% game margin and launch C3), `best` over the sampled dates, plus skipped trial count.
+
+**Limitations:** Fixed flight duration, a sampled calendar grid of 32 dates at 28-day steps rather than global optimization, approximate JPL planetary elements, single-revolution impulsive Lambert conics, no finite electric thrust, atmospheric ascent, gravity-assist flybys, plane correction or launch site geography. If Java is offline, the front-end deliberately labels its phase-angle Hohmann approximation as a **game heuristic**, not a real date-specific Lambert solution.
+
 ## Fixed-date Lambert flight-time optimization
 
 The frontend can send up to 200 candidate arrivals for one departure date through:
