@@ -200,3 +200,59 @@ test('Prometheus library entry makes it clear no vehicle flew',async({page})=>{
     await expect(page.getByText(/CANCELLED/).first()).toBeVisible();
   });
 });
+
+test('Research investment spends agency capital and permanently unlocks technology',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await expect(page.getByRole('heading',{name:'Research the next frontier.'})).toBeVisible();
+    const invest=page.getByRole('button',{name:/Invest \$20M/});
+    await invest.click();
+    await expect(page.getByText('Already researched')).toBeVisible();
+    await page.reload();
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await expect(page.getByText('Already researched')).toBeVisible();
+  });
+});
+
+test('Developer mode temporarily unlocks fission research without spending R&D',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    await page.getByRole('tab',{name:'Power',exact:true}).click();
+    const power=page.getByRole('combobox',{name:/Primary power generation/});
+    await expect(power.locator('option[value="reactor-25kwe"]')).toBeDisabled();
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await expect(page.getByRole('button',{name:'DEV MODE: ON'})).toBeVisible();
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    await page.getByRole('tab',{name:'Power',exact:true}).click();
+    await expect(power.locator('option[value="reactor-25kwe"]')).toBeEnabled();
+    await power.selectOption('snap10a');
+    await page.getByRole('tab',{name:'Thermal'}).click();
+    await expect(page.getByRole('heading',{name:'Deployable remote reactor radiator'})).toBeVisible();
+    await expect(page.getByText('Reactor heat rejection margin')).toBeVisible();
+    await page.reload();
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await expect(page.getByRole('button',{name:'DEV MODE: ON'})).toBeVisible();
+    await page.getByRole('button',{name:'DEV MODE: ON'}).click();
+    await expect(page.getByRole('button',{name:'DEV MODE: OFF'})).toBeVisible();
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    await expect(page.getByText(/selected spacecraft technology unlock/)).toBeVisible();
+  });
+});
+
+test('Observation One renders accelerated orbit motion and hardware economics on mission launch',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await expect(page.getByText('SPACECRAFT TECHNOLOGY / PROCUREMENT ECONOMICS')).toBeVisible();
+    await expect(page.getByText('ENGINEERING RISK REVIEW')).toBeVisible();
+    const button=page.getByRole('button',{name:/Launch Earth Observation One/});
+    await expect(button).toBeEnabled();
+    await button.click();
+    await expect(page.locator('.mission-orbit-scene svg')).toBeVisible();
+    await expect(page.getByText('SIMULATED FLIGHT')).toBeVisible();
+    await page.getByRole('button',{name:/Finish seven-day simulation/}).click();
+    await expect(page.getByText('MISSION COMPLETE')).toBeVisible();
+  });
+});
