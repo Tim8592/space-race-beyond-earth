@@ -59,12 +59,14 @@ const POSITIONS_BY_ID=new Map(TECH_POSITIONS.map(x=>[x.item.id,x]));
 const edges=TECH_POSITIONS.flatMap(to=>to.item.prerequisites.map(from=>({
   from:POSITIONS_BY_ID.get(from)!,to,source:from})));
 const displayText=(id:TechnologyId)=>TECHNOLOGIES.find(t=>t.id===id)?.label??id;
-export default function ResearchLab({cash,researchPoints,unlocked,devMode,onToggleDevMode,onResearch}:{
+export default function ResearchLab({cash,researchPoints,unlocked,devMode,onToggleDevMode,onResearch,
+  initialBranch='All',initialSelectedId='production-line'}:{
   cash:number;researchPoints:number;unlocked:readonly TechnologyId[];devMode:boolean;
   onToggleDevMode:()=>void;onResearch:(id:TechnologyId)=>void;
+  initialBranch?:'All'|Branch;initialSelectedId?:TechnologyId;
 }){
-  const [selectedId,setSelectedId]=useState<TechnologyId>('production-line');
-  const [focusBranch,setFocusBranch]=useState<'All'|Branch>('All');
+  const [selectedId,setSelectedId]=useState<TechnologyId>(initialSelectedId);
+  const [focusBranch,setFocusBranch]=useState<'All'|Branch>(initialBranch);
   const [zoom,setZoom]=useState(1);
   const selected=TECHNOLOGIES.find(t=>t.id===selectedId)??TECHNOLOGIES[0];
   const missing=selected.prerequisites.filter(id=>!unlocked.includes(id));
