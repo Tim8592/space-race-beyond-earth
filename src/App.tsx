@@ -660,10 +660,9 @@ export default function App() {
       orbitalAssemblyUnlocked:game.orbitalAssemblyUnlocked,
       priorServiceFlights:game.rocketFlightCounts[game.rocketService]??0,
       canadianSuccesses:game.canadianMissionSuccesses,
-      weatherReserveHours:nasaWeather.reserveHours,
     });}catch{return null}
   },[labObservationChoices,spacecraftDesign,vehicle,game.engineBuildCounts,missionTechnologyDiscount,
-    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses,nasaWeather.reserveHours]);
+    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses]);
   const selectedCampaignReview=useMemo(()=>{
     try{return reviewCampaignMission({
       definition:campaignSelection.selected,day:game.day,options:campaignOptions,
@@ -679,7 +678,7 @@ export default function App() {
     });}catch{return null}
   },[campaignSelection.selected,game.day,campaignOptions,spacecraftDesign,vehicle,
     game.cash,game.engineBuildCounts,missionTechnologyDiscount,lastSolvedTransfer,
-    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses]);
+    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses,nasaWeather.reserveHours]);
   function startEarthObservation(costUsd:number){
     setSnapshot(previous=>{
       const g=previous.game;
