@@ -657,3 +657,34 @@
 .mission-index{display:grid;place-items:center;flex:0 0 29px;width:29px;height:27px;background:#243a50;border:1px solid #506f86;border-radius:6px;font:800 10px 'Space Grotesk',sans-serif;color:#ecc890}
 @media(max-width:1020px){.campaign-map-content{grid-template-columns:1fr}.campaign-map-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:none;overflow:visible}}
 @media(max-width:650px){.campaign-map-header{align-items:flex-start;flex-direction:column}.campaign-map-scene{aspect-ratio:720/448}.campaign-map-list{grid-template-columns:1fr}.sys-impact-metrics{grid-template-columns:1fr}.sys-mission-issue{flex-wrap:wrap}.sys-mission-issue button{margin-left:25px}}
+
+
+/* Propulsion physics ledger and mass-coupled, non-overlapping engine structure */
+.sys-engine-packing{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:13px 0;padding:13px 15px;border:1px solid #426c7b;border-radius:8px;background:#112b3e}
+.sys-engine-packing.crowded{background:#372b2b;border-color:#a77861}
+.sys-engine-packing>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sys-engine-packing strong{font-size:12px;color:#d8f2e4}
+.sys-engine-packing.crowded strong{color:#ffcfb5}
+.sys-engine-packing span{font-size:11px;color:#c0d0df;line-height:1.5}
+.sys-engine-packing button{border:1px solid #b89f79;background:#294256;color:#f7dcad;border-radius:6px;padding:9px 12px;font-weight:800;font-size:11px}
+.sys-engine-packing button:hover{background:#3b586a}
+.sys-burn-ledger{background:#0a1d2f;border:1px solid #3f6279;border-radius:9px;margin:14px 0;padding:18px;overflow-x:auto}
+.sys-burn-ledger h4{color:#f2f7fc;font:700 19px 'Space Grotesk',sans-serif;margin:7px 0}
+.sys-burn-ledger>p{font-size:12px;line-height:1.8;color:#abc3d5}
+.sys-burn-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:13px 0}
+.sys-burn-stats>div{padding:12px;background:#172e45;border:1px solid #355873;border-radius:7px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.sys-burn-stats small{font-size:10px;color:#a6c4d5}
+.sys-burn-stats strong{font:700 clamp(12px,1.4vw,19px) 'Space Grotesk',sans-serif;color:#f4e4c7;overflow-wrap:anywhere}
+.sys-burn-modes{display:grid;gap:9px;margin:14px 0}
+.sys-burn-modes>div{border:1px solid #38546d;background:#132739;border-radius:7px;padding:12px}
+.sys-burn-modes>div>div:first-child{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+.sys-burn-modes strong{color:#e4eef7;font-size:12px}
+.sys-burn-modes>div>div:first-child span{color:#f5c88e;font-size:11px}
+.sys-burn-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.sys-burn-metrics span{color:#b4cadb;font-size:11px;line-height:1.55}
+.sys-fuel-table{border-collapse:collapse;width:100%;font-size:11px;margin:10px 0}
+.sys-fuel-table th,.sys-fuel-table td{padding:9px 10px;text-align:right;border-bottom:1px solid #2d4357}
+.sys-fuel-table th:first-child,.sys-fuel-table td:first-child{text-align:left}
+.sys-fuel-table th{font-weight:800;color:#d7e9f6;background:#20364c}
+.sys-fuel-table td{color:#b9d6e6}
+@media(max-width:750px){.sys-burn-stats,.sys-burn-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
