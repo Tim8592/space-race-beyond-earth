@@ -29,10 +29,10 @@ const LAYOUT:Record<Branch,{top:number;height:number;label:string}>={
   Power:{top:500,height:156,label:'ELECTRICAL GENERATION'},
   Thermal:{top:678,height:146,label:'THERMAL CONTROL'},
   Science:{top:844,height:146,label:'SCIENCE & DATA'},
-  Infrastructure:{top:1008,height:146,label:'ORBITAL INFRASTRUCTURE / CANADA'},
-  Economics:{top:1190,height:146,label:'MANUFACTURING ECONOMICS'},
+  Infrastructure:{top:1008,height:290,label:'ORBITAL INFRASTRUCTURE / CANADA'},
+  Economics:{top:1320,height:146,label:'MANUFACTURING ECONOMICS'},
 };
-const CARD_W=230,CARD_H=102,GRAPH_W=1200,GRAPH_H=1370;
+const CARD_W=230,CARD_H=102,GRAPH_W=1200,GRAPH_H=1500;
 type Positioned={item:TechnologyNode;x:number;y:number;depth:number};
 function techPositions():Positioned[]{
   const depthCache=new Map<TechnologyId,number>();
