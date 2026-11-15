@@ -37,12 +37,14 @@ export function dailyEconomics(researchUnlocked:readonly TechnologyId[],moonBase
 }
 export function advanceProgramDay<T extends {
   day:number;cash:number;researchPoints:number;researchUnlocked:TechnologyId[];
-  moonBaseLevel:number;activeStoryRun:unknown;operatingSpentUsd:number;passiveRevenueUsd:number;
+  moonBaseLevel:number;activeStoryRun:unknown;activeMoonCargoRun?:unknown;
+  operatingSpentUsd:number;passiveRevenueUsd:number;
 }>(game:T,days:number):T{
   if(!Number.isInteger(days)||days<0||days>10000)
     throw new RangeError('Invalid elapsed game days');
   if(!days)return game;
-  const costs=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,!!game.activeStoryRun);
+  const costs=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,
+    !!(game.activeStoryRun||game.activeMoonCargoRun));
   const earnedRP=Math.floor((game.day-1+days)/RESEARCH_POINT_EVERY_DAYS)-
     Math.floor((game.day-1)/RESEARCH_POINT_EVERY_DAYS);
   return {...game,day:game.day+days,
