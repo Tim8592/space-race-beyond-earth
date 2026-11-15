@@ -1,4 +1,5 @@
-import { calculateVehicleMetrics, ENGINES, estimateBuildCostUsd, type Vehicle } from './engineering';
+import { calculateVehicleMetrics, ENGINES, type Vehicle } from './engineering';
+import {planLaunchManifest,type LauncherId,type LaunchManifest} from './launchLogistics';
 import { STANDARD_GRAVITY_MS2, EARTH } from './nasaData';
 import { sizeSubsystemDesign, type SubsystemDesign, type SystemResults } from './subsystemDesign';
 import { BATTERY_PACKS } from './spacecraftTechnology';
@@ -64,6 +65,10 @@ export type ObservationConfig = {
   launcher: Vehicle;
   completedWithEngine: number;
   technologyDiscount?: number;
+  launchService?:LauncherId;
+  rocketProgramLevel?:number;
+  orbitalAssemblyUnlocked?:boolean;
+  priorServiceFlights?:number;
 };
 export type Capacity = {name:string;used:number;limit:number;unit:string;context:string;hard:boolean};
 export type DayReport = {
@@ -79,6 +84,7 @@ export type ObservationPreview = {
   requiredLaunchDeltaVMs:number;
   launchReady:boolean;
   missionCostUsd:number;
+  launchManifest:LaunchManifest;
   spacecraftProcurement:HardwareEconomics;
   riskReview:ReturnType<typeof missionRiskSummary>;
   powerLoadW:number;
@@ -126,20 +132,32 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   const deltaVPayloadKg=Math.max(0,launcher.propellantMassKg/exponent-launcher.dryMassKg);
   const twrPayloadKg=Math.max(0,rated.thrustNewtons/(STANDARD_GRAVITY_MS2*MIN_TWR)-
     launcher.dryMassKg-launcher.propellantMassKg);
-  // A manifest allocation must fit both the selected payload slot AND
-  // physical one-stage ideal payload capacity, never the arbitrary slot alone.
+  // Every observed satellite rides an actual paid rocket service in the same
+  // reusable Rocket Fleet as other missions. The guided mission has a limited
+  // reserved satellite slot; provider quotes don't imply a whole 22t bay is
+  // purchased for a 200kg satellite.
+  const launchService=config.launchService??'custom';
+  const manifest=planLaunchManifest({
+    totalWetKg:massKg,service:launchService,vehicle:launcher,
+    tier:config.rocketProgramLevel??0,
+    assemblyUnlocked:config.orbitalAssemblyUnlocked??false,
+    priorFlights:config.priorServiceFlights??config.completedWithEngine,
+  });
+  const custom=launchService==='custom';
   const launchCapacityKg=Math.max(0,Math.min(
-    choices.launchSlotKg,launcher.payloadMassKg,deltaVPayloadKg,twrPayloadKg,
+    choices.launchSlotKg,manifest.capacityKg,
+    custom?deltaVPayloadKg:Infinity,custom?twrPayloadKg:Infinity,
   ));
   const liftoff=calculateVehicleMetrics({...launcher,payloadMassKg:massKg});
-  const launcherDeltaVMs=liftoff.deltaVms,launcherTwr=liftoff.liftoffTwr;
+  const launcherDeltaVMs=custom?liftoff.deltaVms:requiredLaunchDeltaVMs;
+  const launcherTwr=custom?liftoff.liftoffTwr:1.2; // service-level assumption, no Falcon ascent propagation
   const fissionDesign=POWER_SYSTEMS[spacecraft.powerSourceId].class==='fission';
   const unverifiedReactorCooling=fissionDesign&&(
     missionResult.powerSystemMassKg===null||
     missionResult.reactorThermalMarginW===null||
     missionResult.reactorThermalMarginW<0);
-  const launchReady=massKg<=launchCapacityKg &&
-    launcherDeltaVMs>=requiredLaunchDeltaVMs&&launcherTwr>=MIN_TWR&&
+  const launchReady=massKg<=launchCapacityKg &&manifest.feasible&&
+    (custom?(launcherDeltaVMs>=requiredLaunchDeltaVMs&&launcherTwr>=MIN_TWR):true)&&
     !unverifiedReactorCooling;
 
   const orbitRadiusKm=EARTH.equatorialRadiusKm+choices.orbitAltitudeKm;
@@ -178,7 +196,7 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   const scienceRatePerMb=instrument.sciencePerHour/(instrument.dataMbps*3600);
   const scienceGeneratedPotential=availableSunHours*instrument.sciencePerHour*OBSERVATION_DAYS;
   const spacecraftProcurement=spacecraftHardwareEconomics(spacecraft,config.technologyDiscount??0);
-  const missionCostUsd=estimateBuildCostUsd(launcher,config.completedWithEngine)+
+  const missionCostUsd=manifest.launchCostUsd+manifest.assemblyCostUsd+
     spacecraftProcurement.afterDiscountUsd+
     instrument.costUsd+radio.costUsd+storage.costUsd+
     choices.radiatorExtraAreaM2*EXTRA_RADIATOR_USDM2+choices.batteryExtraWh*EXTRA_BATTERY_USDWH+
@@ -207,7 +225,8 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   });
   const warnings:string[]=[];
   if(missionResult.massEstimateIncomplete)warnings.push('Spacecraft wet mass is a PARTIAL estimate; electric propellant storage and some reactor equipment may be missing.');
-  if(!launchReady)warnings.push('Launch is blocked by payload/rocket capability or unverified reactor cooling. Review mass, Δv, TWR and nuclear heat rejection.');
+  if(!launchReady)warnings.push('Launch is blocked by selected flight service, payload bay allocation, custom rocket performance or unverified reactor cooling. Review mass, Δv, TWR and nuclear heat rejection.');
+  if(!custom)warnings.push('The selected external launch service uses an advertised/notional capacity allocation. The ascent vehicle trajectory and liftoff TWR are not computed from the custom rocket equation.');
   if(unverifiedReactorCooling)warnings.push('Fission reactor mass/thermal margin is incomplete or heat rejection is below demand. Add a verified thermal architecture before committing this spacecraft.');
   if(powerLoadW>powerCapacityW)warnings.push('Sunlit power deficit throttles instrument operations. Increase solar area or reduce loads.');
   if(thermalLoadW>thermalCapacityW)warnings.push('Insufficient modeled radiator heat rejection reduces camera duty cycle.');
@@ -219,7 +238,7 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
       ?'Fission waste heat is assigned to the separate conceptual high-temperature radiator branch; real shield, coolant and coupling physics remain unqualified.'
       :'Radioisotope waste heat is not allocated to the bus radiator; isolated source cooling remains to be engineered.');
   return {missionResult,massKg,launcherDeltaVMs,launcherTwr,launchCapacityKg,requiredLaunchDeltaVMs,
-    launchReady,missionCostUsd,spacecraftProcurement,riskReview,
+    launchReady,missionCostUsd,launchManifest:manifest,spacecraftProcurement,riskReview,
     powerLoadW,powerCapacityW,thermalLoadW,thermalCapacityW,
     eclipseRequiredWh,batteryUsableWh,eclipseDurationHours,downlinkMbPerDay,dataMbPerDay,
     bufferMb:storage.capacityMb,scienceGeneratedPotential,dutyFactor,effectPower,effectThermal,
