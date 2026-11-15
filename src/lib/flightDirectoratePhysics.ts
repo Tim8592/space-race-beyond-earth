@@ -102,8 +102,8 @@ export function hohmannTrack(departure:Date,target:'mars'|'jupiter'|'asteroid',s
    const y=a*Math.sqrt(1-e*e)*Math.sin(E);
    return rotate(x,y,arg);
  });
- const v1=Math.sqrt(MU_SUN_KM3S2*(2/(rp*AU_KM)-1/(a*AU_KM)))/1000;
- const v2=Math.sqrt(MU_SUN_KM3S2*(2/(ra*AU_KM)-1/(a*AU_KM)))/1000;
+ const v1=Math.sqrt(MU_SUN_KM3S2*(2/(rp*AU_KM)-1/(a*AU_KM)));
+ const v2=Math.sqrt(MU_SUN_KM3S2*(2/(ra*AU_KM)-1/(a*AU_KM)));
  return {points,centralBody:'sun',model:'hohmann-kepler',
    modeledFlightDays:tDays,destinationRadius:ra,
    departureSpeedKmS:v1,arrivalSpeedKmS:v2,
