@@ -96,6 +96,10 @@ export default function MoonBase({cash,level,unlocked,devMode,onInvest,onExplore
           <div><span>Capital required</span><strong>{fmt(next.investmentUsd)}</strong></div>
           <div><span>Additional daily gross</span><strong>+{fmt(next.dailyRevenueUsd)}</strong></div>
           <div><span>Additional daily upkeep</span><strong>−{fmt(next.dailyOperationsUsd)}</strong></div>
+          <div><span>Simple investment payback</span>
+            <strong>{Math.ceil(next.investmentUsd/
+              (next.dailyRevenueUsd-next.dailyOperationsUsd))} game days</strong>
+          </div>
           <button type="button" className="launch-button" disabled={!canBuild} onClick={onInvest}>
             {unlocked?cash>=next.investmentUsd?'Invest in '+next.name:'Insufficient capital':'Unlock via Lunar Relay Pathfinder'}
           </button>
