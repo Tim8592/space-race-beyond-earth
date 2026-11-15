@@ -5,6 +5,7 @@ import {type SubsystemDesign,sizeSubsystemDesign} from './subsystemDesign';
 import {SCIENCE_INSTRUMENTS,type ScienceInstrumentId} from './instrumentCatalog';
 import {spacecraftHardwareEconomics} from './missionEconomics';
 import {POWER_SYSTEMS} from './powerSources';
+import {evaluatePropulsionBurn} from './propulsionBurn';
 
 const DAY_MS=86_400_000;
 const EPOCH=Date.UTC(2026,10,14,12);
@@ -257,23 +258,6 @@ function format(n:number|null,unit:string,decimals=0):string {
   return n!==null&&Number.isFinite(n)?
     n.toLocaleString('en-US',{maximumFractionDigits:decimals})+' '+unit:'unknown';
 }
-function busBurnDeltaV(wet:number,design:SubsystemDesign,
-  result:ReturnType<typeof sizeSubsystemDesign>,maxDays:number,wattsAvailable:boolean):number{
-  const p=result.primaryMode,s=result.secondaryMode;
-  const burn=(mass:number,m:typeof p)=>{
-    const rate=m.thrustN/(m.ispSeconds*STANDARD_GRAVITY_MS2)*86400;
-    const usable=m.kind!=='hydrazine'&&!wattsAvailable?0:
-      Math.min(m.propellantKg,rate*Math.max(1,maxDays)*.85);
-    const delta=usable>0?m.ispSeconds*STANDARD_GRAVITY_MS2*Math.log(mass/(mass-usable)):0;
-    return {delta,remaining:mass-usable};
-  };
-  if(s&&design.burnOrder==='secondary-first'){
-    const first=burn(wet,s),second=burn(first.remaining,p);
-    return first.delta+second.delta;
-  }
-  const first=burn(wet,p),second=s?burn(first.remaining,s):null;
-  return first.delta+(second?.delta??0);
-}
 export function reviewCampaignMission(args:{
   definition:CampaignDefinition;day:number;options:MissionOptions;
   spacecraft:SubsystemDesign;launcher:Vehicle;capitalUsd:number;
@@ -311,9 +295,26 @@ export function reviewCampaignMission(args:{
     d.target==='mars'?2.5:d.target==='jupiter'?5:1.5;
   const backupUsableWh=(system.storedBatteryEnergyWh+(o.reserveBattery?6000:0))*.8*.9;
   const backupRequiredWh=Math.max(0,powerDemandW-system.generatorElectricPowerW)*interruptionHours;
-  const poweredThrusters=system.primaryMode.canPowerAtRatedPoint&&
-    (!system.secondaryMode||system.secondaryMode.canPowerAtRatedPoint);
-  const busDeltaVms=busBurnDeltaV(busWet,design,system,d.durationDays,poweredThrusters);
+  // Sequential, finite-fuel rocket-equation burn: at most one propulsion
+  // family runs at a time, sharing the TOTAL mission-time budget.
+  // Electric power permits only a whole number of rated thrusters;
+  // unburned fuel stays in the mass denominator.
+  const modes=design.burnOrder==='secondary-first'&&system.secondaryMode?
+    [system.secondaryMode,system.primaryMode]:[
+      system.primaryMode,...(system.secondaryMode?[system.secondaryMode]:[])
+    ];
+  const busBurn=evaluatePropulsionBurn({
+    initialWetMassKg:busWet,windowDays:d.durationDays,
+    dutyFraction:design.propulsionDutyFraction,
+    powerBudgetW:Math.max(0,available-powerDemandW),
+    modes:modes.map(m=>({
+      id:m.id,name:m.name,installedEngines:m.count,
+      thrustPerEngineN:m.thrustN/m.count,ispSeconds:m.ispSeconds,
+      propellantKg:m.propellantKg,
+      busPowerPerEngineW:m.completePropulsionPowerW/m.count,
+    })),
+  });
+  const busDeltaVms=busBurn.deliveredDeltaVms;
   const totalDeltaVms=boosterDeltaVms+busDeltaVms;
   const requiredDeltaVms=route.totalDeltaVms*1.05; // 5% gameplay energy margin
   const radiatorCapacityW=system.radiatorCapacityW;
@@ -386,7 +387,16 @@ export function reviewCampaignMission(args:{
       passed:(route.apogeeKm??0)>=d.ellipticalApogeeKm,
       detail:'Perigee + eccentricity propagate through the same Keplerian Earth orbit model as the Orbital Map'});
   }
+  if(!system.engineMountsFit)checks.push({
+    label:'Engine mount clearance',actual:design.structureScale.toFixed(2)+'×',
+    needed:'At least '+system.requiredStructureScale.toFixed(2)+'×',
+    passed:false,detail:'The selected installed engine count needs a wider structural frame. Resize the bus structure in Engineering Lab; the added structural mass affects launch and delta-V.'
+  });
   const findings=checks.filter(c=>!c.passed).map(c=>c.label+': '+c.detail);
+  if(busBurn.remainingPropellantKg>1e-5)findings.push(
+    'Within '+d.durationDays+' mission days, only '+busBurn.burnedPropellantKg.toFixed(2)+
+    ' kg of '+system.totalPropellantKg.toFixed(2)+' kg can burn at the selected rated Isp / electricity budget. Unused fuel still adds mass.'
+  );
   if(route.source==='Hohmann approximation'&&route.phaseErrorDeg!==null&&route.phaseErrorDeg>30)
     findings.push('Orbital alignment is unfavorable for the simple Hohmann geometry; examine the date in Orbital Map and evaluate an Orekit Lambert solution.');
   if(system.massEstimateIncomplete)findings.push('Engineering mass has incomplete flight hardware allowances. This is a campaign-grade feasibility screen only, not flight qualification.');
