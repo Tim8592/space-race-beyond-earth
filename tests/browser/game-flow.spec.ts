@@ -533,7 +533,7 @@ test('NASA API network errors never prevent launch economy, research or offline 
     await page.getByRole('tab',{name:'Rocket Fleet'}).click();
     await expect(page.locator('.rocket-fleet-grid')).toContainText('Aurora');
     await page.getByRole('tab',{name:'Research & Roadmap'}).click();
-    await expect(page.locator('.tech-map-node')).toHaveCount(15);
+    await expect(page.locator('.tech-map-node')).toHaveCount(17);
   });
 });
 test('NASA datasets, source linkage and future mission calendar remain navigable',async({page})=>{
