@@ -70,6 +70,7 @@ export type ObservationConfig = {
   orbitalAssemblyUnlocked?:boolean;
   priorServiceFlights?:number;
   canadianSuccesses?:number;
+  weatherReserveHours?:number;
 };
 export type Capacity = {name:string;used:number;limit:number;unit:string;context:string;hard:boolean};
 export type DayReport = {
@@ -172,8 +173,10 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   // No instrument activity during eclipse in this first-order mission.
   const instrumentWithHarnessW=instrument.powerW/0.94;
   const baseHousekeepingW=missionResult.housekeepingPowerW-instrumentWithHarnessW;
+  const nasaReserveHours=Math.max(0,Math.min(2,
+    Number.isFinite(config.weatherReserveHours)?config.weatherReserveHours??0:0));
   const eclipseRequiredWh=Math.max(0,baseHousekeepingW-
-    missionResult.generatorElectricPowerW)*eclipseDurationHours;
+    missionResult.generatorElectricPowerW)*(eclipseDurationHours+nasaReserveHours);
   const batteryUsableWh=(missionResult.storedBatteryEnergyWh+choices.batteryExtraWh)*BATTERY_DOD*BATTERY_EFF;
   // Thrusters do not fire during routine Earth imaging. Their physical mass
   // remains in the launcher payload, but their rated electric power is not
@@ -211,7 +214,8 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
     {name:'Radiator heat rejection',used:thermalLoadW,limit:thermalCapacityW,unit:'W',hard:false,
       context:'Peak electronics heat vs modeled radiative rejection'},
     {name:'Eclipse energy',used:eclipseRequiredWh,limit:batteryUsableWh,unit:'Wh',hard:false,
-      context:'Required no-sunlight bus energy vs usable battery reserve'},
+      context:'Required no-sunlight bus energy vs usable battery reserve'+
+        (nasaReserveHours?' · +'+nasaReserveHours+'h game NASA DONKI contingency from recent observations':'')},
     {name:'Daily science downlink',used:dataMbPerDay,limit:downlinkMbPerDay,unit:'Mb/day',hard:false,
       context:'Generated images vs assumed daily ground-contact throughput'},
     {name:'Seven-day mission cost',used:missionCostUsd/1e6,limit:OBSERVATION_BUDGET_USD/1e6,unit:'$M',hard:true,
