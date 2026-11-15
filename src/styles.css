@@ -558,3 +558,10 @@
 @media(max-width:740px){.campaign-special-container,.campaign-time-footer{flex-direction:column;align-items:stretch}.campaign-special-offer{min-width:0}.campaign-stage-info{grid-template-columns:1fr}.campaign-contract-values,.campaign-flight-stats{grid-template-columns:1fr}}
 @media(max-width:480px){.campaign-cards,.campaign-orbit-values{grid-template-columns:1fr}.campaign-system-check{grid-template-columns:23px 1fr}.campaign-system-check>div:last-child{grid-column:2;text-align:left}}
 @media(prefers-reduced-motion:reduce){.campaign-orbit-visual animateMotion{display:none}}
+
+/* Mission-to-Orbital-Map round trip */
+.campaign-orbit-return{display:flex;align-items:center;justify-content:space-between;gap:22px;margin:0 0 18px;background:linear-gradient(115deg,#163c4c,#14283b);border:1px solid #5b8a95}
+.campaign-orbit-return p{margin:7px 0 0;max-width:720px;font-size:12px;line-height:1.7;color:#bdd2df}
+.campaign-orbit-return strong{color:#f2d6a0}
+.campaign-orbit-return button{flex-shrink:0}
+@media(max-width:720px){.campaign-orbit-return{flex-direction:column;align-items:stretch}}
