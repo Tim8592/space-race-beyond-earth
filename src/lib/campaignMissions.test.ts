@@ -152,9 +152,9 @@ describe('Next chapter campaign and orbit integrations',()=>{
   });
   it('large spacecraft actually require multiple paid rockets and an assembly facility',()=>{
     const heavy={...referenceArgs,capitalUsd:1e9,
-      launcher:{...INITIAL_VEHICLE,payloadMassKg:700},
+      launcher:{...INITIAL_VEHICLE,payloadMassKg:700}, // ignored by preset fleet
       spacecraft:{...DEFAULT_SUBSYSTEM_DESIGN,payloadMassKg:1000},
-      launchService:'custom' as const,priorServiceFlights:0};
+      launchService:'custom' as const,rocketProgramLevel:1,priorServiceFlights:0};
     const blocked=reviewCampaignMission({...heavy,orbitalAssemblyUnlocked:false});
     expect(blocked.launchManifest.flightsRequired).toBeGreaterThan(1);
     expect(blocked.launchManifest.feasible).toBe(false);
