@@ -222,8 +222,9 @@ export type MissionReview={
   checks:{label:string;actual:string;needed:string;passed:boolean;detail:string}[];
   findings:string[];
 };
-function format(n:number,unit:string,decimals=0):string {
-  return Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:decimals})+' '+unit:'unknown';
+function format(n:number|null,unit:string,decimals=0):string {
+  return n!==null&&Number.isFinite(n)?
+    n.toLocaleString('en-US',{maximumFractionDigits:decimals})+' '+unit:'unknown';
 }
 function busBurnDeltaV(wet:number,design:SubsystemDesign,
   result:ReturnType<typeof sizeSubsystemDesign>,maxDays:number,wattsAvailable:boolean):number{
