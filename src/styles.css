@@ -460,3 +460,10 @@
 @media (max-width:700px){.research-node-grid,.sys-reactor-ledger{grid-template-columns:1fr}.research-intro,.research-dev-banner{flex-direction:column;align-items:stretch}.research-mission-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:460px){.research-mission-grid{grid-template-columns:1fr}.research-economics{grid-template-columns:1fr}.research-economics>div{flex-direction:row;align-items:center;justify-content:space-between}.mission-orbit-head{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.mission-orbit-rotor,.mission-imaging-cone{animation:none!important}}
+
+/* Research portfolio summary replacing the former static roadmap */
+.research-portfolio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:15px 0}
+.research-portfolio-stats>div{display:flex;flex-direction:column;gap:9px;padding:15px;border:1px solid #43647e;border-radius:8px;background:#122b43}
+.research-portfolio-stats span{font-size:10px;color:#a7c5da;line-height:1.55}
+.research-portfolio-stats strong{font-family:'Space Grotesk',sans-serif;font-size:21px;color:#f1d3a4;font-variant-numeric:tabular-nums}
+@media(max-width:620px){.research-portfolio-stats{grid-template-columns:1fr}}
