@@ -139,7 +139,7 @@ export default function ResearchLab({cash,researchPoints,unlocked,devMode,onTogg
                   <rect x="8" y={LAYOUT[b].top} width={GRAPH_W-20}
                     height={LAYOUT[b].height} rx="12"
                     fill={focusBranch==='All'||focusBranch===b?'#12273b':'#101c2b'}
-                    opacity={focusBranch==='All'||focusBranch===b?.95:.4}
+                    opacity={focusBranch==='All'||focusBranch===b?0.95:0.4}
                     stroke={focusBranch===b?'#e2b17b':'#2d445c'}
                     strokeWidth={focusBranch===b?2:1}/>
                   <text x="28" y={LAYOUT[b].top+21} fill="#e0b889" fontSize="10"
@@ -157,7 +157,7 @@ export default function ResearchLab({cash,researchPoints,unlocked,devMode,onTogg
                     d={`M ${x1} ${y1} C ${x1+45} ${y1}, ${x2-45} ${y2}, ${x2} ${y2}`}
                     fill="none" stroke={highlighted?'#f5cd8c':fromDone?'#6fd3b4':'#4d6780'}
                     strokeWidth={highlighted?3.3:fromDone?2.4:1.8}
-                    opacity={faded?.24:1} strokeDasharray={fromDone?'none':'7 7'}/>;
+                    opacity={faded?0.24:1} strokeDasharray={fromDone?'none':'7 7'}/>;
                 })}
               </svg>
               {TECH_POSITIONS.map(({item,x,y})=>{
