@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Spacecraft3D, {type PartName} from './Spacecraft3D';
+import {dateForGameDay,type CampaignDefinition,type MissionReview} from './lib/campaignMissions';
 import FieldHelp from './components/FieldHelp';
 import { descriptionFor } from './lib/fieldHelp';
 import {
@@ -84,12 +85,30 @@ function Result({ label, value, note, tone }: {
   );
 }
 
-export default function SubsystemLab({design,onDesignChange,unlockedTechnologies=[],devMode=false}:{
+export type MissionLabContext={
+  definition:CampaignDefinition;review:MissionReview|null;
+  stageUnlocked:number;completed:boolean;lockedTechnologyCount:number;
+  activeFlight:boolean;gameDay:number;
+};
+type SystemTab='propulsion'|'payload'|'power'|'thermal'|'tank'|'analysis';
+function checkPanel(label:string):SystemTab|null{
+  if(/thermal|heat|radiator|reactor/i.test(label))return 'thermal';
+  if(/power|electric|generator/i.test(label))return 'power';
+  if(/payload|science|instrument/i.test(label))return 'payload';
+  if(/transfer|delta.v|propulsion/i.test(label))return 'propulsion';
+  return null; // launcher, antenna, launch window and budget are campaign controls
+}
+export default function SubsystemLab({design,onDesignChange,unlockedTechnologies=[],devMode=false,
+  mission,onReturnToMission}:{
   design:SubsystemDesign;onDesignChange:(next:SubsystemDesign)=>void;
   unlockedTechnologies?:readonly TechnologyId[];
   devMode?:boolean;
+  mission?:MissionLabContext;onReturnToMission?:()=>void;
 }) {
-  const [activeSystemTab,setActiveSystemTab] = useState<'propulsion'|'payload'|'power'|'thermal'|'tank'|'analysis'>('propulsion');
+  const [activeSystemTab,setActiveSystemTab] = useState<SystemTab>('propulsion');
+  const [lastEdit,setLastEdit]=useState<{
+    label:string;massChangeKg:number;powerChangeW:number;thermalChangeW:number;
+  }|null>(null);
   const analysis = useMemo(() => {
     try { return { result: sizeSubsystemDesign(design), error: '' }; }
     catch (error) {
@@ -105,7 +124,18 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
   const isFission=POWER_SYSTEMS[design.powerSourceId].class==='fission';
 
   function change<K extends keyof SubsystemDesign>(key: K, value: SubsystemDesign[K]) {
-    onDesignChange({...design,[key]:value});
+    const updated={...design,[key]:value};
+    if(result){
+      try{
+        const next=sizeSubsystemDesign(updated);
+        setLastEdit({label:String(key),
+          massChangeKg:next.modeledWetMassKg-result.modeledWetMassKg,
+          powerChangeW:next.totalAvailablePowerW-result.totalAvailablePowerW,
+          thermalChangeW:next.radiatorCapacityW-result.radiatorCapacityW,
+        });
+      }catch{setLastEdit(null)}
+    }
+    onDesignChange(updated);
   }
 
   const isLiquid = design.thrusterId === 'mono-reference' ||
@@ -118,6 +148,35 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
     ...IN_SPACE_THRUSTERS.map(t=>({id:t.id,
       name:t.name+' · '+t.nominalSpecificImpulseSeconds+' s · '+(t.nominalThrusterPowerW/1000).toFixed(2)+' kW'})),
   ];
+
+  const summary=result?({
+    propulsion:{title:'Propulsion effect',description:'Installed engine(s), fuel and feed architecture influence thrust, stored mass and ideal Δv. The timeline is still an approximation.',stats:[
+      ['Ideal onboard Δv',fmt(result.idealDeltaVms,'m/s',0)],
+      ['Thruster hardware + tank mass',fmt(result.engineHardwareMassKg+result.totalTankHardwareMassKg,'kg',2)],
+      ['Propulsion peak electrical input',fmt(result.propulsionPeakPowerW,'W',0)]]},
+    payload:{title:'Science payload effect',description:'Sensors add instrument mass, steady active watts and associated waste heat; generic cargo is counted separately.',stats:[
+      ['Total science + cargo',fmt(result.instrumentMassKg+design.payloadMassKg,'kg',1)],
+      ['Active instrument load',fmt(result.instrumentPowerW,'W',0)],
+      ['Selected sensor',result.instrumentName]]},
+    power:{title:'Power generation effect',description:'Solar area, number of wings, batteries and generators set delivered electrical power, margins and installed equipment mass.',stats:[
+      ['Generation at selected distance',fmt(result.totalAvailablePowerW,'W',0)],
+      ['Power margin vs peak loads',fmt(result.totalPowerMarginW,'W',0)],
+      ['Array + battery + source mass',fmt(result.powerSystemMassKg===null?null:
+        result.arrayMassKg+result.batteryMassKg+result.powerSystemMassKg,'kg',2)]]},
+    thermal:{title:'Thermal hardware effect',description:'Radiator installation directly adds modeled dry mass and raises heat rejection. Reactor cooling is an independent high-temperature branch.',stats:[
+      ['Bus radiator rejection',fmt(result.radiatorCapacityW,'W',0)],
+      ['Bus heat rejection margin',fmt(result.thermalMarginW,'W',0)],
+      ['Installed bus + reactor cooling mass',fmt(result.radiatorMassKg===null?null:
+        result.radiatorMassKg+result.radiatorMountMassKg+result.reactorCoolingMassKg,'kg',2)]]},
+    tank:{title:'Propellant storage effect',description:'Pressure, material stress, fuel family and propellant quantity drive conceptual tank wall, fittings and dry hardware weight.',stats:[
+      ['Tanks and feeds',fmt(result.totalTankHardwareMassKg,'kg',2)],
+      ['Stored propellant',fmt(design.propellantMassKg+(design.secondaryThrusterId!=='none'?design.secondaryPropellantMassKg:0),'kg',2)],
+      ['Independent reservoirs',String(result.tankReports.length)]]},
+    analysis:{title:'Whole-spacecraft engineering effect',description:'This roll-up couples every installed subsystem, including dry hardware, stored propellant, electrical loads and waste heat.',stats:[
+      ['Modeled wet mass',fmt(result.modeledWetMassKg,'kg',1)],
+      ['Electrical margin',fmt(result.totalPowerMarginW,'W',0)],
+      ['Bus thermal margin',fmt(result.thermalMarginW,'W',0)]]}
+  } satisfies Record<SystemTab,{title:string;description:string;stats:[string,string][]}>)[activeSystemTab]:null;
 
   return (
     <section className="panel sys-panel" id="systems-lab" aria-label="In-space spacecraft systems engineering lab">
@@ -144,6 +203,45 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
         <div><small>PEAK ELECTRICAL DRAW</small><strong>{fmt(result.totalElectricalDemandW,'W',0)}</strong></div>
         <div><small>TANKS AND FEEDS</small><strong>{fmt(result.totalTankHardwareMassKg,'kg',1)}</strong></div>
       </div>}
+      {mission&&<div className="sys-mission-brief" aria-label="Selected mission and engineering bottlenecks">
+        <div className="sys-mission-top">
+          <div><div className="eyebrow">ACTIVE DESIGN TARGET / FLIGHT READINESS</div>
+            <h3>{mission.definition.title}</h3>
+            <p>{mission.definition.location} · Chapter {mission.definition.stage} · Game date {dateForGameDay(mission.gameDay)}
+              {mission.definition.windowEndDay!==undefined?' · Offer closes '+dateForGameDay(mission.definition.windowEndDay):''}</p></div>
+          <button type="button" className="secondary-button" onClick={onReturnToMission}>
+            Return to selected mission ↗
+          </button>
+        </div>
+        {mission.review?<><div className="sys-mission-readiness">
+          <strong>{mission.review.checks.filter(c=>c.passed).length}/{mission.review.checks.length} engineering checks pass</strong>
+          <span>{mission.completed?'✓ This mission already completed':
+            mission.activeFlight?'A spacecraft is already in flight':
+            mission.stageUnlocked<mission.definition.stage?'Chapter locked · advance the main campaign':
+            mission.lockedTechnologyCount>0?'Research locked components are installed':
+            mission.review.feasible?'Design passes preliminary mission review':'Resolve the current bottlenecks below'}</span>
+        </div>
+          <div className="sys-mission-bottlenecks">
+            {mission.review.checks.filter(c=>!c.passed).slice(0,5).map(check=>{
+              const panel=checkPanel(check.label);
+              return <div className="sys-mission-issue" key={check.label}>
+                <span className="sys-mission-issue-icon">!</span>
+                <div><strong>{check.label}</strong>
+                  <small>Actual: {check.actual} · Required: {check.needed}</small></div>
+                {panel?<button type="button" onClick={()=>setActiveSystemTab(panel)}>
+                  Open {panel==='payload'?'Science payload':panel==='tank'?'Tanks':panel} ↗
+                </button>:<small className="sys-campaign-only">Mission / rocket controls</small>}
+              </div>;
+            })}
+            {mission.review.checks.every(c=>c.passed)&&<p className="sys-mission-ready-text">
+              All preliminary engineering checks passed. Return to your selected contract to launch.
+            </p>}
+            {mission.review.checks.filter(c=>!c.passed).length>5&&
+              <p className="sys-mission-ready-text">
+                +{mission.review.checks.filter(c=>!c.passed).length-5} more findings in mission review.
+              </p>}
+          </div></>:<p className="sys-mission-ready-text">Engineering analysis unavailable. Check invalid inputs in the Engineering Analysis tab.</p>}
+      </div>}
       <Spacecraft3D design={design} analysis={result} onPartSelect={(part:PartName)=>{
         const where:Record<PartName,'propulsion'|'payload'|'power'|'thermal'|'tank'|'analysis'>={
           bus:'analysis',power:'power',radiator:'thermal',tank:'tank',
@@ -163,6 +261,19 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
         ))}
       </div>
 
+      {summary&&<div className="sys-impact-summary" aria-label="Live subsystem impact summary">
+        <div className="sys-impact-heading"><div className="eyebrow">LIVE COMPONENT IMPACT</div><h3>{summary.title}</h3>
+          <p>{summary.description}</p></div>
+        <div className="sys-impact-metrics">
+          {summary.stats.map(([label,value])=><div key={label}><small>{label}</small><strong>{value}</strong></div>)}
+        </div>
+        {lastEdit&&<div className="sys-impact-delta">
+          Latest change ({lastEdit.label}):
+          <span>Wet mass {lastEdit.massChangeKg>=0?'+':''}{fmt(lastEdit.massChangeKg,'kg',2)}</span>
+          <span>Power generation {lastEdit.powerChangeW>=0?'+':''}{fmt(lastEdit.powerChangeW,'W',0)}</span>
+          <span>Heat rejection {lastEdit.thermalChangeW>=0?'+':''}{fmt(lastEdit.thermalChangeW,'W',0)}</span>
+        </div>}
+      </div>}
       <div className={'sys-group '+(activeSystemTab==='propulsion'?'':'sys-hidden')}>
         <div className="sys-heading"><span>01</span><div><h3>Propulsion</h3><small>Specific impulse, thrust, mass flow and burn time</small></div></div>
         <div className="sys-input-grid">
