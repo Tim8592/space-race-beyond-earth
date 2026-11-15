@@ -343,6 +343,47 @@ test('Continuous campaign clock is slower and replaces manual day skip',async({p
   });
 });
 
+test('RP and operating costs persist, Moon investment income and hidden missions have no trajectory',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await expect(page.getByText('RESEARCH POINTS').first()).toBeVisible();
+    await expect(page.getByText('DAILY OPERATING COST')).toBeVisible();
+    await expect(page.getByText('NET / GAME DAY')).toBeVisible();
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await expect(page.locator('.research-node').first()).toContainText('RESEARCH POINTS');
+    await page.getByRole('tab',{name:'Moon Base'}).click();
+    await expect(page.getByRole('heading',{name:'Moon Base Directorate'})).toBeVisible();
+    await expect(page.getByRole('button',{name:/Zoom in lunar map/})).toBeVisible();
+    await expect(page.getByText('Moon Base financing locked')).toBeVisible();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await page.locator('.campaign-stage-card').filter({hasText:'Mars Orbiter'}).click();
+    await expect(page.locator('.campaign-locked-overlay')).toContainText('unlock Mars Orbiter');
+    await expect(page.locator('.campaign-workshop')).toHaveCount(0);
+    await expect(page.locator('.campaign-map-current')).toContainText('Mission classified');
+    await expect(page.getByRole('button',{name:/Select 03 Mars Orbiter/})).toHaveCount(0);
+  });
+});
+test('Moon Base dividends fund agency recurring expenses in a saved lunar-success campaign',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.evaluate(()=>{
+      const key='space-race-v01-save',saved=JSON.parse(localStorage.getItem(key)!);
+      saved.game.storyCompleted=['observation','lunar'];
+      saved.game.cash=350000000;
+      localStorage.setItem(key,JSON.stringify(saved));
+    });
+    await page.reload();
+    await page.getByRole('tab',{name:'Moon Base'}).click();
+    await page.getByRole('button',{name:/Invest in Lunar Survey Outpost/}).click();
+    await expect(page.getByText('1 / 3')).toBeVisible();
+    await expect(page.locator('.agency-finance-bar')).toContainText('MOON REVENUE');
+    await expect(page.locator('.agency-finance-bar')).toContainText('+');
+    await page.reload();
+    await page.getByRole('tab',{name:'Moon Base'}).click();
+    await expect(page.getByText('1 / 3')).toBeVisible();
+  });
+});
 test('NASA datasets, source linkage and future mission calendar remain navigable',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
@@ -441,6 +482,16 @@ test('A configured lunar milestone launches, survives reload and pays exactly on
     await page.reload();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await expect(page.getByText('FLIGHT OPERATIONS / CONTRACT IN PROGRESS')).toBeVisible();
+    await expect(page.getByRole('button',{name:/Flight underway · ETA/})).toBeDisabled();
+    await expect(page.getByRole('button',{name:'Open active flight progress'})).toBeVisible();
+    await page.evaluate(()=>{
+      const key='space-race-v01-save',saved=JSON.parse(localStorage.getItem(key)!);
+      saved.game.activeStoryRun.startedAtMs=Date.now()-120_000;
+      localStorage.setItem(key,JSON.stringify(saved));
+    });
+    await page.reload();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.getByRole('button',{name:/Complete flight and mission debrief/})).toBeEnabled();
     await page.getByRole('button',{name:/Complete flight and mission debrief/}).click();
     await expect(page.getByText(/unlocked the next stage/)).toBeVisible();
     await expect(page.getByText('1 / 4')).toBeVisible();
