@@ -168,6 +168,12 @@ export default function CampaignMissions({
     completedWithLauncherEngine,solvedTransfer,launchService,rocketProgramLevel,
     orbitalAssemblyUnlocked,priorServiceFlights,canadianSuccesses,weatherReserveHours]);
   const review=draft.review;
+  const optionalKitNames=[
+    ...(!selected.requiresHighGain&&options.highGain?['high-gain antenna']:[]),
+    ...(!selected.requiresShield&&options.radiationShield?['radiation shield']:[]),
+    ...(options.reserveBattery?['energy reserve']:[]),
+    ...(!selected.requiredCubeSatUnits&&options.cubesatUnits?[options.cubesatUnits+'U CubeSat']:[]),
+  ];
   const canStart=stage>=selected.stage&&!completedMission&&
     review?.feasible===true&&!run&&!assembly&&!logisticsInProgress&&lockedTechnologies.length===0&&
     (status===null||status==='open');
@@ -484,7 +490,8 @@ export default function CampaignMissions({
             </div>}
           <details className="campaign-optional-kit">
             <summary>Optional flight equipment
-              <small>Extra mission hardware · expand to configure</small>
+              <small>{optionalKitNames.length>0?
+                'Selected: '+optionalKitNames.join(' · '):'None selected · expand to configure'}</small>
             </summary>
             <div className="campaign-optional-kit-body">
               <div className="campaign-external-modules">
