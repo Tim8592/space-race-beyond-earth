@@ -136,7 +136,7 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
       </p>
       {installedLocked.length>0&&<div className="sys-feedback sys-error" role="status">
         This design uses {installedLocked.length} technology research unlock(s) you have not permanently acquired. You can inspect the saved design, but guided missions cannot launch it until the technologies are researched or Dev Mode is enabled.
-      </div>
+      </div>}
 
       {result&&<div className="sys-live-strip" aria-label="Live spacecraft engineering summary">
         <div><small>MODELED WET MASS</small><strong>{fmt(result.modeledWetMassKg,'kg',1)}</strong></div>
