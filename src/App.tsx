@@ -431,6 +431,40 @@ export default function App() {
         orbitalAssemblyUnlocked:true}};
     });
   }
+  function saveWorkingSpacecraft(name:string,description:string){
+    setSnapshot(old=>({...old,game:{...old.game,
+      spacecraftBlueprints:saveSpacecraftBlueprint(old.game.spacecraftBlueprints,
+        name,spacecraftDesign,old.game.day,description)}}));
+    setMessage('Independent spacecraft blueprint saved. Future changes to the working model will not overwrite it.');
+  }
+  function newWorkingSpacecraft(){
+    setSpacecraftDesign(cloneSpacecraftDesign(DEFAULT_SUBSYSTEM_DESIGN));
+    setActiveView('systems');setMessage('New blank spacecraft loaded. Prior saved designs and flown configurations remain in the library.');
+  }
+  function loadWorkingSpacecraft(id:string){
+    const found=game.spacecraftBlueprints.find(x=>x.id===id);
+    if(!found)return;
+    setSpacecraftDesign(cloneSpacecraftDesign(found.design));
+    setActiveView('systems');
+    setMessage('Loaded an independent working copy of '+found.name+'. Original saved version is unchanged.');
+  }
+  function duplicateWorkingSpacecraft(id:string){
+    const found=game.spacecraftBlueprints.find(x=>x.id===id);
+    if(!found)return;
+    setSnapshot(old=>({...old,game:{...old.game,
+      spacecraftBlueprints:duplicateSpacecraftBlueprint(old.game.spacecraftBlueprints,id,old.game.day)}}));
+    setSpacecraftDesign(cloneSpacecraftDesign(found.design));setActiveView('systems');
+    setMessage('Created independent duplicate of '+found.name+' and opened it for editing. Save another revision when finished.');
+  }
+  function renameWorkingSpacecraft(id:string,name:string){
+    if(!name.trim())return;
+    setSnapshot(old=>({...old,game:{...old.game,spacecraftBlueprints:
+      old.game.spacecraftBlueprints.map(x=>x.id===id?{...x,name:name.trim().slice(0,80)}:x)}}));
+  }
+  function deleteWorkingSpacecraft(id:string){
+    setSnapshot(old=>({...old,game:{...old.game,spacecraftBlueprints:
+      old.game.spacecraftBlueprints.filter(x=>x.id!==id)}}));
+  }
   function dispatchNetwork(kind:OrbitalNetworkKind){
     setSnapshot(previous=>{
       const g=previous.game;
