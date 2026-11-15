@@ -7,7 +7,7 @@ import react from '@vitejs/plugin-react';
  * Deployed static builds use public DEMO_KEY with NASA's restrictive rate limit.
  */
 export default defineConfig(({mode})=>{
-  const config=loadEnv(mode,process.cwd(),'');
+  const config=loadEnv(mode,'.','');
   const nasaApiKey=config.NASA_API_KEY?.trim()||'DEMO_KEY';
   return {plugins:[react()],
     server:{proxy:{'/nasa-api':{
