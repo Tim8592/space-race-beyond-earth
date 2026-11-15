@@ -26,6 +26,7 @@ import CampaignMissions,{type CampaignRun,type CampaignDebrief,type CampaignAsse
 import {dateForGameDay,orbitalRoute,reviewCampaignMission,unlockedStage,DEFAULT_MISSION_OPTIONS,
   type CampaignDefinition,type MissionOptions,type SolvedCampaignTransfer} from './lib/campaignMissions';
 import {resolveCampaignSelection} from './lib/campaignSelection';
+import {CSA_DATA_PROGRAMS} from './lib/csaScienceMissions';
 import type {LambertSolution} from './TransferPlanner';
 import {canResearch,TECHNOLOGIES, type TechnologyId,hasTechnology,
   THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,researchDiscount} from './lib/technologyTree';
@@ -319,6 +320,13 @@ export default function App() {
     setSelectedCampaignId(offer.id);
     setCampaignMode('progression');setActiveView('missions');
     setMessage('NASA close approach '+neo.name+' selected for an Earth-orbit observation scenario. No asteroid intercept is implied.');
+  }
+  function chooseCSAScienceMission(id:string){
+    const program=CSA_DATA_PROGRAMS.find(x=>x.mission.id===id);
+    if(!program)return;
+    setSelectedCampaignId(program.mission.id);
+    setCampaignMode('progression');setActiveView('missions');
+    setMessage(program.realProgram+' source-data mission selected. Equip the required modeled science instrument and review electrical, thermal, launch and cash constraints.');
   }
   function openFlightViewer(){
     setFlightViewerOpen(true);
@@ -1002,7 +1010,8 @@ export default function App() {
           gameDate={dateForGameDay(game.day)} gameDay={game.day} brief={nasaWeather}
           selectedNeoId={game.neoOpportunity?.sourceNeo.id??null}
           onRefresh={()=>void updateNASAIntel(true)}
-          onSelectNeo={chooseNASAObject}/>}
+          onSelectNeo={chooseNASAObject}
+          onSelectCSAMission={chooseCSAScienceMission}/>}
         {activeView==='sources' && <div className="single-tab-page"><References/></div>}
         {activeView==='library' && <div className="single-tab-page"><MissionLibrary onOpenMap={()=>setActiveView('orbits')}/></div>}
         {activeView==='learning' && <div className="single-tab-page">
