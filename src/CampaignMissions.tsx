@@ -175,7 +175,7 @@ export default function CampaignMissions({
         and realistic first-order transfer energy. Special contracts appear for a limited
         number of <b>in-game days</b>; their requirements and rewards vary with your progress.</p>
       <div className="campaign-stage-info">
-        <span>MISSION PROGRESSION <strong>{completed.filter(id=>id!=='observation'&&!id.startsWith('special-')).length} / {STORY_MISSIONS.length}</strong></span>
+        <span>MISSION PROGRESSION <strong>{STORY_MISSIONS.filter(m=>completed.includes(m.id)).length} / {STORY_MISSIONS.length}</strong></span>
         <span>GAME DATE <strong>{dateForGameDay(day)}</strong></span>
         <span>ACTIVE MISSION <strong>{run?run.title:'Mission design'}</strong></span>
       </div>
@@ -258,7 +258,7 @@ export default function CampaignMissions({
           <div className="eyebrow">{selected.special?'SPECIAL CONTRACT':'CAMPAIGN MILESTONE 0'+selected.stage}</div>
           <h2>{selected.title}</h2>
           <p>{selected.summary}</p>
-          {selected.special&&<p className="campaign-time-tag">Bid window Days {selected.windowStartDay}–{selected.windowEndDay}. {status==='open'
+          {selected.special&&<p className="campaign-time-tag">Game bid window {dateForGameDay(selected.windowStartDay!)}–{dateForGameDay(selected.windowEndDay!)}. {status==='open'
             ?(selected.windowEndDay!-day)+' in-game days left to launch.':status==='upcoming'
             ?'Offer not yet open.':'The offer has expired.'}</p>}
           <div className="campaign-contract-values">
