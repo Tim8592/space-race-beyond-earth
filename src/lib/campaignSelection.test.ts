@@ -13,6 +13,7 @@ describe('Shared campaign selection',()=>{
   it('keeps story and NASA map selection consistent across panels',()=>{
     const state=resolveCampaignSelection(1,4,['observation'],'jupiter');
     expect(state.selected.id).toBe('jupiter');
-    expect(state.agency).toHaveLength(4);
+    expect(state.agency).toHaveLength(7);
+    expect(state.agency.filter(x=>x.id.startsWith('csa-'))).toHaveLength(3);
   });
 });
