@@ -575,7 +575,7 @@ export default function App() {
           <span><strong>{game.activeStoryRun.title}</strong>
             <small>{activeFlightProgress.ready?'READY FOR DEBRIEF':
               'ETA '+flightEta(activeFlightProgress.remainingMs)+' · open viewer'}</small></span>
-        </button>
+        </button>}
         <section className={'intro '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')}>
           <div><div className="eyebrow"><span className="small-diamond" /> YOUR SPACE PROGRAM STARTS HERE</div><h1>Build the future.<br /><em>Beyond Earth.</em></h1><p>Design capable spacecraft, accept orbital contracts, and turn engineering decisions into a thriving space economy.</p></div>
           <div className="intro-right"><span>CAMPAIGN / EARTH ERA</span><div className="day-marker">DAY <strong>{game.day.toString().padStart(3, '0')}</strong></div><span className="game-clock-caption">{dateForGameDay(game.day)} · next day {secondsToNextDay}s · auto</span></div>
