@@ -24,7 +24,8 @@ export default function LaunchWindowForecast({target,day,options,review,netDaily
    const controller=new AbortController();
    setRefined(null);setChecking(true);
    tryOrekitDepartureWindows(target,day,options,review.route.flightDays,
-     controller.signal).then(r=>{if(!controller.signal.aborted)setRefined(r)});
+     controller.signal).then(r=>{if(!controller.signal.aborted)setRefined(r)})
+     .finally(()=>{if(!controller.signal.aborted)setChecking(false)});
    return ()=>{controller.abort();setChecking(false)};
  },[target,day,options,review.route.flightDays]);
  const forecast=refined??baseline;
