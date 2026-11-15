@@ -30,6 +30,14 @@ The **Space Mission Design Game** challenge lists CubeSat 101 in its NASA Resour
 
 Mission titles, prizes, proposal/launch windows, energy thresholds, CubeSat dispenser costs, required payload masses, and the player's spacecraft are **fictional**. If a fictional NASA-inspired proposal period is missed, a **25% lower-paying follow-on contract** remains playable, under the original contract ID (only one reward). Original NASA milestones are not repeated, and main story unlocks do not depend on accepting them. In particular: the game asteroid is synthetic, its NEO Surveyor contract does not use the actual Sun-Earth L1 orbit; the Jupiter scenario is a flyby rather than Europa Clipper's Jupiter orbit insertion; SkyFall's actual reactor-powered transfer is not simulated. Spacecraft and real mission properties must not be conflated with gameplay parameters.
 
+## Propellant depletion, power-constrained thrust and 3D architecture (v1.3)
+
+- The fundamental governing relation **ṁ = F/(Isp · g₀)** and Tsiolkovsky **Δv = Isp · g₀ · ln(m₀/mf)** are implemented in `src/lib/spacecraftSystems.ts` and `src/lib/propulsionBurn.ts`; no fuel is instantaneously deleted to obtain mission Δv. Propellant mass drains throughout the burn and its remaining mass stays aboard.
+- Distinguish **ideal all-propellant Δv** (independent of thrust count at fixed wet mass) from **deliverable mission-window Δv** (finite rated engine thrust, time available, firing duty, and whole powered engine count). The distinction explains why reducing engine count can increase total potential Δv while lowering delivered Δv during a short opportunity. Engine counts change dry mass through engine and PPU mass.
+- Dual propulsion families share a single time budget and burn sequentially in the selected order. Power left after housekeeping determines how many rated engines can fire; no unpublished throttle efficiency curve is invented.
+- `src/lib/structureSizing.ts` computes unique rear nozzle mounts and minimum frame width for the installed engine count. Increasing visual bus frame scale also adds dry mass and an illustrative manufacturing cost; no qualification or structural stress analysis is performed.
+- The physics is preliminary: **no numerical finite-thrust orbit propagation, gravity losses during long burns, varying power across a trajectory, eclipse duty integration, flow regulation, propellant boiloff, gimbals, thruster plume interaction or engine qualification**.
+
 ## Time and transfer fidelity
 
 - Open browser tab advances **one game day every two real minutes**. Backgrounded/closed tabs do not accumulate real time. Newly started games map the user's browser calendar date to the 2026-11-14 game epoch; previously saved game days remain intact.
