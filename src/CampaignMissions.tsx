@@ -9,6 +9,7 @@ import {dateForGameDay,BOOSTERS,EXTERNAL_MODULES,
   unlockedStage,type CampaignDefinition,type MissionOptions,type MissionReview,
   type SolvedCampaignTransfer} from './lib/campaignMissions';
 import {AGENCY_MILESTONES,agencyMissionDefinitions,agencyOfferPhase} from './lib/realWorldMissions';
+import {CSA_DATA_PROGRAMS} from './lib/csaScienceMissions';
 import type {Vehicle} from './lib/engineering';
 import type {SubsystemDesign} from './lib/subsystemDesign';
 
@@ -287,6 +288,36 @@ export default function CampaignMissions({
       </div>
       <p className="campaign-agency-links">NASA mission sources: {AGENCY_MILESTONES.map((m,i)=>
         <span key={m.id}><a href={m.sourceUrl} target="_blank" rel="noreferrer">{m.realMission} ({m.event})</a>{i!==AGENCY_MILESTONES.length-1?' · ':''}</span>)}</p>
+    </div>
+    <div className="panel csa-research-contracts">
+      <div className="eyebrow">CANADIAN SPACE AGENCY / REAL PUBLIC SCIENCE DATA SOURCES</div>
+      <h3>Canadian data-driven science missions</h3>
+      <p>These are fictional missions informed by real CSA research-data repositories.
+        NEOSSAT optical observations, CASSIOPE auroral imaging and RADARSAT radar
+        imagery motivate different installed instruments, electrical demands and
+        mission budgets. NASA/CSA have NOT awarded these fictional contracts.
+        Original FITS, FAI and SAR imagery are linked rather than redistributed.</p>
+      <div className="campaign-agency-grid">
+        {CSA_DATA_PROGRAMS.map(item=><button type="button" key={item.id}
+          className={'campaign-agency-offer '+(selected.id===item.mission.id?'selected':'')}
+          onClick={()=>onSelectedIdChange(item.mission.id)}
+          aria-pressed={selected.id===item.mission.id}>
+          <small>{item.realProgram} · {item.datasetFormat}</small>
+          <strong>{item.mission.title}</strong>
+          <span>{stage<item.mission.stage?
+            'LOCKED · Complete Earth Observation One':
+            completed.includes(item.mission.id)?'✓ RESEARCH MISSION COMPLETE':
+            'AVAILABLE · INSTRUMENT-DEPENDENT SCIENCE CONTRACT'}</span>
+          <small>Modeled {usd(item.mission.payoutUsd)} ·
+            electrical minimum {item.mission.minElectricW} W</small>
+        </button>)}
+      </div>
+      <p className="campaign-agency-links">Original CSA source tutorials:
+        {' '}{CSA_DATA_PROGRAMS.map((p,i)=><span key={p.id}>
+          <a href={p.sourceUrl} target="_blank" rel="noreferrer">{p.realProgram}</a>
+          {i<CSA_DATA_PROGRAMS.length-1?' · ':''}
+        </span>)}
+      </p>
     </div>
     {assembly&&<div className="panel campaign-assembly-progress" aria-label="Multi-rocket orbital spacecraft assembly">
       <div className="eyebrow">ORBITAL LOGISTICS / SHIP THE SPACECRAFT IN PARTS</div>
