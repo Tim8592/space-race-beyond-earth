@@ -284,6 +284,7 @@ test('Special elliptical offer responds to eccentricity and expires after in-gam
     await page.goto('/');
     await page.getByRole('tab',{name:'Research & Roadmap'}).click();
     await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await expect(page.locator('.campaign-special-offer')).toBeVisible();
     await page.getByRole('button',{name:/Advance 7 days \/ wait for opportunities/}).click();
@@ -305,6 +306,7 @@ test('Dev Mode opens later planetary missions and orbital solver entry points',a
     await page.goto('/');
     await page.getByRole('tab',{name:'Research & Roadmap'}).click();
     await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await page.locator('.campaign-stage-card').filter({hasText:'Mars Orbiter'}).click();
     await expect(page.getByRole('heading',{name:'Mars Orbiter'})).toBeVisible();
