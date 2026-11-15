@@ -3,6 +3,7 @@ import {
 } from './spacecraftTechnology';
 import { getPowerOutput, POWER_SYSTEMS, type PowerSourceId } from './powerSources';
 import { getInstrument, type InstrumentSelection } from './instrumentCatalog';
+import {ORBITAL_SERVICE_MODULES,type OrbitalServiceModuleId} from './orbitalServiceModules';
 import {evaluatePropulsionBurn,type PropulsionBurnResult} from './propulsionBurn';
 import {extraFrameMassKg,minimumStructureScale} from './structureSizing';
 import { estimatePropellantTank, type TankReport, type PropellantKind } from './propellantTanks';
@@ -46,6 +47,7 @@ export type SubsystemDesign = {
   /** Additional cargo/instrument accommodation beyond selected catalogue instrument. */
   payloadMassKg:number;
   payloadInstrumentId:InstrumentSelection;
+  orbitalServiceModuleId:OrbitalServiceModuleId;
   /** Base housekeeping avionics; selected instrument/control/wiring loads are automatic. */
   busElectricalPowerW:number;
   eclipseHours:number;
@@ -84,7 +86,7 @@ export const DEFAULT_SUBSYSTEM_DESIGN:SubsystemDesign={
   propellantMassKg:5,
   busDryMassKg:100,
   payloadMassKg:20,
-  payloadInstrumentId:'none',
+  payloadInstrumentId:'none',orbitalServiceModuleId:'none',
   busElectricalPowerW:90,
   eclipseHours:.6,
   liquidDensityKgM3:1000,
@@ -182,6 +184,7 @@ export type SystemResults={
   radiatorMountMassKg:number;
   instrumentMassKg:number;
   instrumentPowerW:number;
+  orbitalServiceMassKg:number;orbitalServicePowerW:number;orbitalServiceHeatW:number;orbitalServiceName:string;
   baseBusPowerW:number;
   wingControlPowerW:number;
   radiatorControlPowerW:number;
@@ -235,8 +238,9 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
   const battery=BATTERY_PACKS.find(b=>b.id===design.batteryPackId);
   const coating=THERMAL_SURFACES.find(c=>c.id===design.coatingId);
   const instrument=getInstrument(design.payloadInstrumentId);
+  const module=ORBITAL_SERVICE_MODULES[design.orbitalServiceModuleId];
   if(!cell||!battery||!coating||
-    (design.payloadInstrumentId!=='none'&&!instrument))throw new Error('Unknown spacecraft component');
+    (design.payloadInstrumentId!=='none'&&!instrument)||!module)throw new Error('Unknown spacecraft component');
 
   const inputNumbers=[
     design.distanceAu,design.cellAreaM2,design.propellantMassKg,
@@ -296,8 +300,11 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
   const radiatorControlPowerW=design.radiatorPanelCount*RADIATOR_SENSOR_W+
     (branchActive?8:0); // illustrative hot radiator pump/control electronics
   const instrumentPowerW=instrument?.powerW??0;
+  const orbitalServicePowerW=module.activePowerW;
+  const orbitalServiceHeatW=module.heatDissipationW;
+  const orbitalServiceMassKg=module.massKg;
   const baseBusPowerW=design.busElectricalPowerW;
-  const electricalBase=baseBusPowerW+wingControlPowerW+radiatorControlPowerW+instrumentPowerW;
+  const electricalBase=baseBusPowerW+wingControlPowerW+radiatorControlPowerW+instrumentPowerW+orbitalServicePowerW;
   const harnessLoadW=electricalBase*(1/HARNESS_EFFICIENCY-1);
   const housekeepingPowerW=electricalBase+harnessLoadW;
   // Two installed engines need not (and often cannot) operate at once.
@@ -335,7 +342,9 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
   };
   const propulsionHeatW=Math.max(propulsionHeat(p,pp,design.thrusterCount),
     s?propulsionHeat(s,sp,design.secondaryThrusterCount):0);
-  const thermalLoadW=housekeepingPowerW+propulsionHeatW;
+  // Remaining service module electrical output exits locally as modeled heat.
+  const thermalLoadW=housekeepingPowerW+propulsionHeatW-
+    Math.max(0,orbitalServicePowerW-orbitalServiceHeatW);
   const solarFluxWm2=SOLAR_IRRADIANCE/design.distanceAu**2;
   const absorbedSolarFluxWm2=solarFluxWm2*coating.solarAbsorptivityBOL*design.radiatorSunIncidence;
   const radiatorNetFluxWm2=
@@ -376,7 +385,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     secondaryEnabled?design.secondaryThrusterCount:0);
   const engineMountsFit=design.structureScale+1e-8>=requiredStructureScale;
   const extraStructureMassKg=extraFrameMassKg(design.structureScale);
-  const modeledDryMassKg=design.busDryMassKg+extraStructureMassKg+design.payloadMassKg+instrumentMassKg+
+  const modeledDryMassKg=design.busDryMassKg+extraStructureMassKg+design.payloadMassKg+instrumentMassKg+orbitalServiceMassKg+
     arrayMassKg+batteryMassKg+(radiatorMassKg??0)+radiatorMountMassKg+
     engineHardwareMassKg+totalTankHardwareMassKg+(power.installedGeneratorMassKg??0)+
     reactorCoolingMassKg;
@@ -431,6 +440,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     ' nozzles. Increase bus structure size in Propulsion; added structure increases dry mass.');
   if(burnPreview.deliveredDeltaVms+1e-6<burnPreview.idealDeltaVms)
     warnings.push('Propulsion window and available electrical power limit delivered Δv. Ideal total Δv assumes all propellant can be used with unlimited time and sufficient power.');
+  if(module.id!=='none')warnings.push('Commercial '+module.family+' payload is illustrative. Model uses '+module.activePowerW+' W peak including '+module.heatDissipationW+' W of local waste heat; service uptime and data capacity are game estimates.');
   if(burnPreview.phases.some(phase=>phase.activeEngines<phase.installedEngines))
     warnings.push('Power limits the number of thrusters that can fire at their published operating point. Additional installed engines add mass but not necessarily usable thrust.');
   const isElectric=p.isElectric||!!s?.isElectric;
@@ -468,6 +478,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     {label:'Bus and other cargo',massKg:design.busDryMassKg+design.payloadMassKg},
     {label:'Expanded structural frame',massKg:extraStructureMassKg},
     {label:'Selected science instrument',massKg:instrumentMassKg},
+    {label:'Orbital compute/relay service module',massKg:orbitalServiceMassKg},
     {label:'Solar arrays + deployable mounts',massKg:arrayMassKg},
     {label:'Eclipse battery',massKg:batteryMassKg},
     {label:'Thermal panels + mounts',massKg:(radiatorMassKg??0)+radiatorMountMassKg},
@@ -501,7 +512,8 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     extraStructureMassKg,requiredStructureScale,engineMountsFit,burnPreview,
     massEstimateIncomplete,warnings,primaryMode,secondaryMode,tankReports,
     totalPropellantKg,arrayMassKg,radiatorMountMassKg,instrumentMassKg,
-    instrumentPowerW,baseBusPowerW,wingControlPowerW,radiatorControlPowerW,
+    instrumentPowerW,orbitalServiceMassKg,orbitalServicePowerW,orbitalServiceHeatW,
+    orbitalServiceName:module.name,baseBusPowerW,wingControlPowerW,radiatorControlPowerW,
     harnessLossW,housekeepingPowerW,propulsionPeakPowerW,
     instrumentName:instrument?.name??'None installed',
     engineHardwareMassKg,totalTankHardwareMassKg,massBreakdown,
