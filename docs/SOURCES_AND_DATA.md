@@ -30,6 +30,16 @@ The **Space Mission Design Game** challenge lists CubeSat 101 in its NASA Resour
 
 Mission titles, prizes, proposal/launch windows, energy thresholds, CubeSat dispenser costs, required payload masses, and the player's spacecraft are **fictional**. If a fictional NASA-inspired proposal period is missed, a **25% lower-paying follow-on contract** remains playable, under the original contract ID (only one reward). Original NASA milestones are not repeated, and main story unlocks do not depend on accepting them. In particular: the game asteroid is synthetic, its NEO Surveyor contract does not use the actual Sun-Earth L1 orbit; the Jupiter scenario is a flyby rather than Europa Clipper's Jupiter orbit insertion; SkyFall's actual reactor-powered transfer is not simulated. Spacecraft and real mission properties must not be conflated with gameplay parameters.
 
+## v1.4 finance, research and flight playback provenance
+
+All program financial rates, starting cash, Moon Base facilities, commercial revenues, R&D point requirements, daily RP drip, and 105-second mission playback durations are **invented gameplay mechanics**, not NASA budgets, procurement commitments, actual lunar market forecasts or published spacecraft mission operations.
+
+- `src/lib/programEconomy.ts`: single program-day ledger for base operations, active R&D yearly upkeep converted to per-game-day expense, flight operations, lunar base gross income/opex, net cash, and routine research-point accrual. The same day-settlement logic is called when the visible live clock ticks and when a completed mission jumps the calendar.
+- `src/lib/technologyTree.ts`: each tech requires BOTH cash and game Research Points plus prerequisite nodes, and neither can be overspent. Program progression and saved RP are handled in `src/App.tsx`.
+- `src/MoonBase.tsx`: an interactive, schematic Moon close-up with invented infrastructure locations and three capital investments. Facility placements are illustrative and NOT certified landing coordinates, surveying coordinates or orbital trajectories.
+- `src/MissionFlightViewer.tsx` and `src/missionFlightTrajectory.ts`: a live 105-second mission visualization with persisted timestamps and %/ETA. Mars/Jupiter may draw the optional *local Orekit 13.1.9* Sun-centred impulsive Lambert path returned from the same solver model as the Orbital Map. The fallback curve and Moon/asteroid animations are visual-only; a 105-second view is NOT a real-world travel-time prediction. **The Orekit endpoint does not simulate Earth–Moon elliptical transfers or an invented synthetic asteroid.**
+- Unlocked planets and future missions do not imply that their actual mission trajectory has been solved: the orbit list hides locked destination/location traces and exposes only the mission name and locked status.
+
 ## Propellant depletion, power-constrained thrust and 3D architecture (v1.3)
 
 - The fundamental governing relation **ṁ = F/(Isp · g₀)** and Tsiolkovsky **Δv = Isp · g₀ · ln(m₀/mf)** are implemented in `src/lib/spacecraftSystems.ts` and `src/lib/propulsionBurn.ts`; no fuel is instantaneously deleted to obtain mission Δv. Propellant mass drains throughout the burn and its remaining mass stays aboard.
