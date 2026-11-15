@@ -231,6 +231,7 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [activeView,setActiveView] = useState<'missions'|'rockets'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'>('missions');
   const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'|'progression'>('observation');
+  const [researchFocus,setResearchFocus]=useState<'All'|'Launch'>('All');
   const [orbitalSelection,setOrbitalSelection]=useState<{
     mode:'earth'|'heliocentric';day:number;target:'mars'|'jupiter';
     perigee:number;eccentricity:number;}|null>(null);
@@ -716,6 +717,7 @@ export default function App() {
                 ['missions','Play Campaign'],['rockets','Rocket Fleet'],['systems','Engineering Lab'],['moon','Moon Base'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>{
                   if(id==='systems')setLabObservationChoices(readObservationChoices());
+                  if(id==='research')setResearchFocus('All');
                   setActiveView(id);
                 }}>{label}</button>)}
             </nav>
@@ -932,7 +934,7 @@ export default function App() {
           onServiceChange={id=>setSnapshot(previous=>({...previous,game:{...previous.game,rocketService:id}}))}
           onFleetUpgrade={buyFleetUpgrade}
           onUnlockAssembly={buyOrbitalAssembly}
-          onGoResearch={()=>setActiveView('research')}/>}
+          onGoResearch={()=>{setResearchFocus('Launch');setActiveView('research')}}/>}
         {activeView==='moon'&&<MoonBase cash={game.cash} level={game.moonBaseLevel}
           unlocked={game.storyCompleted.includes('lunar')||game.devMode} devMode={game.devMode}
           cargoDeliveredLevel={game.moonCargoDeliveredLevel}
@@ -953,7 +955,11 @@ export default function App() {
         {activeView==='learning' && <div className="single-tab-page">
           <LearningLab onOpenBuilder={()=>setActiveView('systems')} onOpenOrbital={()=>setActiveView('orbits')}/>
         </div>}
-        {activeView==='research'&&<ResearchLab cash={game.cash} researchPoints={game.researchPoints}
+        {activeView==='research'&&<ResearchLab key={researchFocus+'-'+game.rocketProgramLevel}
+          initialBranch={researchFocus} initialSelectedId={researchFocus==='Launch'?
+            (FLEET_UPGRADES[game.rocketProgramLevel]?.requiredResearch??'canadian-heavy-lift'):
+            'production-line'}
+          cash={game.cash} researchPoints={game.researchPoints}
           unlocked={game.researchUnlocked} devMode={game.devMode}
           onToggleDevMode={toggleDevMode} onResearch={investResearch}/>}
         <section className={'bottom-grid '+(activeView==='research'?'':'view-hidden')} id="roadmap"><div className="panel roadmap">
