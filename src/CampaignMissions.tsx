@@ -1,7 +1,7 @@
 import {useMemo} from 'react';
 import CampaignOrbitMap from './CampaignOrbitMap';
 import MissionFlightViewer from './MissionFlightViewer';
-import type {LauncherId} from './lib/launchLogistics';
+import type {LauncherId,LaunchBatch} from './lib/launchLogistics';
 import {flightProgress,flightEta,DEFAULT_FLIGHT_VIEWER_MS} from './lib/flightProgress';
 import {earthOrbitAtTime} from './lib/orbitalMechanics';
 import {dateForGameDay,BOOSTERS,EXTERNAL_MODULES,
@@ -21,8 +21,13 @@ export type CampaignRun={
   deltaVms:number;requiredDeltaVms:number;
   launchService:LauncherId;launchCount:number;
   launchCostsUsd:number;orbitalAssemblyCostsUsd:number;
+  spacecraftProcurementUsd:number;
+  launchInvoices:LaunchBatch[];
   busPropellantBurnedKg?:number;busPropellantRemainingKg?:number;
   startedAtMs?:number;viewerDurationMs?:number;orekitTrajectoryAu?:number[][];
+};
+export type CampaignAssemblyProject={
+  draft:CampaignRun;launchesCompleted:number;startedDay:number;
 };
 export type CampaignDebrief={
   id:string;title:string;day:number;success:boolean;special:boolean;
@@ -116,6 +121,7 @@ export default function CampaignMissions({
   selected,onSelectedIdChange,options,onOptionsChange,agencyOffers,scheduled,
   nowMs,viewerOpen,onViewerOpenChange,
   launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,logisticsInProgress,
+  assembly,onLaunchAssemblyFlight,onFinalizeAssembly,onCancelAssembly,
 }:{
   day:number;cash:number;completed:readonly string[];devMode:boolean;
   lockedTechnologies?:readonly string[];
@@ -130,6 +136,9 @@ export default function CampaignMissions({
   options:MissionOptions;onOptionsChange:(next:MissionOptions)=>void;
   agencyOffers:readonly CampaignDefinition[];scheduled:CampaignDefinition|null;
   nowMs:number;viewerOpen:boolean;onViewerOpenChange:(open:boolean)=>void;
+  assembly:CampaignAssemblyProject|null;
+  onLaunchAssemblyFlight:()=>void;onFinalizeAssembly:()=>void;
+  onCancelAssembly:()=>void;
   launchService:LauncherId;rocketProgramLevel:number;
   orbitalAssemblyUnlocked:boolean;priorServiceFlights:number;logisticsInProgress:boolean;
 }){
@@ -151,7 +160,7 @@ export default function CampaignMissions({
     orbitalAssemblyUnlocked,priorServiceFlights]);
   const review=draft.review;
   const canStart=stage>=selected.stage&&!completedMission&&
-    review?.feasible===true&&!run&&!logisticsInProgress&&lockedTechnologies.length===0&&
+    review?.feasible===true&&!run&&!assembly&&!logisticsInProgress&&lockedTechnologies.length===0&&
     (status===null||status==='open');
   const change=<K extends keyof MissionOptions>(key:K,val:MissionOptions[K])=>{
     onOptionsChange({...options,[key]:val});
@@ -164,6 +173,8 @@ export default function CampaignMissions({
       launchService,launchCount:review.launchManifest.flightsRequired,
       launchCostsUsd:review.launchManifest.launchCostUsd,
       orbitalAssemblyCostsUsd:review.launchManifest.assemblyCostUsd,
+      spacecraftProcurementUsd:review.spacecraftProcurementUsd,
+      launchInvoices:review.launchManifest.flights,
       scienceKg:review.scienceMassKg,target:selected.target,options:{...options},
       route:review.route,deltaVms:review.totalDeltaVms,requiredDeltaVms:review.requiredDeltaVms,
       busPropellantBurnedKg:review.busPropellantBurnedKg,
@@ -251,6 +262,43 @@ export default function CampaignMissions({
       <p className="campaign-agency-links">NASA mission sources: {AGENCY_MILESTONES.map((m,i)=>
         <span key={m.id}><a href={m.sourceUrl} target="_blank" rel="noreferrer">{m.realMission} ({m.event})</a>{i!==AGENCY_MILESTONES.length-1?' · ':''}</span>)}</p>
     </div>
+    {assembly&&<div className="panel campaign-assembly-progress" aria-label="Multi-rocket orbital spacecraft assembly">
+      <div className="eyebrow">ORBITAL LOGISTICS / SHIP THE SPACECRAFT IN PARTS</div>
+      <h2>{assembly.draft.title} — orbital assembly campaign</h2>
+      <p>The spacecraft and kick-stage components have been purchased once.
+        Each rocket must now actually deliver its assigned hardware to an Earth
+        parking orbit. Its launch invoice is paid separately. Only when every
+        flight has arrived can your purchased docking facility integrate the
+        spacecraft and begin the mission timer.</p>
+      <div className="campaign-assembly-meter"><div style={{
+        width:(100*assembly.launchesCompleted/assembly.draft.launchCount).toFixed(1)+'%'}}/></div>
+      <div className="rocket-assembly-items">
+        {assembly.draft.launchInvoices.map((f,i)=><div key={f.flight}
+          className={i<assembly.launchesCompleted?'launched':''}>
+          <span>{i<assembly.launchesCompleted?'✓ Delivered to parking orbit':'○ Awaiting flight'}
+            {' '}· Rocket {f.flight} · {num(f.massKg,1)} kg</span>
+          <strong>{usd(f.serviceCostUsd)}</strong>
+        </div>)}
+      </div>
+      {assembly.launchesCompleted<assembly.draft.launchCount?<>
+        <p>Next launcher will deliver batch {assembly.launchesCompleted+1} of
+          {assembly.draft.launchCount} aboard {assembly.draft.launchService}.</p>
+        <button className="launch-button" type="button"
+          disabled={cash<assembly.draft.launchInvoices[assembly.launchesCompleted].serviceCostUsd}
+          onClick={onLaunchAssemblyFlight}>Launch and dock hardware batch
+          {' '}{assembly.launchesCompleted+1}/{assembly.draft.launchCount} ↗</button>
+      </>:<>
+        <p>All rocket deliveries are logged at the rendezvous point.
+          Charge {usd(assembly.draft.orbitalAssemblyCostsUsd)} for
+          mechanical docking, propellant connection and final spacecraft integration.</p>
+        <button className="launch-button" type="button"
+          disabled={cash<assembly.draft.orbitalAssemblyCostsUsd}
+          onClick={onFinalizeAssembly}>Assemble spacecraft and begin transfer flight ↗</button>
+      </>}
+      <button className="secondary-button" type="button" onClick={onCancelAssembly}>
+        Cancel assembly project (launch/hardware spending is non-refundable)
+      </button>
+    </div>}
     {run&&liveReview?<div className="panel campaign-flight">
       <div className="eyebrow">FLIGHT OPERATIONS / CONTRACT IN PROGRESS</div>
       <h2>{run.title}</h2>
