@@ -3,6 +3,9 @@ import { STANDARD_GRAVITY_MS2, EARTH } from './nasaData';
 import { sizeSubsystemDesign, type SubsystemDesign, type SystemResults } from './subsystemDesign';
 import { BATTERY_PACKS } from './spacecraftTechnology';
 import { SCIENCE_INSTRUMENTS } from './instrumentCatalog';
+import { spacecraftHardwareEconomics, type HardwareEconomics } from './missionEconomics';
+import { missionRiskSummary } from './technologyTree';
+import { POWER_SYSTEMS } from './powerSources';
 
 /**
  * Earth Observation One: a deterministic seven-day educational campaign.
@@ -60,6 +63,7 @@ export type ObservationConfig = {
   spacecraft: SubsystemDesign;
   launcher: Vehicle;
   completedWithEngine: number;
+  technologyDiscount?: number;
 };
 export type Capacity = {name:string;used:number;limit:number;unit:string;context:string;hard:boolean};
 export type DayReport = {
@@ -75,6 +79,8 @@ export type ObservationPreview = {
   requiredLaunchDeltaVMs:number;
   launchReady:boolean;
   missionCostUsd:number;
+  spacecraftProcurement:HardwareEconomics;
+  riskReview:ReturnType<typeof missionRiskSummary>;
   powerLoadW:number;
   powerCapacityW:number;
   thermalLoadW:number;
@@ -165,7 +171,9 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   const downlinkMbPerDay=radio.rateMbps*accessHoursPerDay*3600*GROUND_EFFICIENCY*radioPowerFactor;
   const scienceRatePerMb=instrument.sciencePerHour/(instrument.dataMbps*3600);
   const scienceGeneratedPotential=availableSunHours*instrument.sciencePerHour*OBSERVATION_DAYS;
+  const spacecraftProcurement=spacecraftHardwareEconomics(spacecraft,config.technologyDiscount??0);
   const missionCostUsd=estimateBuildCostUsd(launcher,config.completedWithEngine)+
+    spacecraftProcurement.afterDiscountUsd+
     instrument.costUsd+radio.costUsd+storage.costUsd+
     choices.radiatorExtraAreaM2*EXTRA_RADIATOR_USDM2+choices.batteryExtraWh*EXTRA_BATTERY_USDWH+
     choices.launchSlotKg*1500;
@@ -183,6 +191,14 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
     {name:'Seven-day mission cost',used:missionCostUsd/1e6,limit:OBSERVATION_BUDGET_USD/1e6,unit:'$M',hard:true,
       context:'Launcher + instrument + communications + storage + upgrades'},
   ];
+  const riskReview=missionRiskSummary({
+    powerMarginW:powerCapacityW-powerLoadW,
+    thermalMarginW:thermalCapacityW-thermalLoadW,
+    massMarginKg:launchCapacityKg-massKg,
+    moneyMarginUsd:OBSERVATION_BUDGET_USD-missionCostUsd,
+    generatorClass:POWER_SYSTEMS[spacecraft.powerSourceId].class,
+    hasConceptTech:POWER_SYSTEMS[spacecraft.powerSourceId].heritage==='concept-only',
+  });
   const warnings:string[]=[];
   if(missionResult.massEstimateIncomplete)warnings.push('Spacecraft wet mass is a PARTIAL estimate; electric propellant storage and some reactor equipment may be missing.');
   if(!launchReady)warnings.push('Launch payload exceeds the allocation or ideal rocket performance. Increase mass allowance or redesign.');
@@ -194,7 +210,8 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   if(missionResult.powerSystemWasteHeatW!==null&&missionResult.powerSystemWasteHeatW>0)
     warnings.push('Radioisotope/reactor waste heat and integration are not fully captured by the bus radiator budget.');
   return {missionResult,massKg,launcherDeltaVMs,launcherTwr,launchCapacityKg,requiredLaunchDeltaVMs,
-    launchReady,missionCostUsd,powerLoadW,powerCapacityW,thermalLoadW,thermalCapacityW,
+    launchReady,missionCostUsd,spacecraftProcurement,riskReview,
+    powerLoadW,powerCapacityW,thermalLoadW,thermalCapacityW,
     eclipseRequiredWh,batteryUsableWh,eclipseDurationHours,downlinkMbPerDay,dataMbPerDay,
     bufferMb:storage.capacityMb,scienceGeneratedPotential,dutyFactor,effectPower,effectThermal,
     effectEclipse,scienceRatePerMb,capacities,warnings};
