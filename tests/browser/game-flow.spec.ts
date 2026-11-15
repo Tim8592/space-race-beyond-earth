@@ -580,7 +580,7 @@ test('CSA verified source data inspires actual optical, radar and auroral scienc
       {name:/Plan this Canadian data-inspired mission/}).click();
     await expect(page.locator('.campaign-workshop-controls')).toContainText('Canadian Optical Asteroid Survey');
     await expect(page.locator('.campaign-system-checks')).toContainText('Required science instrument');
-    await page.getByRole('button',{name:/Engineering Lab \/ installed equipment/}).click();
+    await page.getByRole('button',{name:/Edit installed payload and core systems in Engineering Lab/}).click();
     await page.getByRole('tab',{name:'Science payload'}).click();
     await page.locator('label.sys-field').filter({hasText:'Installed science sensor'})
       .locator('select').selectOption('neoTelescope');
@@ -672,7 +672,7 @@ test('Mission map zoom, selection and engineering lab bottlenecks stay synchroni
     await page.getByRole('button',{name:'Zoom in solar system map'}).click();
     await page.getByRole('button',{name:'Select 03 Mars Orbiter'}).click();
     await expect(page.locator('.campaign-map-current')).toContainText('Mars Orbiter');
-    await page.getByRole('button',{name:/Engineering Lab \/ installed equipment/}).click();
+    await page.getByRole('button',{name:/Edit installed payload and core systems in Engineering Lab/}).click();
     await expect(page.locator('.sys-mission-brief')).toContainText('Mars Orbiter');
     await expect(page.locator('.sys-mission-bottlenecks')).toBeVisible();
     await page.getByRole('tab',{name:'Thermal'}).click();
@@ -791,7 +791,7 @@ test('Campaign draws its payload from Engineering Lab and keeps mission add-ons 
     await expect(page.getByRole('tab',{name:'Science payload'})).toHaveAttribute('aria-selected','true');
     await page.locator('label.sys-field').filter({hasText:'Additional instruments / cargo mass'})
       .locator('input').fill('100');
-    await page.getByRole('button',{name:/Return to selected mission/}).click();
+    await page.getByRole('button',{name:/Return to selected mission/}).first().click();
     await expect(page.locator('.campaign-installed-craft')).toContainText('100 kg');
     const kit=page.locator('.campaign-optional-kit');
     await expect(kit).not.toHaveAttribute('open','');
