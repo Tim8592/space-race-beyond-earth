@@ -22,16 +22,17 @@ export const FUTURE_MISSIONS=[
 ] as const;
 
 type Branch=TechnologyNode['branch'];
-const BRANCHES:readonly Branch[]=['Launch','Propulsion','Power','Thermal','Science','Economics'];
+const BRANCHES:readonly Branch[]=['Launch','Propulsion','Power','Thermal','Science','Infrastructure','Economics'];
 const LAYOUT:Record<Branch,{top:number;height:number;label:string}>={
   Launch:{top:24,height:146,label:'SOVEREIGN LAUNCH / CANADA'},
   Propulsion:{top:190,height:290,label:'SPACECRAFT PROPULSION'},
   Power:{top:500,height:156,label:'ELECTRICAL GENERATION'},
   Thermal:{top:678,height:146,label:'THERMAL CONTROL'},
   Science:{top:844,height:146,label:'SCIENCE & DATA'},
-  Economics:{top:1008,height:146,label:'MANUFACTURING ECONOMICS'},
+  Infrastructure:{top:1008,height:146,label:'ORBITAL INFRASTRUCTURE / CANADA'},
+  Economics:{top:1190,height:146,label:'MANUFACTURING ECONOMICS'},
 };
-const CARD_W=230,CARD_H=102,GRAPH_W=1200,GRAPH_H=1190;
+const CARD_W=230,CARD_H=102,GRAPH_W=1200,GRAPH_H=1370;
 type Positioned={item:TechnologyNode;x:number;y:number;depth:number};
 function techPositions():Positioned[]{
   const depthCache=new Map<TechnologyId,number>();
@@ -111,7 +112,7 @@ export default function ResearchLab({cash,researchPoints,unlocked,devMode,onTogg
     <div className="tech-atlas-layout">
       <div className="panel tech-atlas-panel">
         <div className="tech-atlas-toolbar">
-          <div><div className="eyebrow">DEPENDENCY NETWORK / SIX INVESTMENT BRANCHES</div>
+          <div><div className="eyebrow">DEPENDENCY NETWORK / SEVEN INVESTMENT BRANCHES</div>
             <h3>Technology development map</h3>
             <p>Click any node to open its research requirements.
               Solid routes are unlocked; brighter routes lead to the selected technology.
