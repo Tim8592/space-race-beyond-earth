@@ -319,7 +319,8 @@ export function reviewCampaignMission(args:{
   const radiatorCapacityW=system.radiatorCapacityW;
   const heatDemandW=system.thermalLoadW+modulePower;
   const instrument=design.payloadInstrumentId==='none'?null:SCIENCE_INSTRUMENTS[design.payloadInstrumentId];
-  const scienceMassKg=(instrument?.massKg??0)+design.payloadMassKg+modulesKg;
+  const scienceMassKg=(instrument?.massKg??0)+design.payloadMassKg+
+    extraModules.reduce((sum,m)=>sum+m.massKg,0)+(cubesat?.massKg??0);
   const rocket=ENGINES[launcher.engineId];
   const requiredRocketDv=9300; // educational LEO ascent requirement
   const exponent=Math.expm1(requiredRocketDv/(rocket.ispSeconds*STANDARD_GRAVITY_MS2));
