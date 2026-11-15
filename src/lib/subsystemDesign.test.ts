@@ -83,7 +83,7 @@ describe('coupled in-space spacecraft engineering', () => {
     });
     expect(nuclear.powerSystemWasteHeatW).toBeGreaterThan(1000);
     expect(nuclear.thermalLoadW).toBeCloseTo(solar.thermalLoadW);
-    expect(nuclear.warnings.some(w => w.includes('Dedicated source heat rejection'))).toBe(true);
+    expect(nuclear.warnings.some(w => w.includes('Radioisotope waste heat'))).toBe(true);
   });
 
   it('counts simultaneous thrusters in power, thrust, burn time and dry mass', () => {
