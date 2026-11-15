@@ -125,15 +125,21 @@ export type NeoObservationOffer={id:string;sourceNeo:NearEarthApproach;
  * We do NOT insert the actual asteroid into the synthetic 1.35 AU game orbit. */
 export function makeNeoObservationOffer(neo:NearEarthApproach,day:number):NeoObservationOffer{
  if(!Number.isInteger(day)||day<1)throw new RangeError('Invalid NASA scenario day');
+ // Real NASA measurements scale *fictional* science objectives and reward.
+ const scienceKg=18+Math.min(30,Math.ceil(neo.diameterM/120)*4);
+ const electricW=145+Math.min(70,Math.ceil(neo.velocityKmS*1.5));
+ const proximityBonusUsd=Math.max(0,Math.round((4e6-neo.missDistanceKm)/600_000))*2e6;
+ const sizeBonusUsd=Math.min(18e6,Math.round(neo.diameterM/100)*3e6);
+ const payoutUsd=86e6+proximityBonusUsd+sizeBonusUsd;
  return {id:'nasa-neo-'+neo.id+'-'+neo.date,sourceNeo:neo,launchDay:day,
    mission:{id:'nasa-neo-'+neo.id+'-'+neo.date,
      title:'Asteroid Watch · '+neo.name,
      summary:'NASA NeoWs reports an Earth close approach on '+neo.date+
        '. Launch a fictional EARTH-ORBIT optical observation spacecraft to monitor '+neo.name+
-       '; this does not intercept or orbit the named asteroid. NASA close-approach date, miss distance and estimated size are real source data; the contract budget and energy requirements are game assumptions.',
+       '; this does not intercept or orbit the named asteroid. NASA close-approach date, miss distance and estimated size are real source data; these observed measurements scale fictional science/electric requirements and reward. The mission orbit and payout remain game assumptions.',
      location:'Earth orbit · optical NEO tracking',target:'ellipse',stage:1,special:true,
-     durationDays:5,payoutUsd:92e6,
-     requiredScienceKg:18,minElectricW:145,requiresHighGain:true,
+     durationDays:5,payoutUsd,
+     requiredScienceKg:scienceKg,minElectricW:electricW,requiresHighGain:true,
      requiresShield:false,acceptedInstruments:[],
      windowStartDay:day,windowEndDay:day+8,
    }};
