@@ -238,7 +238,7 @@ test('Developer mode temporarily unlocks fission research without spending R&D',
     await page.getByRole('button',{name:'DEV MODE: ON'}).click();
     await expect(page.getByRole('button',{name:'DEV MODE: OFF'})).toBeVisible();
     await page.getByRole('tab',{name:'Engineering Lab'}).click();
-    await expect(page.getByText(/selected spacecraft technology unlock/)).toBeVisible();
+    await expect(page.locator('.sys-error')).toContainText('technology research unlock');
   });
 });
 
@@ -253,6 +253,6 @@ test('Observation One renders accelerated orbit motion and hardware economics on
     await expect(page.locator('.mission-orbit-scene svg')).toBeVisible();
     await expect(page.getByText('SIMULATED FLIGHT')).toBeVisible();
     await page.getByRole('button',{name:/Finish seven-day simulation/}).click();
-    await expect(page.getByText('MISSION COMPLETE')).toBeVisible();
+    await expect(page.locator('.orbit-live-pill')).toHaveText('MISSION COMPLETE');
   });
 });
