@@ -279,15 +279,17 @@ test('Earth observation success unlocks the lunar mission and new campaign scree
   });
 });
 
-test('Special elliptical offer responds to eccentricity and expires after in-game days',async({page})=>{
+test('Special elliptical offers follow real-time in-game days rather than a skip button',async({page})=>{
+  await page.clock.install({time:new Date('2026-11-14T12:00:00Z')});
   await expectNoErrors(page,async()=>{
     await page.goto('/');
     await page.getByRole('tab',{name:'Research & Roadmap'}).click();
     await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
     await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.getByRole('button',{name:/Advance 7 days/})).toHaveCount(0);
     await expect(page.locator('.campaign-special-offer')).toBeVisible();
-    await page.getByRole('button',{name:/Advance 7 days \/ wait for opportunities/}).click();
+    await page.clock.runFor(60_000); // exactly seven simulated days
     await expect(page.locator('.campaign-special-offer')).toContainText('WINDOW OPEN');
     await page.locator('.campaign-special-offer').click();
     await expect(page.locator('.campaign-orbital-inputs')).toBeVisible();
@@ -295,9 +297,21 @@ test('Special elliptical offer responds to eccentricity and expires after in-gam
     const initial=await apogeeCheck.textContent();
     await page.getByRole('slider',{name:'Mission eccentricity'}).fill('0.78');
     await expect(apogeeCheck).not.toHaveText(initial??'');
-    for(let i=0;i<4;i++)await page.getByRole('button',
-      {name:/Advance 7 days \/ wait for opportunities/}).click();
+    await page.clock.runFor(200_000); // > 21 game days, before the next offer cycle
     await expect(page.locator('.campaign-special-offer')).toContainText('WINDOW EXPIRED');
+  });
+});
+
+test('NASA datasets, source linkage and future mission calendar remain navigable',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Sources & Data'}).click();
+    await expect(page.getByRole('heading',{name:'Sources, datasets & engineering provenance'})).toBeVisible();
+    await expect(page.getByText(/NASA challenge resource directly used: CubeSat 101/)).toBeVisible();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.getByRole('heading',{name:'Future mission opportunities'})).toBeVisible();
+    await expect(page.locator('.campaign-agency-offer')).toHaveCount(4);
   });
 });
 
