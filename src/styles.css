@@ -808,3 +808,90 @@
 .moon-cargo-flight .launch-button{width:100%;font-size:11px}
 @media(max-width:1000px){.rocket-fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rocket-fleet-panels{grid-template-columns:1fr}}
 @media(max-width:600px){.rocket-fleet-grid,.rocket-fleet-stats,.campaign-logistics-costs{grid-template-columns:1fr}}
+
+
+/* v1.6 preset Canadian rocket roadmap, domestic flight credit and interactive tech atlas */
+.rocket-sovereign-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.rocket-sovereign-compare h3{font:800 22px 'Space Grotesk',sans-serif;color:#f7e2bd;margin:9px 0}
+.rocket-sovereign-compare p{font-size:11px;color:#b7d1e1;line-height:1.8}
+.rocket-sovereign-compare.commercial{border-color:#527096}
+.rocket-return-stats{display:grid;gap:8px;margin-top:16px}
+.rocket-return-stats>span{display:flex;gap:9px;justify-content:space-between;background:#10263a;border:1px solid #344e64;border-radius:6px;padding:11px;color:#a9c3d5;font-size:11px}
+.rocket-return-stats strong{color:#ffdfad;text-align:right;font-size:11px}
+.rocket-fleet-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.rocket-service-credit{font-size:10px!important;color:#9ee3c3;margin-top:auto;line-height:1.5}
+.rocket-service-selected{font-size:10px!important;color:#f4d5a2;font-weight:900;padding-top:7px}
+.canadian-rocket-ladder{display:grid;gap:9px;margin-top:18px}
+.canadian-rocket-step{display:flex;align-items:flex-start;gap:14px;padding:13px;border:1px solid #3d526a;border-radius:8px;background:#102438;opacity:.7}
+.canadian-rocket-step.current{opacity:1;border-color:#efb779;background:#22364b}
+.canadian-rocket-step.complete{opacity:1;border-color:#408d7a;background:#15383b}
+.canadian-rocket-step-number{width:35px;height:35px;display:grid;place-items:center;border:1px solid #687e8d;background:#152c42;border-radius:50%;flex-shrink:0;font-weight:900;color:#f7c790}
+.canadian-rocket-step h4{font:800 17px 'Space Grotesk',sans-serif;color:#e5f1fb;margin:7px 0 4px}
+.canadian-rocket-step small{font-size:10px;color:#a9cde2}
+.canadian-rocket-step p{margin:9px 0!important;line-height:1.65}
+.canadian-rocket-step>div:last-child{width:100%;min-width:0}
+.canadian-rocket-step>div:last-child>div:not(.eyebrow){display:flex;gap:8px 14px;justify-content:space-between;flex-wrap:wrap;margin-bottom:7px;font-size:10px}
+.canadian-rocket-step strong{color:#f5d49d}
+.canadian-rocket-step a,.rocket-canada-context a{font-size:11px;color:#98caff;text-decoration:underline}
+.rocket-canada-context{margin-top:19px;border-top:1px solid #3c5468;padding-top:12px}
+.rocket-canada-context h4{color:#ead5b4;font-size:14px}
+.rocket-gate-list{display:grid;gap:7px}
+.rocket-gate-list>div{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px;border:1px solid #58637a;border-radius:6px;font-size:11px}
+.rocket-gate-list>.passed{border-color:#407867;background:#183935;color:#acebc9}
+.rocket-gate-list>.missing{background:#302b37;color:#efc4b4}
+.rocket-gate-list strong{max-width:55%;text-align:right;color:#f5d7aa}
+.rocket-upgrade>small{font-size:10px;color:#9eb8c8;line-height:1.8}
+.rocket-upgrade .secondary-button{width:100%}
+.guided-launch-invoice{display:flex;flex-direction:column;gap:9px;padding:14px;background:#102e40;border:1px solid #47698b;border-radius:7px;margin-top:13px}
+.guided-launch-invoice strong{font-size:15px;color:#efca92}
+.guided-launch-invoice span,.guided-launch-invoice p{font-size:11px;color:#bdd3df;line-height:1.65}
+.tech-atlas-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(290px,.9fr);gap:14px;align-items:start;margin:13px 0 20px}
+.tech-atlas-panel{padding:17px!important;min-width:0}
+.tech-atlas-toolbar{display:flex;align-items:flex-start;gap:13px;justify-content:space-between;flex-wrap:wrap;margin-bottom:13px}
+.tech-atlas-toolbar h3{font:800 21px 'Space Grotesk',sans-serif;color:#f4e0c1;margin:8px 0}
+.tech-atlas-toolbar p{font-size:11px;color:#b7cedf;line-height:1.65;margin:0;max-width:460px}
+.tech-zoom-controls{display:flex;gap:5px;flex-shrink:0}
+.tech-zoom-controls button{font:800 13px 'Space Grotesk',sans-serif;color:#dcecff;padding:8px 13px;background:#162e47;border:1px solid #42647e;border-radius:6px}
+.tech-zoom-controls button:hover:not(:disabled){background:#2b4b66}
+.tech-zoom-controls button:disabled{opacity:.35}
+.tech-atlas-key{display:flex;flex-wrap:wrap;gap:13px;margin:15px 0;color:#9eb7c9;font-size:10px}
+.tech-atlas-key>span{display:inline-flex;align-items:center;gap:5px}
+.tech-atlas-key i{display:inline-block;width:9px;height:9px;border-radius:50%;border:1px solid #7292ab}
+.tech-atlas-key i.done{background:#77d2ae}
+.tech-atlas-key i.ready{background:#f3bc78}
+.tech-atlas-key i.blocked{background:#52657c}
+.tech-atlas-key i.active{background:#fff0bb;border-color:#fff1d2}
+.tech-map-scroll{width:100%;max-height:650px;overflow:auto;overscroll-behavior:contain;border:1px solid #34546c;border-radius:8px;background:radial-gradient(ellipse at center,#142c44,#081927);scrollbar-color:#50708b #102135}
+.tech-map-stage{position:relative;min-width:0}
+.tech-map-canvas{position:relative}
+.tech-map-links{position:absolute;inset:0;pointer-events:none}
+.tech-map-node{position:absolute;z-index:1;display:flex;flex-direction:column;align-items:stretch;text-align:left;justify-content:space-between;padding:10px 12px;background:#152b42;border:1px solid #536e83;border-radius:9px;color:#d1e4f3;box-shadow:0 4px 10px #020a139a;transition:opacity .15s,border-color .15s,background .15s}
+.tech-map-node:hover{z-index:3;border-color:#fbd294;background:#29485b}
+.tech-map-node.done{border-color:#4ea183;background:#173d3c}
+.tech-map-node.ready{border-color:#d3a46b;background:#313747}
+.tech-map-node.chosen{z-index:2;border:2px solid #ffdaa2;box-shadow:0 0 0 3px #dba85c36,0 0 22px #f1b97645}
+.tech-map-node.muted{opacity:.28}
+.tech-map-node .tech-map-node-head{display:flex;justify-content:space-between;gap:7px;font-size:9px;color:#b5cddd;letter-spacing:.25px}
+.tech-map-node .tech-map-node-head b{color:#f4c891;font-size:8px}
+.tech-map-node.done .tech-map-node-head b{color:#9df3ca}
+.tech-map-node strong{font:800 13px 'Space Grotesk',sans-serif;line-height:1.3;color:#e5f5ff}
+.tech-map-node small{font-size:10px;color:#f1d2a4}
+.tech-inspector{position:sticky;top:92px;min-width:0}
+.tech-inspector h3{font:800 20px 'Space Grotesk',sans-serif;color:#ffdda8;margin:13px 0}
+.tech-inspector>p{font-size:11px;color:#afcbda;line-height:1.75}
+.tech-inspector .research-node-top{margin-top:14px}
+.tech-inspector .research-economics{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tech-gates{display:grid;gap:7px;margin:15px 0}
+.tech-gates>div{display:flex;justify-content:space-between;gap:12px;border-radius:6px;border:1px solid #60576c;padding:10px;font-size:10px}
+.tech-gates>div.ready{border-color:#467761;background:#163534;color:#b3f2cd}
+.tech-gates>div.missing{color:#e5baac;background:#2b2433}
+.tech-gates b{white-space:nowrap}
+.tech-preconditions{display:grid;gap:8px;margin:15px 0}
+.tech-preconditions button{padding:9px;background:#152d43;border:1px solid #526e84;border-radius:6px;color:#add2eb;font-size:11px;text-align:left}
+.tech-preconditions button:hover{background:#21415f}
+.tech-inspector .tech-invest{width:100%;font-size:11px;margin-top:13px;white-space:normal;text-align:left;line-height:1.5;min-height:45px}
+.research-tabs{overflow-x:auto}
+.research-tabs>button[aria-selected=true]{box-shadow:inset 0 -2px #e9bc80}
+@media(max-width:1050px){.tech-atlas-layout{grid-template-columns:1fr}.tech-inspector{position:static}}
+@media(max-width:850px){.rocket-sovereign-choice{grid-template-columns:1fr}}
+@media(max-width:620px){.tech-map-scroll{max-height:540px}.tech-atlas-panel{padding:10px!important}.tech-atlas-layout{gap:10px}.rocket-fleet-grid{grid-template-columns:1fr}}
