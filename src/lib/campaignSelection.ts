@@ -1,5 +1,6 @@
 import {STORY_MISSIONS,nextSpecialOffer,type CampaignDefinition} from './campaignMissions';
 import {agencyMissionDefinitions} from './realWorldMissions';
+import {CSA_DATA_MISSIONS} from './csaScienceMissions';
 export type CampaignSelection={
   selected:CampaignDefinition;story:readonly CampaignDefinition[];
   agency:CampaignDefinition[];special:CampaignDefinition|null;
@@ -10,7 +11,7 @@ export type CampaignSelection={
  */
 export function resolveCampaignSelection(day:number,stage:number,
   completed:readonly string[],requestedId:string,extra:readonly CampaignDefinition[]=[]):CampaignSelection{
-  const agency=agencyMissionDefinitions(day);
+  const agency=[...agencyMissionDefinitions(day),...CSA_DATA_MISSIONS];
   const special=nextSpecialOffer(day,stage);
   const first=STORY_MISSIONS.find(m=>stage>=m.stage&&!completed.includes(m.id))??STORY_MISSIONS[0];
   return {selected:STORY_MISSIONS.find(m=>m.id===requestedId)??
