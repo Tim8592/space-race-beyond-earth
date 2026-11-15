@@ -9,6 +9,7 @@ import {
 } from './lib/observationMission';
 import type { SubsystemDesign } from './lib/subsystemDesign';
 import type { Vehicle } from './lib/engineering';
+import type {LauncherId} from './lib/launchLogistics';
 
 const SAVE_KEY='space-race-observation-one-v1';
 type Run = {config:ObservationConfig; day:number; phase:'operations'|'debrief'};
@@ -68,6 +69,7 @@ function PercentBars({days}:{days:ReturnType<typeof simulateObservation>['days']
 
 export default function EarthObservationMission({
   spacecraft,launcher,cash,completedWithEngine,technologyDiscount=0,lockedTechnologies=[],
+  launchService='custom',rocketProgramLevel=0,orbitalAssemblyUnlocked=false,priorServiceFlights=0,
   onEditSpacecraft,onEditLauncher,onStart,onComplete,
 }:{
   spacecraft:SubsystemDesign;
@@ -78,6 +80,8 @@ export default function EarthObservationMission({
   onEditLauncher:()=>void;
   technologyDiscount?:number;
   lockedTechnologies?:readonly string[];
+  launchService?:LauncherId;rocketProgramLevel?:number;
+  orbitalAssemblyUnlocked?:boolean;priorServiceFlights?:number;
   onStart:(costUsd:number)=>void;
   onComplete:(result:{success:boolean;missionCostUsd:number;payoutUsd:number;
     wetMassKg:number;returnedScience:number})=>void;
@@ -88,7 +92,9 @@ export default function EarthObservationMission({
 
   const config:ObservationConfig=useMemo(()=>({
     choices,spacecraft,launcher,completedWithEngine,technologyDiscount,
-  }),[choices,spacecraft,launcher,completedWithEngine,technologyDiscount]);
+    launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,
+  }),[choices,spacecraft,launcher,completedWithEngine,technologyDiscount,
+    launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights]);
   const current=useMemo(()=>{
     try{return {simulation:simulateObservation(config),error:''}}
     catch(error){return {simulation:null,error:error instanceof Error?error.message:'Invalid design'}}
@@ -194,9 +200,19 @@ export default function EarthObservationMission({
             analysis={preview.missionResult}/>}
           <div className="ob-link-actions">
             <button className="secondary-button" onClick={onEditSpacecraft}>Edit propulsion, solar and thermal →</button>
-            <button className="secondary-button" onClick={onEditLauncher}>Edit launch vehicle →</button>
+            <button className="secondary-button" onClick={onEditLauncher}>Open Rocket Fleet / choose launch service →</button>
           </div>
-          {preview&&<p className="ob-subtitle">The rocket's usable payload is the smallest of its physical idealized capacity, your launch manifest allocation and your chosen launch configuration. The complete satellite wet mass, including the selected instrument and auxiliary equipment, is charged against that capacity.</p>}
+          {preview&&<div className="guided-launch-invoice">
+            <div className="eyebrow">PAID SATELLITE TRANSPORT / ROCKET FLEET</div>
+            <strong>{preview.launchManifest.vehicleLabel}</strong>
+            <span>Selected launch quote: {usd(preview.launchManifest.launchCostUsd)} for
+              {preview.launchManifest.flightsRequired} flight(s) · {num(preview.massKg,1)} kg
+              wet satellite · reserved {choices.launchSlotKg} kg deployment slot</span>
+            <p>The reserved smallsat slot is a game limit. External service
+              launch Δv/TWR are contract-level assumptions, not a propagated Falcon
+              ascent or a verified flight offer. Choosing a heavier spacecraft
+              cannot exceed either your slot or the launcher's physical capacity.</p>
+          </div>}
         </div>
       </div>
       <div className="panel ob-review">
