@@ -61,6 +61,21 @@ describe('Next chapter campaign and orbit integrations',()=>{
     expect(bigger.powerDemandW).toBeGreaterThan(simple.powerDemandW);
     expect(bigger.costUsd).toBeGreaterThan(simple.costUsd);
   });
+  it('science payload comes from installed science cargo, never support equipment',()=>{
+    const clean=reviewCampaignMission({...referenceArgs,options:{...DEFAULT_MISSION_OPTIONS,
+      highGain:false,radiationShield:false,reserveBattery:false}});
+    const supported=reviewCampaignMission({...referenceArgs,options:{...DEFAULT_MISSION_OPTIONS,
+      highGain:true,radiationShield:true,reserveBattery:true}});
+    expect(supported.scienceMassKg).toBe(clean.scienceMassKg);
+    expect(supported.hardwareWetKg).toBeGreaterThan(clean.hardwareWetKg);
+    expect(supported.powerDemandW).toBeGreaterThan(clean.powerDemandW);
+    expect(supported.costUsd).toBeGreaterThan(clean.costUsd);
+    const cargo=reviewCampaignMission({...referenceArgs,
+      spacecraft:{...DEFAULT_SUBSYSTEM_DESIGN,payloadMassKg:DEFAULT_SUBSYSTEM_DESIGN.payloadMassKg+50}});
+    expect(cargo.scienceMassKg).toBe(clean.scienceMassKg+50);
+    const rideshare=reviewCampaignMission({...referenceArgs,options:{...DEFAULT_MISSION_OPTIONS,cubesatUnits:3}});
+    expect(rideshare.scienceMassKg).toBeGreaterThan(clean.scienceMassKg);
+  });
   it('time window is a hard gate; missing high apogee and deadlines cannot pass',()=>{
     const offer=nextSpecialOffer(8,1)!;
     const review=reviewCampaignMission({...referenceArgs,definition:offer,
