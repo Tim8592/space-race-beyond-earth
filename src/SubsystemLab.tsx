@@ -6,6 +6,8 @@ import {
   BATTERY_PACKS, IN_SPACE_THRUSTERS, SOLAR_CELLS, THERMAL_SURFACES,
 } from './lib/spacecraftTechnology';
 import { POWER_SYSTEMS, type PowerSourceId } from './lib/powerSources';
+import { SCIENCE_INSTRUMENTS, type InstrumentSelection } from './lib/instrumentCatalog';
+import type { ThrusterId } from './lib/subsystemDesign';
 import {
   DEFAULT_SUBSYSTEM_DESIGN, DESTINATIONS, sizeSubsystemDesign,
   type SubsystemDesign, type SystemResults,
@@ -83,7 +85,7 @@ function Result({ label, value, note, tone }: {
 export default function SubsystemLab({design,onDesignChange}:{
   design:SubsystemDesign;onDesignChange:(next:SubsystemDesign)=>void;
 }) {
-  const [activeSystemTab,setActiveSystemTab] = useState<'propulsion'|'power'|'thermal'|'tank'|'analysis'>('propulsion');
+  const [activeSystemTab,setActiveSystemTab] = useState<'propulsion'|'payload'|'power'|'thermal'|'tank'|'analysis'>('propulsion');
   const analysis = useMemo(() => {
     try { return { result: sizeSubsystemDesign(design), error: '' }; }
     catch (error) {
@@ -96,12 +98,16 @@ export default function SubsystemLab({design,onDesignChange}:{
     onDesignChange({...design,[key]:value});
   }
 
-  const isLiquid = design.thrusterId === 'mono-reference';
+  const isLiquid = design.thrusterId === 'mono-reference' ||
+    design.secondaryThrusterId === 'mono-reference';
+  const hasXenon = result?.tankReports.some(t=>t.kind==='xenon')??false;
   const selectedElectric = IN_SPACE_THRUSTERS.find(t => t.id === design.thrusterId);
-  const isIodine = design.thrusterId === 'busek-bit3';
-  const storage = isLiquid ? 'Illustrative liquid monopropellant'
-    : isIodine ? 'Iodine solid-feed (not liquid)'
-    : 'High-pressure xenon (not liquid)';
+  const selectedInstrument=design.payloadInstrumentId==='none'?null:SCIENCE_INSTRUMENTS[design.payloadInstrumentId];
+  const thrusterChoices=[
+    {id:'mono-reference',name:'Chemical monopropellant · 1 N / 230 s (illustrative)'},
+    ...IN_SPACE_THRUSTERS.map(t=>({id:t.id,
+      name:t.name+' · '+t.nominalSpecificImpulseSeconds+' s · '+(t.nominalThrusterPowerW/1000).toFixed(2)+' kW'})),
+  ];
 
   return (
     <section className="panel sys-panel" id="systems-lab" aria-label="In-space spacecraft systems engineering lab">
@@ -109,7 +115,7 @@ export default function SubsystemLab({design,onDesignChange}:{
         <div>
           <div className="eyebrow">02 / NASA TECHNOLOGY LAB</div>
           <h2>Spacecraft Subsystems</h2>
-          <p>Design an in-space spacecraft bus. Changing propulsion affects power, thermal control, mass and propellant.</p>
+          <p>Choose the parts and the game derives the coupled mass, heat, electrical demand and propellant storage. Add a second propulsion architecture when useful.</p>
         </div>
         <span className="sys-model-label">BETA · PRELIMINARY</span>
       </div>
@@ -118,11 +124,17 @@ export default function SubsystemLab({design,onDesignChange}:{
         everything labeled <b>assumption</b> is an illustrative sizing input, not a NASA-certified design.
       </p>
 
+      {result&&<div className="sys-live-strip" aria-label="Live spacecraft engineering summary">
+        <div><small>MODELED WET MASS</small><strong>{fmt(result.modeledWetMassKg,'kg',1)}</strong></div>
+        <div><small>SOLAR ARRAY + MOUNTS</small><strong>{fmt(result.arrayMassKg,'kg',1)}</strong></div>
+        <div><small>PEAK ELECTRICAL DRAW</small><strong>{fmt(result.totalElectricalDemandW,'W',0)}</strong></div>
+        <div><small>TANKS AND FEEDS</small><strong>{fmt(result.totalTankHardwareMassKg,'kg',1)}</strong></div>
+      </div>}
       <Spacecraft3D design={design} analysis={result}/>
 
       <div className="sys-tab-strip" role="tablist" aria-label="Spacecraft subsystem">
         {([
-          ['propulsion','Propulsion'], ['power','Power'], ['thermal','Thermal'],
+          ['propulsion','Propulsion'], ['payload','Science payload'], ['power','Power'], ['thermal','Thermal'],
           ['tank','Tanks'], ['analysis','Engineering Analysis'],
         ] as const).map(([id,label])=>(
           <button key={id} role="tab" aria-selected={activeSystemTab===id}
@@ -135,23 +147,73 @@ export default function SubsystemLab({design,onDesignChange}:{
         <div className="sys-heading"><span>01</span><div><h3>Propulsion</h3><small>Specific impulse, thrust, mass flow and burn time</small></div></div>
         <div className="sys-input-grid">
           <label className="sys-field sys-wide">
-            <span>In-space engine / technology<small>SELECT COMPONENT</small><FieldHelp term="In-space engine / technology"/></span>
-            <select value={design.thrusterId} onChange={e => change('thrusterId', e.target.value as SubsystemDesign['thrusterId'])}>
-              <option value="mono-reference">Chemical monopropellant · illustrative 1 N / 230 s</option>
-              {IN_SPACE_THRUSTERS.map(t => <option key={t.id} value={t.id}>{t.name} · {t.nominalSpecificImpulseSeconds} s</option>)}
+            <span>Primary propulsion system<small>SELECT COMPONENT</small><FieldHelp term="In-space engine / technology"/></span>
+            <select value={design.thrusterId} onChange={e => change('thrusterId', e.target.value as ThrusterId)}>
+              {thrusterChoices.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </label>
           <NumberField label="Number of thrusters" unit="identical engines · concurrent operation" value={design.thrusterCount} min={1} max={8} step={1} onChange={n=>change("thrusterCount",n)}/>
-          <NumberField label="Propellant inventory" unit="kg" value={design.propellantMassKg} min={0.1} max={300} step={0.5} onChange={n=>change('propellantMassKg', n)}/>
+          <NumberField label="Primary propellant inventory" unit="kg · stored by selected engine type" value={design.propellantMassKg} min={0.1} max={300} step={0.5} onChange={n=>change('propellantMassKg', n)}/>
+          <label className="sys-field sys-wide">
+            <span>Optional second propulsion system<small>SEPARATE ENGINE + PROPELLANT</small><FieldHelp term="Optional second propulsion system"/></span>
+            <select value={design.secondaryThrusterId} onChange={e=>change('secondaryThrusterId',e.target.value as SubsystemDesign['secondaryThrusterId'])}>
+              <option value="none">None · one propulsion system</option>
+              {thrusterChoices.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+          {design.secondaryThrusterId!=='none'&&<>
+            <NumberField label="Secondary thruster count" unit="identical engines" value={design.secondaryThrusterCount}
+              min={1} max={8} step={1} onChange={n=>change('secondaryThrusterCount',n)}/>
+            <NumberField label="Secondary propellant" unit="kg · independent tank" value={design.secondaryPropellantMassKg}
+              min={0.1} max={300} step={0.5} onChange={n=>change('secondaryPropellantMassKg',n)}/>
+            <label className="sys-field">
+              <span>Burn sequence<small>IDEAL EQUATION ONLY</small><FieldHelp term="Burn sequence"/></span>
+              <select value={design.burnOrder} onChange={e=>change('burnOrder',e.target.value as SubsystemDesign['burnOrder'])}>
+                <option value="primary-first">Primary burns first</option>
+                <option value="secondary-first">Secondary burns first</option>
+              </select>
+            </label>
+          </>}
           <NumberField label="Spacecraft bus (other dry hardware)" unit="kg · assumption" value={design.busDryMassKg} min={1} max={2000} step={5} onChange={n=>change('busDryMassKg',n)}/>
-          <NumberField label="Science / cargo payload" unit="kg" value={design.payloadMassKg} min={0} max={1000} step={5} onChange={n=>change('payloadMassKg',n)}/>
+
         </div>
+        {result&&<div className="sys-architecture">
+          <div><strong>Primary · {result.primaryMode.name}</strong><span>{result.primaryMode.kind} · {fmt(result.primaryMode.thrustN*1000,'mN',1)} · {fmt(result.primaryMode.completePropulsionPowerW,'W',0)} peak bus draw</span></div>
+          {result.secondaryMode&&<div><strong>Secondary · {result.secondaryMode.name}</strong><span>{result.secondaryMode.kind} · {fmt(result.secondaryMode.thrustN*1000,'mN',1)} · {fmt(result.secondaryMode.completePropulsionPowerW,'W',0)} peak bus draw</span></div>}
+          <p>Both engines count toward launch mass. The power and thermal systems are sized to the highest single active engine family, not both firing at once. Ideal Δv uses separate sequential burns; no real low-thrust trajectory is implied.</p>
+        </div>}
         <p className="sys-subnote">
           {selectedElectric
             ? `NASA-surveyed per-thruster operating point: ${fmt(selectedElectric.nominalThrustN * 1000, 'mN', 2)} thrust · ${fmt(selectedElectric.nominalSpecificImpulseSeconds, 's', 0)} Isp · ${fmt(selectedElectric.nominalThrusterPowerW, 'W', 0)} rated thruster input. This is not full propulsion-system power or mass.`
             : 'Chemical baseline 1 N, 230 s, 8 W for valves (assumptions within NASA-surveyed monopropellant performance ranges).'}
           {' '}<a href="https://www.nasa.gov/smallsat-institute/sst-soa/in-space_propulsion/" target="_blank" rel="noreferrer">NASA propulsion survey ↗</a>
         </p>
+      </div>
+
+      <div className={'sys-group '+(activeSystemTab==='payload'?'':'sys-hidden')}>
+        <div className="sys-heading"><span>02</span><div><h3>Scientific payload</h3><small>Instrument mass, continuous active load and mission suitability</small></div></div>
+        <div className="sys-input-grid">
+          <label className="sys-field sys-wide">
+            <span>Installed science sensor<small>GAME ENGINEERING EXAMPLES</small><FieldHelp term="Installed science sensor"/></span>
+            <select value={design.payloadInstrumentId} onChange={e=>change('payloadInstrumentId',e.target.value as InstrumentSelection)}>
+              <option value="none">No catalog sensor · generic payload only</option>
+              {Object.values(SCIENCE_INSTRUMENTS).map(inst=><option key={inst.id} value={inst.id}>
+                {inst.name} · {inst.massKg} kg · {inst.powerW} W · {inst.category}</option>)}
+            </select>
+          </label>
+          <NumberField label="Additional instruments / cargo mass" unit="kg · excludes selected sensor" value={design.payloadMassKg}
+            min={0} max={1000} step={5} onChange={n=>change('payloadMassKg',n)}/>
+        </div>
+        {selectedInstrument?<div className="sys-sensor-card">
+          <div><span className="sys-chip">{selectedInstrument.category==='earth'?'EARTH OBSERVATION':'DEEP-SPACE SCIENCE'}</span><h4>{selectedInstrument.name}</h4>
+            <p>{selectedInstrument.description}</p>
+            <a href={selectedInstrument.reference} target="_blank" rel="noreferrer">Explore NASA science inspiration ↗</a>
+          </div>
+          <div className="sys-sensor-numbers"><strong>{fmt(selectedInstrument.massKg,'kg')}</strong><span>INSTALLED MASS</span>
+            <strong>{fmt(selectedInstrument.powerW,'W')}</strong><span>ACTIVE DRAW</span>
+            <strong>{selectedInstrument.dataMbps} Mb/s</strong><span>ILLUSTRATIVE DATA</span></div>
+        </div>:<p className="sys-subnote">Install a camera, magnetometer, spectrometer, thermal sensor or altimeter to automatically add its mass, active electric demand and heat. Values are illustrative—not certified specifications of NASA flight instruments.</p>}
+        <p className="sys-subnote">Earth Observation One uses its own chosen sensor as this payload slot and does not double-count the generic Engineering Lab payload when launching.</p>
       </div>
 
       <div className={'sys-group '+(activeSystemTab==='power'?'':'sys-hidden')}>
@@ -181,7 +243,7 @@ export default function SubsystemLab({design,onDesignChange}:{
           </label>
           <NumberField label="Number of solar wings" unit="deployable panel assemblies" value={design.solarWingCount} min={1} max={8} step={1} onChange={n=>change("solarWingCount",n)}/>
           <NumberField label="Active solar cell area" unit="m²" value={design.cellAreaM2} min={0} max={250} step={0.5} onChange={n=>change('cellAreaM2',n)}/>
-          <NumberField label="Housekeeping / instruments draw" unit="W" value={design.busElectricalPowerW} min={0} max={5000} step={10} onChange={n=>change('busElectricalPowerW',n)}/>
+          <NumberField label="Base avionics load" unit="W · only the non-component baseline" value={design.busElectricalPowerW} min={0} max={5000} step={10} onChange={n=>change('busElectricalPowerW',n)}/>
           <label className="sys-field">
             <span>Battery pack technology<small>NASA-SURVEYED</small><FieldHelp term="Battery pack technology"/></span>
             <select value={design.batteryPackId} onChange={e=>change('batteryPackId',e.target.value)}>
@@ -190,6 +252,17 @@ export default function SubsystemLab({design,onDesignChange}:{
           </label>
           <NumberField label="Eclipse / no-solar duration" unit="hours · assumption" value={design.eclipseHours} min={0} max={30} step={0.1} onChange={n=>change('eclipseHours',n)}/>
         </div>
+        {result&&<div className="sys-auto-ledger">
+          <div className="eyebrow">AUTO-CALCULATED POWER LEDGER</div>
+          <div><span>Base avionics / platform</span><strong>{fmt(result.baseBusPowerW,'W',1)}</strong></div>
+          <div><span>Wing controls · {design.solarWingCount} wings</span><strong>{fmt(result.wingControlPowerW,'W',1)}</strong></div>
+          <div><span>Radiator sensors · {design.radiatorPanelCount} panels</span><strong>{fmt(result.radiatorControlPowerW,'W',1)}</strong></div>
+          <div><span>Installed science instrument</span><strong>{fmt(result.instrumentPowerW,'W',1)}</strong></div>
+          <div><span>Distribution / wiring losses</span><strong>{fmt(result.harnessLossW,'W',1)}</strong></div>
+          <div><span>Worst active propulsion mode incl. PPU</span><strong>{fmt(result.propulsionPeakPowerW,'W',1)}</strong></div>
+          <div className="total"><span>Total peak spacecraft power</span><strong>{fmt(result.totalElectricalDemandW,'W',1)}</strong></div>
+          <div className="total"><span>Solar array mass + wing mounts</span><strong>{fmt(result.arrayMassKg,'kg',2)}</strong></div>
+        </div>}
         <p className="sys-subnote">
           Selected radioisotope or fission hardware operates alongside solar panels, with published reference mass included when available. Solar model uses measured 1 AU irradiance, cell efficiency and inverse-square solar distance;
           a 75% overall array derate and 88% thruster power-processing efficiency are <b>assumptions</b>. Solar wing count redistributes the selected total cell area.
@@ -222,34 +295,43 @@ export default function SubsystemLab({design,onDesignChange}:{
       </div>
 
       <div className={'sys-group '+(activeSystemTab==='tank'?'':'sys-hidden')}>
-        <div className="sys-heading"><span>04</span><div><h3>Tank & propellant management</h3><small>Propellant mass, shell mass, volume and liquid acquisition</small></div></div>
-        <p className="sys-storage"><b>Propellant storage class:</b> {storage}</p>
-        {isLiquid ? (
-          <>
-            <div className="sys-input-grid">
-              <label className="sys-field">
-                <span>Liquid acquisition / tank type<small>ILLUSTRATIVE MASS ALLOWANCE</small><FieldHelp term="Liquid acquisition / tank type"/></span>
-                <select value={design.tankType} onChange={e=>change('tankType',e.target.value as SubsystemDesign['tankType'])}>
-                  <option value="diaphragm">Diaphragm tank · +1 kg</option>
-                  <option value="bellows">Bellows tank · +1.5 kg</option>
-                  <option value="capillary">Surface-tension PMD · +0.5 kg</option>
-                </select>
-              </label>
-              <NumberField label="Assumed liquid density" unit="kg/m³" value={design.liquidDensityKgM3} min={300} max={2000} step={25} onChange={n=>change('liquidDensityKgM3',n)}/>
-              <NumberField label="Differential tank pressure" unit="bar" value={design.tankPressureBar} min={1} max={100} step={1} onChange={n=>change('tankPressureBar',n)}/>
-              <NumberField label="Allowable membrane stress" unit="MPa" value={design.tankAllowableStressMpa} min={10} max={700} step={10} onChange={n=>change('tankAllowableStressMpa',n)}/>
-              <NumberField label="Tank shell material density" unit="kg/m³" value={design.tankMetalDensityKgM3} min={1000} max={10000} step={100} onChange={n=>change('tankMetalDensityKgM3',n)}/>
-            </div>
-            <p className="sys-subnote">Ideal thin spherical shell with assumed 5% ullage. This is a <b>lower-bound mass estimate</b>, not a tank design-code calculation. Diaphragms, bellows or capillary PMDs help avoid ingesting gas in microgravity; actual pump/valve/pressurant compatibility and slosh dynamics remain unmodeled.</p>
-          </>
-        ) : (
-          <p className="sys-subnote">
-            {isIodine
-              ? 'The BIT-3 uses iodine. Its published 2.9 kg reported mass is integrated WET mass; it is not added as a dry component or sized with a liquid-density model.'
-              : 'Xenon is stored under pressure, and cannot be correctly sized using the incompressible-liquid spherical tank formula. Pressure-vessel mass, feed/pressurant and regulator masses are explicitly NOT included in the estimate below.'}
-            {' '}<a href="https://www.nasa.gov/smallsat-institute/sst-soa/in-space_propulsion/" target="_blank" rel="noreferrer">NASA propulsion and PMD background ↗</a>
-          </p>
-        )}
+        <div className="sys-heading"><span>04</span><div><h3>Propellant storage architecture</h3>
+          <small>Auto-derived reservoirs based on selected propulsion, pressure and propellant mass</small></div></div>
+        <p className="sys-subnote">Liquid monopropellant gets a regulated diaphragm/bellows tank. Xenon receives a dense high-pressure spherical vessel estimate. Iodine uses a heated solid-feed reservoir, not a fictional liquid tank. Dual propulsion adds a separate store even if propellants match.</p>
+        <div className="sys-input-grid">
+          {isLiquid&&<label className="sys-field">
+            <span>Chemical liquid acquisition system<FieldHelp term="Liquid acquisition / tank type"/></span>
+            <select value={design.tankType} onChange={e=>change('tankType',e.target.value as SubsystemDesign['tankType'])}>
+              <option value="diaphragm">Diaphragm tank</option>
+              <option value="bellows">Bellows tank</option>
+              <option value="capillary">Surface-tension PMD</option>
+            </select>
+          </label>}
+          {isLiquid&&<NumberField label="Differential tank pressure" unit="bar · monopropellant" value={design.tankPressureBar}
+            min={1} max={100} step={1} onChange={n=>change('tankPressureBar',n)}/>}
+          {hasXenon&&<NumberField label="Xenon storage pressure" unit="bar · gas/supercritical estimate" value={design.xenonStoragePressureBar}
+            min={60} max={350} step={10} onChange={n=>change('xenonStoragePressureBar',n)}/>}
+          <NumberField label="Allowable membrane stress" unit="MPa · conceptual input" value={design.tankAllowableStressMpa}
+            min={10} max={700} step={10} onChange={n=>change('tankAllowableStressMpa',n)}/>
+          <NumberField label="Tank shell material density" unit="kg/m³" value={design.tankMetalDensityKgM3}
+            min={1000} max={10000} step={100} onChange={n=>change('tankMetalDensityKgM3',n)}/>
+        </div>
+        {result&&<div className="sys-tank-grid">
+          {result.tankReports.map((t,i)=><article key={i} className="sys-tank-card">
+            <div className="sys-chip">{i===0?'PRIMARY TANK':'SECONDARY TANK'} · {t.kind.toUpperCase()}</div>
+            <h4>{t.label}</h4>
+            <div><span>Propellant inventory</span><strong>{fmt(t.propellantKg,'kg',2)}</strong></div>
+            <div><span>Pressure assumption</span><strong>{fmt(t.designPressureBar,'bar',0)}</strong></div>
+            <div><span>Storage volume</span><strong>{fmt(t.internalVolumeL,'L',2)}</strong></div>
+            <div><span>Membrane Tmin</span><strong>{fmt(t.membraneTminMm,'mm',3)}</strong></div>
+            <div><span>Adopted wall / manufacturing floor</span><strong>{fmt(t.adoptedWallMm,'mm',3)}</strong></div>
+            <div><span>Shell + fittings allowance</span><strong>{fmt(t.shellMassKg,'kg',2)}</strong></div>
+            <div><span>Feed / valves / heater estimate</span><strong>{fmt(t.feedHardwareKg,'kg',2)}</strong></div>
+            <div className="total"><span>Installed tank/feed estimate</span><strong>{fmt(t.totalHardwareKg,'kg',2)}</strong></div>
+            <p>{t.note}</p>
+          </article>)}
+        </div>}
+        <p className="sys-subnote"><b>Engineering boundary:</b> Conceptual internal-pressure membrane thickness uses t ≈ P·R/(2·S·E − 0.2·P), assumed joint efficiency 0.85, plus application-specific minimum thickness and fittings allowance. It is NOT verified ASME VIII code compliance. Real spacecraft require stress analysis, burst/proof factors, welds, temperature-dependent strength, buckling, fatigue, fluid EOS, leakage and qualification testing.</p>
       </div>
 
       <div className={activeSystemTab==='analysis'?'':'sys-hidden'}>
@@ -274,8 +356,16 @@ export default function SubsystemLab({design,onDesignChange}:{
             <Result label="Required radiator area" value={fmt(result.radiatorAreaM2,'m²',2)} note="Net radiative heat rejection" tone={result.radiatorAreaM2===null?'bad':undefined}/>
             <Result label={result.massEstimateIncomplete?'Partial modeled dry mass':'Preliminary dry mass'} value={fmt(result.modeledDryMassKg,'kg',2)} note="PV + battery + thermal + propulsion + tank allowances"/>
             <Result label={result.massEstimateIncomplete?'Partial modeled wet mass':'Preliminary wet mass'} value={fmt(result.modeledWetMassKg,'kg',2)} note="Dry mass + propellant inventory"/>
-            <Result label="Tank shell mass" value={fmt(result.tankShellMassKg,'kg',2)} note={isLiquid?'Ideal thin-wall + PMD allowance separately':'Not modeled for gas/solid storage'} tone={!isLiquid?'warn':undefined}/>
-            <Result label="Tank volume / wall" value={isLiquid ? fmt(result.tankInternalVolumeL,'L',1)+' / '+fmt(result.tankWallMm,'mm',2) : 'Not sized'} note={isLiquid?'Shell geometry only':'Different storage physics required'}/>
+            <Result label="Installed tanks + feed hardware" value={fmt(result.totalTankHardwareMassKg,'kg',2)} note={result.tankReports.length+' tank architecture(s), conceptual mass'}/>
+            <Result label="Primary tank volume / adopted wall" value={fmt(result.tankInternalVolumeL,'L',1)+' / '+fmt(result.tankWallMm,'mm',2)} note={result.primaryMode.feedTank.label}/>
+            <Result label="Selected sensor + array hardware" value={fmt(result.instrumentMassKg+result.arrayMassKg,'kg',2)} note={result.instrumentName+' + solar array assembly'}/>
+            <Result label="Automatic housekeeping power" value={fmt(result.housekeepingPowerW,'W',0)} note="Avionics + instrument + controllers + wiring losses"/>
+          </div>
+          <div className="sys-auto-ledger">
+            <div className="eyebrow">MASS ROLL-UP · WHAT CHANGES WET WEIGHT?</div>
+            {result.massBreakdown.map((item,i)=><div key={i}><span>{item.label}</span>
+              <strong>{fmt(item.massKg,'kg',2)}</strong></div>)}
+            <div className="total"><span>Installed modeled wet mass</span><strong>{fmt(result.modeledWetMassKg,'kg',2)}</strong></div>
           </div>
           <div className="sys-feedback">
             <strong>Engineering review</strong>
