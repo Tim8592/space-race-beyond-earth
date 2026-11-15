@@ -121,7 +121,7 @@ export default function CampaignMissions({
   selected,onSelectedIdChange,options,onOptionsChange,agencyOffers,scheduled,
   nowMs,viewerOpen,onViewerOpenChange,
   launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,logisticsInProgress,
-  canadianSuccesses,
+  canadianSuccesses,nasaNeoOffer,weatherReserveHours,
   assembly,onLaunchAssemblyFlight,onFinalizeAssembly,onCancelAssembly,
 }:{
   day:number;cash:number;completed:readonly string[];devMode:boolean;
@@ -143,6 +143,7 @@ export default function CampaignMissions({
   launchService:LauncherId;rocketProgramLevel:number;
   orbitalAssemblyUnlocked:boolean;priorServiceFlights:number;logisticsInProgress:boolean;
   canadianSuccesses:number;
+  nasaNeoOffer:CampaignDefinition|null;weatherReserveHours:number;
 }){
   const stage=unlockedStage(completed,devMode);
   const originalAgency=useMemo(()=>agencyMissionDefinitions(),[]);
@@ -155,12 +156,12 @@ export default function CampaignMissions({
       definition:selected,day,options,spacecraft,launcher,capitalUsd:cash,
       productionDiscount,completedWithLauncherEngine,solvedTransfer,
       launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,
-      canadianSuccesses,
+      canadianSuccesses,weatherReserveHours,
     }),error:''};}
     catch(e){return {review:null,error:e instanceof Error?e.message:String(e)}}
   },[selected,day,options,spacecraft,launcher,cash,productionDiscount,
     completedWithLauncherEngine,solvedTransfer,launchService,rocketProgramLevel,
-    orbitalAssemblyUnlocked,priorServiceFlights,canadianSuccesses]);
+    orbitalAssemblyUnlocked,priorServiceFlights,canadianSuccesses,weatherReserveHours]);
   const review=draft.review;
   const canStart=stage>=selected.stage&&!completedMission&&
     review?.feasible===true&&!run&&!assembly&&!logisticsInProgress&&lockedTechnologies.length===0&&
@@ -186,7 +187,7 @@ export default function CampaignMissions({
   const flightStatus=run?flightProgress(run.startedAtMs??nowMs,nowMs,
     run.viewerDurationMs??DEFAULT_FLIGHT_VIEWER_MS):null;
   const activeMission=run?(
-    STORY_MISSIONS.find(m=>m.id===run.id)??agencyOffers.find(m=>m.id===run.id)??(scheduled?.id===run.id?scheduled:null)??{
+    STORY_MISSIONS.find(m=>m.id===run.id)??agencyOffers.find(m=>m.id===run.id)??(nasaNeoOffer?.id===run.id?nasaNeoOffer:null)??(scheduled?.id===run.id?scheduled:null)??{
       ...selected,id:run.id,title:run.title,target:run.target,durationDays:run.durationDays,
     }):selected;
   const liveReview=run?({
@@ -209,7 +210,7 @@ export default function CampaignMissions({
       </div>
     </div>
     <CampaignOrbitMap day={day} selected={selected} stage={stage} completed={completed}
-      story={STORY_MISSIONS} agency={agencyOffers} special={scheduled}
+      story={STORY_MISSIONS} agency={nasaNeoOffer?[...agencyOffers,nasaNeoOffer]:agencyOffers} special={scheduled}
       onSelect={onSelectedIdChange}/>
     <div className="campaign-cards">
       {STORY_MISSIONS.map(m=><button type="button" key={m.id}
@@ -222,6 +223,28 @@ export default function CampaignMissions({
           <strong>{m.title}</strong>{stage>=m.stage&&<span>{m.location}</span>}</div>
       </button>)}
     </div>
+    {nasaNeoOffer&&<div className="panel nasa-campaign-watch">
+      <div className="eyebrow">LIVE NASA NEOWS / REAL ASTEROID DATA, FICTIONAL CONTRACT</div>
+      <h3>Rapid asteroid observation request</h3>
+      <p>Track a real NASA-listed Earth close approach with an Earth-orbit telescope.
+        This mission DOES NOT travel to the asteroid. Real target name/date,
+        fictional launch requirements and customer reward.</p>
+      <button type="button" className={'campaign-special-offer '+(selected.id===nasaNeoOffer.id?'selected':'')}
+        onClick={()=>onSelectedIdChange(nasaNeoOffer.id)}>
+        <strong>{nasaNeoOffer.title}</strong>
+        <span>{completed.includes(nasaNeoOffer.id)?'✓ COMPLETED':
+          day>(nasaNeoOffer.windowEndDay??0)?'WINDOW CLOSED':
+          'REQUEST OPEN · '+Math.max(0,(nasaNeoOffer.windowEndDay??day)-day)+' GAME DAYS LEFT'}</span>
+        <small>{usd(nasaNeoOffer.payoutUsd)} fictional reward · NASA observation scenario</small>
+      </button>
+    </div>}
+    {weatherReserveHours>0&&<div className="panel nasa-weather-campaign-note">
+      <div className="eyebrow">NASA DONKI / OPERATIONAL INTELLIGENCE</div>
+      <strong>Recent observed space weather: +{weatherReserveHours} h battery contingency</strong>
+      <p>Applies to Earth-orbit and lunar mission readiness when real and game dates
+        overlap. Increase battery capacity or reserve module. This is a gameplay
+        contingency, not a forecast or measured radiation dose.</p>
+    </div>}
     <div className="campaign-special-container">
       <div><div className="eyebrow">DYNAMIC OPPORTUNITIES / LIMITED TIME</div>
         <h3>Time-sensitive contracts</h3>
@@ -407,7 +430,7 @@ export default function CampaignMissions({
           </div>}
           <div className="campaign-workshop-actions">
             <button type="button" className="secondary-button" onClick={onGoToLab}>Engineering Lab / installed equipment ↗</button>
-            <button type="button" className="secondary-button" onClick={onGoToRocket}>Launch Rocket Builder ↗</button>
+            <button type="button" className="secondary-button" onClick={onGoToRocket}>Rocket Fleet / Launch Logistics ↗</button>
             <button type="button" className="secondary-button"
               onClick={()=>onViewOrbital(selected,options)}>Analyze this orbit in Orbital Map ↗</button>
           </div>
