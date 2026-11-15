@@ -1,6 +1,6 @@
 # Sources, tools, and SI/AI attribution
 
-This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.9**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
+This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v1.0**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
 
 ## NASA / JPL resources used in the application
 
@@ -127,6 +127,17 @@ This version dynamically partitions a player-specified total active cell area ov
 - Assumed radiator branch truss/heat loop mass = 14 kg plus 7 kg/m² of hot radiator; assumed radiator pump/control electrical load = 8 W. These are educational parameters, not product specifications.
 - All twelve R&D expenditures, equipment procurement costs, annual operating costs, 12% manufacturing discount, qualitative risk labels and mission campaign order in `src/lib/technologyTree.ts`, `src/lib/missionEconomics.ts` and `src/ResearchLab.tsx` are **game economic assumptions**, not real quotes, NASA budget estimates or predictions.
 - Orbital animation uses the existing Earth radius/GM dataset and approximate two-body period; drawn scale and playback speed are not real-time ephemerides.
+
+## v1.0 orbital-transfer campaign sources and explicitly invented values
+
+- **Earth elliptical orbit**: `src/lib/orbitalMechanics.ts` solves the classical Kepler equation and vis-viva speed with Earth gravitational parameter and radius from the already documented JPL/NASA references. Campaign apogee and ellipse injection delta-V use that same mathematics, with no perturbations, launch-site geometry, or plane-change losses.
+- **Heliocentric transfers**: the game reuses `planetAtDate` with JPL [approximate planetary positions](https://ssd.jpl.nasa.gov/planets/approx_pos.html). Circular coplanar Hohmann energy is a **reference approximation** only; a phase-angle mismatch surcharge is game logic, not a real Lambert minimum or launch window. The **optional** Orekit 13.1.9 solver continues to perform impulsive two-body Lambert transfers, with the limitations documented elsewhere.
+- Solar-system reference constants (Sun GM ~1.3271244e11 km³/s², AU 149597870.7 km) and reference planetary GM/radii used for simple circular capture: https://ssd.jpl.nasa.gov/astro_par.html and https://nssdc.gsfc.nasa.gov/planetary/factsheet/ .
+- The lunar stage is an **Earth two-body apogee-at-Moon-distance estimate** plus an illustrative **850 m/s capture/correction allowance**. It does not propagate the Moon's actual location, gravitational sphere of influence, 3-body dynamics or lunar orbit insertion.
+- The asteroid 1.35 AU orbital location is **fictional** and no discovered body's orbit was used.
+- The Jupiter stage is expressly a **flyby**: no modeled Jovian orbit capture or icy-moon transfer sequence.
+- Special contracts have generated **32-day recurring cycles and an inclusive 22-day contract bid window** by game clock. These deadlines are not astronomical alignment predictions. Payload thresholds, stage Isp/dry/propellant mass, module wattage and procurement prices, special payout values, Hohmann phase surcharge and mission elapsed days are **invented game parameters**, not NASA technical requirements.
+- Spacecraft sizing and thermal/power margins are first-order and not a complete technology qualification; true propulsion finite-burn trajectories, mission hazards, radiation, interplanetary communication links and daily thermal/electric operation remain outside this simulation.
 
 ## Other frameworks and external sources
 
