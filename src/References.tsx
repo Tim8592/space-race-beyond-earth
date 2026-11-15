@@ -1,5 +1,6 @@
 import {AGENCY_MILESTONES} from './lib/realWorldMissions';
 import {NASA_CUBESAT_REFERENCE} from './lib/campaignMissions';
+import {CSA_DATA_PROGRAMS} from './lib/csaScienceMissions';
 const nasaData=[
   {
     name:'NASA CubeSat 101 · CubeSat Launch Initiative (2017)',
@@ -24,6 +25,18 @@ const nasaData=[
     tag:'NASA PHYSICAL CONSTANTS / ACTIVE CALCULATION',
     url:'https://nssdc.gsfc.nasa.gov/planetary/factsheet/',
     use:'Earth and planet reference sizes and parameters used in mission and orbit engineering. Figures are documented in the engineering source files.'
+  },
+  {
+    name:'NASA mission-viz · public web-based orbital visualizations',
+    tag:'OFFICIAL NASA GITHUB / ORBIT REFERENCE, NOT RUNTIME DEPENDENCY',
+    url:'https://github.com/nasa/mission-viz',
+    use:'NASA repository demonstrates web orreries, elliptical-orbit trajectories and Earth–Moon visualizations. Our Flight Directorate uses separately implemented Kepler/orbit propagation and optional Orekit instead of embedding its examples verbatim.'
+  },
+  {
+    name:'NASA/JSC JEOD · Engineering Orbital Dynamics',
+    tag:'OFFICIAL NASA GITHUB / HIGH-FIDELITY RESEARCH, NOT EMBEDDED',
+    url:'https://github.com/nasa/jeod',
+    use:'NASA orbital dynamics libraries coupled to Trick. Useful for evaluating what a future high-fidelity n-body or spacecraft attitude simulation could require. NOT installed or run in the game.'
   },
   {
     name:'NASA General Mission Analysis Tool (GMAT)',
@@ -59,6 +72,26 @@ export default function References(){
           <h4>{source.name}</h4>
           <p>{source.use}</p>
           <a href={source.url} target="_blank" rel="noreferrer">View source ↗</a>
+        </article>
+      )}</div>
+    </div>
+    <div className="references-section">
+      <h3>Canadian Space Agency open GitHub data & source-inspired hardware</h3>
+      <p>Each repository provides access instructions and processing examples for a
+        genuine Canadian scientific dataset. The game includes separately modeled
+        optical/auroral/SAR instrument classes and playable fictional observation
+        missions, but does not download original science imagery or present actual
+        flight hardware specifications.</p>
+      <div className="references-grid">{CSA_DATA_PROGRAMS.map(source=>
+        <article className="panel references-card" key={source.id}>
+          <div className="eyebrow">CSA / {source.realProgram.toUpperCase()} · {source.datasetFormat}</div>
+          <h4>{source.mission.title}</h4>
+          <p>{source.datasetDescription}</p>
+          <p>{source.dataAccess}</p>
+          <p>Modeled gameplay: requires {source.mission.acceptedInstruments.join(', ')},
+            {source.mission.minElectricW} W of generation and an actually funded
+            launch. Instrument masses, power and mission rewards are fictional.</p>
+          <a href={source.sourceUrl} target="_blank" rel="noreferrer">Official CSA GitHub repository ↗</a>
         </article>
       )}</div>
     </div>
