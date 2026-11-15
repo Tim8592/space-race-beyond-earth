@@ -375,7 +375,7 @@ export function reviewCampaignMission(args:{
       passed:o.cubesatUnits===d.requiredCubeSatUnits,
       detail:'NASA CubeSat 101 (2017), §1.1: 1U = 10×10×11 cm and ≈1–1.33 kg, 3U = 10×10×34 cm. 3U mass is a game extrapolation; dispenser mass/cost are invented.'
     });
-    checks.push({label:'Special contract deadline',actual:'Day '+day,
+    if(d.windowStartDay!==undefined&&d.windowEndDay!==undefined)checks.push({label:'Special contract deadline',actual:'Day '+day,
       needed:'Days '+d.windowStartDay+'–'+d.windowEndDay,
       passed:specialOfferStatus(d,day)==='open',
       detail:'Must start the launch while the in-game procurement/mission window is open, not complete the entire flight inside it'});
