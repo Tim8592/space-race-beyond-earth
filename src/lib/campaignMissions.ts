@@ -11,7 +11,6 @@ const EPOCH=Date.UTC(2026,10,14,12);
 const MU_SUN=1.32712440018e11; // km³/s² — JPL solar GM
 const AU_KM=149597870.7;
 const MU_MARS=42828.375214;
-const MU_JUPITER=126686534.9;
 const R_MARS=3396.19;
 const R_JUPITER=71492;
 export const dayToDate=(day:number)=>new Date(EPOCH+(day-1)*DAY_MS);
@@ -279,7 +278,7 @@ export function reviewCampaignMission(args:{
   const heatDemandW=system.thermalLoadW+modulePower;
   const instrument=design.payloadInstrumentId==='none'?null:SCIENCE_INSTRUMENTS[design.payloadInstrumentId];
   const scienceMassKg=(instrument?.massKg??0)+design.payloadMassKg+modulesKg;
-  const rocket=ENGINES[launcher.engineId],r=EARTH.equatorialRadiusKm+400;
+  const rocket=ENGINES[launcher.engineId];
   const requiredRocketDv=9300; // educational LEO ascent requirement
   const exponent=Math.expm1(requiredRocketDv/(rocket.ispSeconds*STANDARD_GRAVITY_MS2));
   const idealPayload=launcher.propellantMassKg/exponent-launcher.dryMassKg;

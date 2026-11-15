@@ -345,7 +345,7 @@ export default function App() {
       definition.target==='asteroid'?'heliocentric':'earth',
       day:game.day,target:definition.target==='jupiter'?'jupiter':'mars',
       perigee:options.perigeeKm,eccentricity:definition.target==='ellipse'?options.eccentricity:
-        definition.target==='lunar'?.72:.25});
+        definition.target==='lunar'?0.72:0.25});
     setActiveView('orbits');
   }
   const missionSolved: SolvedCampaignTransfer|null=lastSolvedTransfer&&

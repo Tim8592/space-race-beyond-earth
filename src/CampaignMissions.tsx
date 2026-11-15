@@ -35,9 +35,9 @@ function OrbitScene({definition,review,progress=0}:{
   const ellipse=definition.target==='ellipse'||definition.target==='lunar';
   const points=useMemo(()=>{
     if(!ellipse)return '';
-    const p=definition.target==='ellipse'?definition:{...definition};
-    const perigee=definition.target==='ellipse'?review.route.apogeeKm!==null?
-      (review.route.apogeeKm>0?400:400):400:400; // orbit visual uses actual shape from route eccentricity
+    const perigee=definition.target==='ellipse'?
+      review.route.apogeeKm!==null?
+        (review.route.apogeeKm>0?400:400):400:400; // schematic Earth-focus view
     const state=earthOrbitAtTime(perigee,review.route.eccentricity,0);
     const rmax=Math.max(1,state.apogeeAltitudeKm+6378);
     const scale=134/rmax;
@@ -98,10 +98,11 @@ function OptionCheck({label,checked,onChange,note}:{label:string;checked:boolean
   </label>;
 }
 export default function CampaignMissions({
-  day,cash,completed,devMode,spacecraft,launcher,productionDiscount,run,debrief,
+  day,cash,completed,devMode,spacecraft,launcher,productionDiscount,lockedTechnologies=[],run,debrief,
   solvedTransfer,onStart,onFinish,onGoToLab,onGoToRocket,onViewOrbital,onAdvance,
 }:{
   day:number;cash:number;completed:readonly string[];devMode:boolean;
+  lockedTechnologies?:readonly string[];
   spacecraft:SubsystemDesign;launcher:Vehicle;productionDiscount:number;
   run:CampaignRun|null;debrief:CampaignDebrief|null;
   solvedTransfer?:SolvedCampaignTransfer|null;
@@ -130,7 +131,8 @@ export default function CampaignMissions({
   },[selected,day,options,spacecraft,launcher,cash,productionDiscount,solvedTransfer]);
   const review=draft.review;
   const canStart=stage>=selected.stage&&!completedMission&&
-    review?.feasible===true&&!run&&(status===null||status==='open');
+    review?.feasible===true&&!run&&lockedTechnologies.length===0&&
+    (status===null||status==='open');
   const change=<K extends keyof MissionOptions>(key:K,val:MissionOptions[K])=>{
     setOptions(prev=>({...prev,[key]:val}));
   };
@@ -285,6 +287,9 @@ export default function CampaignMissions({
               <button type="button" className="launch-button" disabled={!canStart}
                 onClick={launch}>{review.feasible?'Accept contract and launch':'Resolve engineering constraints'} ↗</button>}
             {stageIsLocked&&<p className="campaign-model-warning">Complete preceding milestones or use Developer Mode before launching.</p>}
+            {lockedTechnologies.length>0&&<p className="campaign-model-warning" role="status">
+              Research required: {lockedTechnologies.join(', ')}. Unlock your installed spacecraft parts in Research &amp; Roadmap or temporarily enable Dev Mode.
+            </p>}
           </>:<p role="alert">Cannot analyze the selected design: {draft.error}. Restore valid spacecraft parameters in Engineering Lab.</p>}
         </div>
       </div>
