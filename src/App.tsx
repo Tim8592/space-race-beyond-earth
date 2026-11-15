@@ -309,7 +309,7 @@ export default function App() {
   const payloadOK=valid&&selectedServiceQuote.capacityKg>=contract.requiredPayloadKg;
   const sufficientCash=game.cash>=buildCost;
   const ready=payloadOK&&sufficientCash&&
-    !game.activeStoryRun&&!game.activeMoonCargoRun&&!game.activeAssemblyProject;
+    !game.activeStoryRun&&!game.activeMoonCargoRun&&!game.activeAssemblyProject&&!game.activeNetworkRun;
   const successfulLaunches = game.completed;
   const latest = game.history[0];
   const dailyBudget=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,
@@ -526,7 +526,7 @@ export default function App() {
     setSnapshot(previous=>{
       const g=previous.game,stage=g.moonBaseLevel;
       if((!g.storyCompleted.includes('lunar')&&!g.devMode)||
-        g.activeMoonCargoRun||g.activeStoryRun||g.activeAssemblyProject||
+        g.activeMoonCargoRun||g.activeStoryRun||g.activeAssemblyProject||g.activeNetworkRun||
         g.moonCargoDeliveredLevel>stage||stage>=MOON_BASE_LEVELS.length)return previous;
       const logistics=planMoonShipment({stageIndex:stage,
         service:g.rocketService,vehicle:previous.vehicle,
@@ -604,11 +604,11 @@ export default function App() {
       canadianSuccesses:game.canadianMissionSuccesses,
     });
     if(!quote.available||quote.capacityKg<contract.requiredPayloadKg||
-      game.cash<quote.costUsd||game.activeStoryRun||game.activeMoonCargoRun||
+      game.cash<quote.costUsd||game.activeStoryRun||game.activeMoonCargoRun||game.activeNetworkRun||
       game.activeAssemblyProject)return;
     setSnapshot(previous=>{
       const g=previous.game;
-      if(g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject)return previous;
+      if(g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject||g.activeNetworkRun)return previous;
       const selected=flightService({
         service:g.rocketService,vehicle:previous.vehicle,tier:g.rocketProgramLevel,
         priorFlights:g.rocketFlightCounts[g.rocketService]??0,
@@ -642,7 +642,7 @@ export default function App() {
   function startCampaignMission(run:CampaignRun){
     setSnapshot(previous=>{
       const g=previous.game;
-      if(g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject||
+      if(g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject||g.activeNetworkRun||
          g.storyCompleted.includes(run.id)||
          g.cash<run.costUsd||run.launchedDay!==g.day||
          run.launchService!==g.rocketService)return previous;
@@ -690,7 +690,7 @@ export default function App() {
   function launchAssemblyFlight(){
     setSnapshot(previous=>{
       const g=previous.game,project=g.activeAssemblyProject;
-      if(!project||g.activeStoryRun||g.activeMoonCargoRun)return previous;
+      if(!project||g.activeStoryRun||g.activeMoonCargoRun||g.activeNetworkRun)return previous;
       const batch=project.draft.launchInvoices[project.launchesCompleted];
       if(!batch||g.cash<batch.serviceCostUsd)return previous;
       const service=project.draft.launchService;
@@ -813,7 +813,7 @@ export default function App() {
   function startEarthObservation(costUsd:number){
     setSnapshot(previous=>{
       const g=previous.game;
-      if(g.cash<costUsd||g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject)return previous;
+      if(g.cash<costUsd||g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject||g.activeNetworkRun)return previous;
       return {...previous,game:{
       ...g,
       cash:g.cash-costUsd,
@@ -1071,7 +1071,7 @@ export default function App() {
               <div className="panel-heading compact-heading"><div><div className="eyebrow">04 / FLIGHT REVIEW</div><h2>Launch Readiness</h2></div><span className={'status-tag ' + (ready ? 'ready' : 'blocked')}>{ready ? '● DESIGN READY' : '● REVIEW REQUIRED'}</span></div>
               <div className="readiness-list"><div><span><CheckIcon good={payloadOK}/> Provider payload allocation</span><strong>{integer(selectedServiceQuote.capacityKg)} / {integer(contract.requiredPayloadKg)} kg</strong></div>
                 <div><span><CheckIcon good={sufficientCash}/> Rocket invoice funded</span><strong>{usd(game.cash)} / {usd(buildCost)}</strong></div>
-                <div><span><CheckIcon good={!game.activeStoryRun&&!game.activeMoonCargoRun&&!game.activeAssemblyProject}/> Flight operations available</span><strong>{ready?'Ready':'Existing mission/assembly in progress'}</strong></div></div>
+                <div><span><CheckIcon good={!game.activeStoryRun&&!game.activeMoonCargoRun&&!game.activeAssemblyProject&&!game.activeNetworkRun}/> Flight operations available</span><strong>{ready?'Ready':'Existing mission/assembly in progress'}</strong></div></div>
               <div className="financials"><div><span>EST. VEHICLE COST</span><strong>{usd(buildCost)}</strong></div><div><span>MISSION PAYOUT</span><strong className="green">+{usd(contract.payoutUsd)}</strong></div><div><span>EXPECTED MARGIN IF SUCCESSFUL</span><strong className={contract.payoutUsd >= buildCost ? 'green' : 'danger-text'}>{usd(contract.payoutUsd - buildCost)}</strong></div></div>
               <button className="launch-button" onClick={launch} disabled={!ready}>
                 {ready?'Purchase launch and deliver mission':'Increase launcher generation or funds first'}<span>↗</span>
