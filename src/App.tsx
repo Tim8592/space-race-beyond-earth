@@ -653,9 +653,10 @@ export default function App() {
       launchService:game.rocketService,rocketProgramLevel:game.rocketProgramLevel,
       orbitalAssemblyUnlocked:game.orbitalAssemblyUnlocked,
       priorServiceFlights:game.rocketFlightCounts[game.rocketService]??0,
+      canadianSuccesses:game.canadianMissionSuccesses,
     });}catch{return null}
   },[labObservationChoices,spacecraftDesign,vehicle,game.engineBuildCounts,missionTechnologyDiscount,
-    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts]);
+    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses]);
   const selectedCampaignReview=useMemo(()=>{
     try{return reviewCampaignMission({
       definition:campaignSelection.selected,day:game.day,options:campaignOptions,
@@ -666,10 +667,11 @@ export default function App() {
       launchService:game.rocketService,rocketProgramLevel:game.rocketProgramLevel,
       orbitalAssemblyUnlocked:game.orbitalAssemblyUnlocked,
       priorServiceFlights:game.rocketFlightCounts[game.rocketService]??0,
+      canadianSuccesses:game.canadianMissionSuccesses,
     });}catch{return null}
   },[campaignSelection.selected,game.day,campaignOptions,spacecraftDesign,vehicle,
     game.cash,game.engineBuildCounts,missionTechnologyDiscount,lastSolvedTransfer,
-    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts]);
+    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses]);
   function startEarthObservation(costUsd:number){
     setSnapshot(previous=>{
       const g=previous.game;
@@ -678,6 +680,7 @@ export default function App() {
       ...g,
       cash:g.cash-costUsd,
       launched:g.launched+1,
+      observationLaunchService:g.rocketService,
       rocketFlightCounts:{...g.rocketFlightCounts,
         [g.rocketService]:(g.rocketFlightCounts[g.rocketService]??0)+1},
       engineBuildCounts:{...previous.game.engineBuildCounts,
@@ -704,7 +707,11 @@ export default function App() {
         ...previous.game,
         ...advanceProgramDay(previous.game,7),
         cash:advanceProgramDay(previous.game,7).cash+payoutUsd,
-        researchPoints:advanceProgramDay(previous.game,7).researchPoints+(success?7:2),
+        researchPoints:advanceProgramDay(previous.game,7).researchPoints+(success?7:2)+
+          (success&&previous.game.observationLaunchService==='custom'?CANADIAN_RESEARCH_BONUS_RP:0),
+        canadianMissionSuccesses:previous.game.canadianMissionSuccesses+
+          (success&&previous.game.observationLaunchService==='custom'?1:0),
+        observationLaunchService:null,
         day:previous.game.day+7,
         completed:previous.game.completed+Number(success),
         deliveredKg:previous.game.deliveredKg+wetMassKg,
@@ -749,7 +756,7 @@ export default function App() {
                   setActiveView(id);
                 }}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.5</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.6</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
       </header>
 
@@ -818,6 +825,7 @@ export default function App() {
             orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
             priorServiceFlights={game.rocketFlightCounts[game.rocketService]??0}
             otherMissionActive={!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject)}
+            canadianSuccesses={game.canadianMissionSuccesses}
             onEditSpacecraft={()=>{setLabObservationChoices(readObservationChoices());setActiveView('systems')}}
             onEditLauncher={()=>setActiveView('rockets')}
             onStart={startEarthObservation}
@@ -833,6 +841,7 @@ export default function App() {
             rocketProgramLevel={game.rocketProgramLevel}
             orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
             priorServiceFlights={game.rocketFlightCounts[game.rocketService]??0}
+            canadianSuccesses={game.canadianMissionSuccesses}
             logisticsInProgress={!!game.activeMoonCargoRun}
             nowMs={flightNowMs} viewerOpen={flightViewerOpen}
             onViewerOpenChange={setFlightViewerOpen}
@@ -942,12 +951,14 @@ export default function App() {
         </div>}
         {activeView==='rockets'&&<RocketFleet vehicle={vehicle} cash={game.cash}
           service={game.rocketService} tier={game.rocketProgramLevel}
+          day={game.day} devMode={game.devMode}
+          canadianSuccesses={game.canadianMissionSuccesses} researched={game.researchUnlocked}
           assemblyUnlocked={game.orbitalAssemblyUnlocked}
           priorFlights={game.rocketFlightCounts}
-          onUpdateVehicle={updateVehicle}
           onServiceChange={id=>setSnapshot(previous=>({...previous,game:{...previous.game,rocketService:id}}))}
           onFleetUpgrade={buyFleetUpgrade}
-          onUnlockAssembly={buyOrbitalAssembly}/>}
+          onUnlockAssembly={buyOrbitalAssembly}
+          onGoResearch={()=>setActiveView('research')}/>}
         {activeView==='moon'&&<MoonBase cash={game.cash} level={game.moonBaseLevel}
           unlocked={game.storyCompleted.includes('lunar')||game.devMode} devMode={game.devMode}
           cargoDeliveredLevel={game.moonCargoDeliveredLevel}
@@ -955,6 +966,7 @@ export default function App() {
           rocketService={game.rocketService} rocketTier={game.rocketProgramLevel}
           orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
           rocketFlights={game.rocketFlightCounts} vehicle={vehicle}
+          canadianSuccesses={game.canadianMissionSuccesses}
           otherFlightActive={!!(game.activeStoryRun||game.activeAssemblyProject)}
           onDispatchCargo={startMoonCargo} onCompleteCargo={finishMoonCargo}
           onOpenRocketFleet={()=>setActiveView('rockets')}
