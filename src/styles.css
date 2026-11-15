@@ -738,7 +738,7 @@
 .moon-next-investment{border-top:1px solid #49667a;padding-top:16px}
 .moon-next-investment h4{font:800 18px 'Space Grotesk',sans-serif;margin:8px 0;color:#f4e4b9}
 .moon-next-investment p{color:#aec9da;font-size:11px;line-height:1.65}
-.moon-next-investment>div:not(.eyebrow){display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #364f62;padding:11px 0;color:#afc7d5;font-size:11px}
+.moon-next-investment>div:not(.eyebrow):not(.moon-cargo-steps):not(.moon-cargo-manifest){display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #364f62;padding:11px 0;color:#afc7d5;font-size:11px}
 .moon-next-investment strong{color:#f2d19c}
 .moon-next-investment .launch-button{font-size:12px;text-align:left;line-height:1.5}
 .moon-base-complete{font-size:12px;color:#a9dfc0;line-height:1.8}
@@ -1120,3 +1120,14 @@
 @media(max-width:520px){.orbital-business-stats,.orbital-business-selector{grid-template-columns:1fr}
  .orbital-business-invest .moon-base-numbers,.spacecraft-library-metrics{grid-template-columns:1fr}
  .flight-window-summary,.flight-window-selected{grid-template-columns:1fr 1fr}}
+
+/* Moon Base: keep the cargo ledger inside the investment card at all widths. */
+.moon-base-body > *, .moon-base-economy, .moon-next-investment {min-width:0}
+.moon-next-investment > .moon-cargo-manifest {display:block;min-width:0;max-width:100%;overflow-wrap:anywhere}
+.moon-next-investment > .moon-cargo-steps {display:grid;min-width:0}
+.moon-cargo-manifest > div:not(.eyebrow) {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);align-items:start;gap:10px;min-width:0}
+.moon-cargo-manifest > div:not(.eyebrow) > span {min-width:0;overflow-wrap:anywhere;line-height:1.55}
+.moon-cargo-manifest > div:not(.eyebrow) > strong {min-width:0;max-width:100%;overflow-wrap:anywhere;line-height:1.55;text-align:right}
+.moon-cargo-manifest .eyebrow {overflow-wrap:anywhere;line-height:1.5}
+.moon-cargo-manifest button {max-width:100%;overflow-wrap:anywhere;justify-content:center;text-align:center}
+@media (max-width:480px) {.moon-cargo-manifest > div:not(.eyebrow) {grid-template-columns:minmax(0,1fr)}.moon-cargo-manifest > div:not(.eyebrow) > strong {text-align:left}}
