@@ -6,12 +6,12 @@
  * See source URLs for original NASA descriptions and usage guidelines.
  */
 export type HeritageMission = {
-  id: 'dawn' | 'psyche' | 'new-horizons' | 'voyager';
+  id: 'dawn' | 'psyche' | 'new-horizons' | 'voyager' | 'prometheus';
   name: string;
   archetype: string;
   status: string;
   destinations: string;
-  missionMode: 'orbiter' | 'flyby';
+  missionMode: 'orbiter' | 'flyby' | 'concept';
   propulsion: string;
   primaryPower: string;
   wetMassKg: number | null;
@@ -32,6 +32,27 @@ export type HeritageMission = {
 };
 
 export const HERITAGE_MISSIONS: readonly HeritageMission[] = [
+  {
+    id: 'prometheus',
+    name: 'Project Prometheus / JIMO',
+    archetype: 'Nuclear electric propulsion · cancelled research',
+    status: 'NASA research concept (2003–2005) · CANCELLED · no spacecraft flown',
+    destinations: 'Proposed Jupiter Icy Moons Orbiter: Callisto, Ganymede, Europa',
+    missionMode: 'concept',
+    propulsion: 'Proposed high-power xenon ion/electric propulsion; hardware was not flight qualified as a complete system',
+    primaryPower: 'Studied reactor + Brayton power conversion, ~200 kWe class studies; not operational spacecraft hardware',
+    wetMassKg: null,
+    dryMassKg: null,
+    propellantKg: null,
+    electricOutput: 'Concept studies at ~100–200 kWe class; no flown measured output',
+    payload: 'Proposed icy-moon science and remote sensing, not a finalized flown instrument manifest',
+    highlights: 'Established by NASA in 2003 to study reactor-powered electric propulsion for outer-planet missions. Jupiter Icy Moons Orbiter was cancelled in 2005 before a spacecraft was built or launched. Distinguish research ambition from flight-proven capability.',
+    dimensions: 'Not a completed flight design; do not infer a qualified envelope',
+    missionUrl: 'https://ntrs.nasa.gov/api/citations/20210016968/downloads/TM-20210016968_final.pdf',
+    spacecraftUrl: 'https://www.gao.gov/products/gao-05-242',
+    credit: 'NASA technical memorandum 2021; U.S. Government Accountability Office historical review',
+  },
+
   {
     id: 'dawn',
     name: 'Dawn',
