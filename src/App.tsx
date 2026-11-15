@@ -660,9 +660,10 @@ export default function App() {
       orbitalAssemblyUnlocked:game.orbitalAssemblyUnlocked,
       priorServiceFlights:game.rocketFlightCounts[game.rocketService]??0,
       canadianSuccesses:game.canadianMissionSuccesses,
+      weatherReserveHours:nasaWeather.reserveHours,
     });}catch{return null}
   },[labObservationChoices,spacecraftDesign,vehicle,game.engineBuildCounts,missionTechnologyDiscount,
-    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses]);
+    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses,nasaWeather.reserveHours]);
   const selectedCampaignReview=useMemo(()=>{
     try{return reviewCampaignMission({
       definition:campaignSelection.selected,day:game.day,options:campaignOptions,
@@ -834,6 +835,7 @@ export default function App() {
             priorServiceFlights={game.rocketFlightCounts[game.rocketService]??0}
             otherMissionActive={!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject)}
             canadianSuccesses={game.canadianMissionSuccesses}
+            weatherReserveHours={nasaWeather.reserveHours}
             onEditSpacecraft={()=>{setLabObservationChoices(readObservationChoices());setActiveView('systems')}}
             onEditLauncher={()=>setActiveView('rockets')}
             onStart={startEarthObservation}
