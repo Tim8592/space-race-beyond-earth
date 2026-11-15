@@ -1,5 +1,5 @@
-/** Real-time pacing for the open browser session: 7 game days per real minute. */
-export const GAME_DAYS_PER_REAL_MINUTE = 7;
+/** Real-time pacing for the open browser session: 1 game day per 2 real minutes. */
+export const GAME_DAYS_PER_REAL_MINUTE = 0.5;
 export const GAME_DAY_DURATION_MS = 60_000 / GAME_DAYS_PER_REAL_MINUTE;
 export const GAME_EPOCH_MS = Date.UTC(2026, 10, 14, 12);
 const DAY_MS = 86_400_000;
