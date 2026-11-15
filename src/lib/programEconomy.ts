@@ -37,7 +37,7 @@ export function dailyEconomics(researchUnlocked:readonly TechnologyId[],moonBase
 }
 export function advanceProgramDay<T extends {
   day:number;cash:number;researchPoints:number;researchUnlocked:TechnologyId[];
-  moonBaseLevel:number;activeStoryRun:unknown;activeMoonCargoRun?:unknown;
+  moonBaseLevel:number;activeStoryRun:unknown;activeMoonCargoRun?:unknown;activeAssemblyProject?:unknown;
   operatingSpentUsd:number;passiveRevenueUsd:number;
 }>(game:T,days:number):T{
   if(!Number.isInteger(days)||days<0||days>10000)
