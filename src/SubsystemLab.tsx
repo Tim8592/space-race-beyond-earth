@@ -9,6 +9,7 @@ import {
 } from './lib/spacecraftTechnology';
 import { POWER_SYSTEMS, type PowerSourceId } from './lib/powerSources';
 import { SCIENCE_INSTRUMENTS, type InstrumentSelection } from './lib/instrumentCatalog';
+import {ORBITAL_SERVICE_MODULES,type OrbitalServiceModuleId} from './lib/orbitalServiceModules';
 import type { ThrusterId } from './lib/subsystemDesign';
 import {hasTechnology,THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,
   type TechnologyId} from './lib/technologyTree';
@@ -455,6 +456,34 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
           <NumberField label="Additional instruments / cargo mass" unit="kg · excludes selected sensor" value={design.payloadMassKg}
             min={0} max={1000} step={5} onChange={n=>change('payloadMassKg',n)}/>
         </div>
+        <div className="sys-orbital-service">
+          <div className="eyebrow">ORBITAL SERVICE PAYLOAD / COMPUTE & CANADIAN NETWORK</div>
+          <h4>Commercial orbital module</h4>
+          <p>Unlike a mission title, an installed module changes the actual spacecraft
+            wet mass, generator demand, eclipse battery, radiator load, and hardware invoice.
+            The orbital business can only commission satellites if the chosen module,
+            electrical reserves and thermal capacity satisfy its deployment review.</p>
+          <label className="sys-field sys-wide">
+            <span>On-orbit compute / communications service payload</span>
+            <select aria-label="On-orbit service payload" value={design.orbitalServiceModuleId}
+              onChange={e=>change('orbitalServiceModuleId',e.currentTarget.value as OrbitalServiceModuleId)}>
+              {Object.values(ORBITAL_SERVICE_MODULES).map(module=><option key={module.id}
+                value={module.id}>{module.name} · {module.massKg} kg ·
+                  {module.activePowerW} W</option>)}
+            </select>
+          </label>
+          {design.orbitalServiceModuleId!=='none'&&<div className="sys-auto-ledger">
+            <div><span>Installed service module mass</span><strong>{fmt(result?.orbitalServiceMassKg??0,'kg')}</strong></div>
+            <div><span>Active electric power (fed from bus)</span><strong>{fmt(result?.orbitalServicePowerW??0,'W',0)}</strong></div>
+            <div><span>Modeled service electronics waste heat</span><strong>{fmt(result?.orbitalServiceHeatW??0,'W',0)}</strong></div>
+            <div><span>Heat rejection margin after installed module</span><strong>{fmt(result?.thermalMarginW??0,'W',0)}</strong></div>
+            <div><span>Battery mass after increased bus load</span><strong>{fmt(result?.batteryMassKg??0,'kg',2)}</strong></div>
+            <p><a href={ORBITAL_SERVICE_MODULES[design.orbitalServiceModuleId].sourceUrl}
+              target="_blank" rel="noreferrer">Vendor technology inspiration ↗</a>.
+              Operating figures are modeled game assumptions, not actual Galaxia/Kepler
+              hardware specifications.</p>
+          </div>}
+        </div>
         {selectedInstrument?<div className="sys-sensor-card">
           <div><span className="sys-chip">{selectedInstrument.category==='earth'?'EARTH OBSERVATION':'DEEP-SPACE SCIENCE'}</span><h4>{selectedInstrument.name}</h4>
             <p>{selectedInstrument.description}</p>
@@ -510,6 +539,7 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
           <div><span>Wing controls · {design.solarWingCount} wings</span><strong>{fmt(result.wingControlPowerW,'W',1)}</strong></div>
           <div><span>Radiator sensors · {design.radiatorPanelCount} panels</span><strong>{fmt(result.radiatorControlPowerW,'W',1)}</strong></div>
           <div><span>Installed science instrument</span><strong>{fmt(result.instrumentPowerW,'W',1)}</strong></div>
+          <div><span>Orbital commercial service module</span><strong>{fmt(result.orbitalServicePowerW,'W',1)}</strong></div>
           <div><span>Distribution / wiring losses</span><strong>{fmt(result.harnessLossW,'W',1)}</strong></div>
           <div><span>Worst active propulsion mode incl. PPU</span><strong>{fmt(result.propulsionPeakPowerW,'W',1)}</strong></div>
           <div className="total"><span>Total peak spacecraft power</span><strong>{fmt(result.totalElectricalDemandW,'W',1)}</strong></div>
