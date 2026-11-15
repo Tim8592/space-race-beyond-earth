@@ -194,7 +194,7 @@ export default function CampaignMissions({
         <span className="campaign-stage-count">0{m.stage}</span>
         <div><small>{completed.includes(m.id)?'✓ COMPLETED':
           stage<m.stage?'LOCKED · COMPLETE PREVIOUS MISSION':devMode?'DEV ACCESS ENABLED':'AVAILABLE'}</small>
-          <strong>{m.title}</strong><span>{m.location}</span></div>
+          <strong>{m.title}</strong>{stage>=m.stage&&<span>{m.location}</span>}</div>
       </button>)}
     </div>
     <div className="campaign-special-container">
