@@ -40,7 +40,8 @@ test('Spacecraft builder tabs, design fields and analysis remain interactive',as
     await page.getByRole('tab',{name:'Thermal',exact:true}).click();
     await expect(page.locator('label.sys-field').filter({hasText:'Number of radiator panels'})).toBeVisible();
     await page.getByRole('tab',{name:'Tanks'}).click();
-    await expect(page.getByText('Propellant storage class:')).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Propellant storage architecture'})).toBeVisible();
+    await expect(page.getByText('Membrane Tmin').first()).toBeVisible();
     await page.getByRole('tab',{name:'Engineering Analysis'}).click();
     await expect(page.getByRole('heading',{name:'Coupled engineering analysis'})).toBeVisible();
     await expect(page.getByText('Combined power margin')).toBeVisible();
@@ -72,7 +73,7 @@ test('Learning tab and Mission Library survive real navigation',async({page})=>{
     await page.getByRole('tab',{name:'Electrical power'}).click();
     await expect(page.getByRole('heading',{name:/How much power can sunlight provide/})).toBeVisible();
     await page.getByRole('tab',{name:'Mission Library'}).click();
-    await expect(page.getByRole('heading',{name:'Build on what has flown.'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Learn from flown missions and unfinished ambitions.'})).toBeVisible();
     await page.getByRole('button',{name:/New Horizons/}).click();
     await expect(page.getByRole('heading',{name:'New Horizons'})).toBeVisible();
     await expect(page.getByRole('heading',{name:'Historical spacecraft trajectory'})).toBeVisible();
@@ -157,5 +158,45 @@ test('Earth observation thermal and downlink limits change the forecast, not jus
     await page.getByRole('combobox',{name:'Communications / antenna'}).selectOption('sband');
     await page.getByRole('slider',{name:'Additional radiator area'}).fill('0');
     await expect(page.getByText(/Insufficient modeled radiator heat rejection/)).toBeVisible();
+  });
+});
+
+test('Science instrument selection automatically changes mass, electrical load and catalog details',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    const mass=page.locator('.sys-live-strip').getByText('MODELED WET MASS').locator('..').locator('strong');
+    const before=await mass.textContent();
+    await page.getByRole('tab',{name:'Science payload'}).click();
+    await page.getByRole('combobox',{name:/Installed science sensor/}).selectOption('hyperspectral');
+    await expect(page.getByRole('heading',{name:'Hyperspectral mapper'})).toBeVisible();
+    await expect(mass).not.toHaveText(before??'');
+    await page.getByRole('tab',{name:'Power',exact:true}).click();
+    await expect(page.getByText('AUTO-CALCULATED POWER LEDGER')).toBeVisible();
+    await expect(page.getByText('Installed science instrument')).toBeVisible();
+    await page.getByRole('tab',{name:'Thermal'}).click();
+    await expect(page.locator('label.sys-field').filter({hasText:'Installed radiator area'})).toBeVisible();
+  });
+});
+
+test('Secondary propulsion gets a second tank with its own propellant class',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    await page.getByRole('combobox',{name:/Optional second propulsion system/}).selectOption('mono-reference');
+    await expect(page.getByText(/Secondary · Illustrative/)).toBeVisible();
+    await page.getByRole('tab',{name:'Tanks'}).click();
+    await expect(page.locator('.sys-tank-card')).toHaveCount(2);
+    await expect(page.getByText(/Hydrazine · regulated monopropellant tank/)).toBeVisible();
+  });
+});
+
+test('Prometheus library entry makes it clear no vehicle flew',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Mission Library'}).click();
+    await page.getByRole('button',{name:/Project Prometheus/}).click();
+    await expect(page.getByText('No flight trajectory exists')).toBeVisible();
+    await expect(page.getByText(/CANCELLED/).first()).toBeVisible();
   });
 });

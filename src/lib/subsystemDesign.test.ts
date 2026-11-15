@@ -129,6 +129,16 @@ describe('coupled in-space spacecraft engineering', () => {
     expect(camera.totalAvailablePowerW).toBeCloseTo(plain.totalAvailablePowerW);
   });
 
+  it('installed radiator geometry can be undersized without changing required area', () => {
+    const small=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,installedRadiatorAreaM2:.1});
+    const large=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,installedRadiatorAreaM2:3});
+    expect(small.radiatorAreaM2).toBeCloseTo(large.radiatorAreaM2!);
+    expect(large.radiatorCapacityW).toBeGreaterThan(small.radiatorCapacityW);
+    expect(large.radiatorMassKg).toBeGreaterThan(small.radiatorMassKg!);
+    expect(small.thermalMarginW).toBeLessThan(0);
+    expect(large.thermalMarginW).toBeGreaterThan(0);
+  });
+
   it('rejects nonphysical values rather than reporting plausible mass estimates', () => {
     expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, radiatorTemperatureK: -10 })).toThrow(RangeError);
     expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, propellantMassKg: 0 })).toThrow(RangeError);
