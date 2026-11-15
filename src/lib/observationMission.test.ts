@@ -19,6 +19,16 @@ describe('Earth Observation One integrated physical and gameplay constraints',()
     expect(result.successful).toBe(true);
     expect(result.preview.capacities).toHaveLength(6);
   });
+  it('recent NASA DONKI event requires extra battery autonomy in the guided satellite forecast',()=>{
+    const baseline=observationPreview(mission());
+    const observed=observationPreview(mission({weatherReserveHours:2}));
+    expect(observed.eclipseRequiredWh).toBeGreaterThan(baseline.eclipseRequiredWh);
+    expect(observed.effectEclipse).toBeLessThanOrEqual(baseline.effectEclipse);
+    expect(observed.capacities.find(c=>c.name==='Eclipse energy')?.context)
+      .toContain('NASA DONKI');
+    expect(observed.missionCostUsd).toBe(baseline.missionCostUsd);
+    expect(observed.massKg).toBe(baseline.massKg);
+  });
   it('selected science instrument replaces generic payload slot, without double-counting',()=>{
     const a=observationPreview(mission());
     const b=observationPreview(mission({
