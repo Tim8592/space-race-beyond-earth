@@ -956,3 +956,14 @@
 .nasa-asteroid-scenario small{font-size:9px;color:#a7cde0;letter-spacing:.6px}
 .nasa-asteroid-scenario strong{font:800 16px 'Space Grotesk',sans-serif;color:#f7d8a5}
 .nasa-asteroid-scenario span{font-size:10px;line-height:1.5;color:#c3d8e7}
+
+
+/* Preserve discoverable navigation as research and NASA tabs are added. */
+.topbar-inner{gap:16px}
+.topbar .game-tabs{flex:1 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;
+  overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#476783 #14273a}
+.topbar .game-tabs button{flex:0 0 auto;font-size:11px;padding:10px 9px}
+@media(max-width:980px){
+  .topbar-inner{flex-wrap:wrap}
+  .topbar .game-tabs{display:flex;order:3;flex:1 0 100%;max-width:100%;padding-bottom:4px}
+}
