@@ -622,7 +622,7 @@ test('Actual compute node needs module/power/radiator/rocket, and only earns dai
     await page.getByRole('tab',{name:'Engineering Lab'}).click();
     await page.getByRole('tab',{name:'Science payload'}).click();
     await page.getByRole('combobox',{name:'On-orbit service payload'}).selectOption('compute');
-    await page.getByRole('tab',{name:'Electrical power'}).click();
+    await page.getByRole('tab',{name:'Power'}).click();
     await page.locator('label.sys-field').filter({hasText:'Active solar cell area'})
       .locator('input').fill('17');
     await page.getByRole('tab',{name:'Thermal'}).click();
