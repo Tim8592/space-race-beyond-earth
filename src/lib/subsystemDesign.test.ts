@@ -35,9 +35,10 @@ describe('coupled in-space spacecraft engineering', () => {
     expect(chemical.isElectric).toBe(false);
     expect(chemical.tankInternalVolumeL).toBeGreaterThan(0);
     expect(chemical.tankShellMassKg).toBeGreaterThan(0);
-    expect(higherPressure.tankWallMm).toBeCloseTo(chemical.tankWallMm! * 2, 6);
-    expect(higherPressure.tankShellMassKg).toBeCloseTo(chemical.tankShellMassKg! * 2, 6);
-    expect(higherPressure.modeledWetMassKg).toBeGreaterThan(chemical.modeledWetMassKg);
+    expect(higherPressure.primaryMode.feedTank.membraneTminMm)
+      .toBeGreaterThan(chemical.primaryMode.feedTank.membraneTminMm!);
+    expect(higherPressure.tankWallMm).toBeGreaterThanOrEqual(chemical.tankWallMm!);
+    expect(higherPressure.modeledWetMassKg).toBeGreaterThanOrEqual(chemical.modeledWetMassKg);
     expect(chemical.modeledWetMassKg - chemical.modeledDryMassKg).toBeCloseTo(base.propellantMassKg);
   });
 
@@ -48,13 +49,17 @@ describe('coupled in-space spacecraft engineering', () => {
     expect(bellows.modeledDryMassKg).toBeGreaterThan(capillary.modeledDryMassKg);
   });
 
-  it('does not incorrectly reuse liquid tank sizing for compressed xenon or iodine', () => {
-    for (const thrusterId of ['busek-bht100', 'busek-bit3'] as const) {
-      const results = sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, thrusterId });
-      expect(results.tankShellMassKg).toBeNull();
-      expect(results.massEstimateIncomplete).toBe(true);
-      expect(results.warnings.some(w => /unmodeled|omitted/i.test(w))).toBe(true);
-    }
+  it('uses different tank architectures for xenon gas and solid iodine', () => {
+    const xenon=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,thrusterId:'busek-bht100'});
+    const iodine=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,thrusterId:'busek-bit3'});
+    expect(xenon.primaryMode.feedTank.kind).toBe('xenon');
+    expect(xenon.tankShellMassKg).toBeGreaterThan(0);
+    expect(xenon.primaryMode.feedTank.designPressureBar).toBe(180);
+    expect(iodine.primaryMode.feedTank.kind).toBe('iodine');
+    expect(iodine.tankWallMm).toBeNull();
+    expect(iodine.primaryMode.feedTank.designPressureBar).toBeNull();
+    expect(xenon.massEstimateIncomplete).toBe(true);
+    expect(iodine.massEstimateIncomplete).toBe(true);
   });
 
   it('lets multiple RTGs supply electric thrusters far from the Sun, at a substantial mass cost', () => {
@@ -90,12 +95,38 @@ describe('coupled in-space spacecraft engineering', () => {
     expect(four.modeledDryMassKg).toBeGreaterThan(one.modeledDryMassKg);
   });
 
-  it('wing and radiator counts change display and mount mass, not total area or generation', () => {
-    const base = sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN, solarWingCount:2, radiatorPanelCount:2});
-    const many = sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN, solarWingCount:8, radiatorPanelCount:6});
+  it('more wings keep fixed cell area/power but increase controls and mounting mass', () => {
+    const base=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,solarWingCount:2,radiatorPanelCount:2});
+    const many=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,solarWingCount:8,radiatorPanelCount:6});
     expect(many.sunlightPowerW).toBeCloseTo(base.sunlightPowerW);
-    expect(many.radiatorAreaM2).toBeCloseTo(base.radiatorAreaM2!);
+    expect(many.wingControlPowerW).toBeGreaterThan(base.wingControlPowerW);
+    expect(many.radiatorControlPowerW).toBeGreaterThan(base.radiatorControlPowerW);
+    expect(many.radiatorAreaM2!).toBeGreaterThan(base.radiatorAreaM2!);
+    expect(many.arrayMassKg).toBeGreaterThan(base.arrayMassKg);
     expect(many.modeledDryMassKg).toBeGreaterThan(base.modeledDryMassKg);
+  });
+
+  it('dual propulsion carries two independent propellant stores and models sequential burns', () => {
+    const single=sizeSubsystemDesign(DEFAULT_SUBSYSTEM_DESIGN);
+    const dual=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,
+      secondaryThrusterId:'mono-reference',secondaryThrusterCount:2,secondaryPropellantMassKg:3});
+    expect(dual.tankReports).toHaveLength(2);
+    expect(dual.secondaryMode?.kind).toBe('hydrazine');
+    expect(dual.totalPropellantKg).toBe(8);
+    expect(dual.modeledWetMassKg).toBeGreaterThan(single.modeledWetMassKg);
+    expect(dual.idealDeltaVms).toBeGreaterThan(single.idealDeltaVms);
+    expect(dual.propulsionPeakPowerW).toBeGreaterThan(0);
+  });
+
+  it('science instrument power and hardware automatically change housekeeping and thermal sizing', () => {
+    const plain=sizeSubsystemDesign(DEFAULT_SUBSYSTEM_DESIGN);
+    const camera=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,payloadInstrumentId:'hyperspectral'});
+    expect(camera.instrumentMassKg).toBe(70);
+    expect(camera.instrumentPowerW).toBe(240);
+    expect(camera.housekeepingPowerW).toBeGreaterThan(plain.housekeepingPowerW);
+    expect(camera.thermalLoadW).toBeGreaterThan(plain.thermalLoadW);
+    expect(camera.modeledWetMassKg).toBeGreaterThan(plain.modeledWetMassKg);
+    expect(camera.totalAvailablePowerW).toBeCloseTo(plain.totalAvailablePowerW);
   });
 
   it('rejects nonphysical values rather than reporting plausible mass estimates', () => {
