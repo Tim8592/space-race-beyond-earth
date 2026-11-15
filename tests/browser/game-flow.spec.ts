@@ -51,6 +51,32 @@ test('Spacecraft builder tabs, design fields and analysis remain interactive',as
   });
 });
 
+test('Propulsion lab shows power-limited mass flow and structural auto-fit for 16 unique nozzles',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    await page.getByRole('tab',{name:'Propulsion'}).click();
+    await expect(page.getByText('Where the Δv comes from')).toBeVisible();
+    await expect(page.locator('.sys-burn-stats')).toContainText('Ideal all-fuel Δv');
+    await expect(page.locator('.sys-burn-stats')).toContainText('Consumed propellant');
+    await page.locator('label.sys-field').filter({hasText:'Number of thrusters'}).locator('input').fill('8');
+    await page.locator('label.sys-field').filter({hasText:'Optional second propulsion system'})
+      .locator('select').selectOption('mono-reference');
+    await page.locator('label.sys-field').filter({hasText:'Secondary thruster count'}).locator('input').fill('8');
+    await expect(page.locator('.sys-engine-packing')).toContainText('Engine mounting structure too small');
+    const former=await page.locator('.sys-live-strip').innerText();
+    await page.getByRole('button',{name:/Auto-fit installed thrusters/}).click();
+    await expect(page.locator('.sys-engine-packing')).toContainText('Engine mounts fit structure');
+    await expect(page.locator('.sys-live-strip')).not.toHaveText(former);
+    await expect(page.locator('.sys-burn-modes')).toContainText('engines powered');
+    await expect(page.locator('.sys-fuel-table tbody tr')).toHaveCount(6);
+    await page.locator('label.sys-field').filter({hasText:'Propulsion evaluation window'}).locator('input').fill('1');
+    await expect(page.locator('.sys-burn-stats')).toContainText('Within 1 days');
+  });
+});
+
 test('Orbital map and transfer planning have a graceful offline state',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
