@@ -895,3 +895,59 @@
 @media(max-width:1050px){.tech-atlas-layout{grid-template-columns:1fr}.tech-inspector{position:static}}
 @media(max-width:850px){.rocket-sovereign-choice{grid-template-columns:1fr}}
 @media(max-width:620px){.tech-map-scroll{max-height:540px}.tech-atlas-panel{padding:10px!important}.tech-atlas-layout{gap:10px}.rocket-fleet-grid{grid-template-columns:1fr}}
+
+
+/* v1.7 — NASA observational mission intelligence */
+.nasa-intel-page{display:flex;flex-direction:column;gap:17px;margin-bottom:24px}
+.nasa-intel-intro{background:linear-gradient(130deg,#15374b,#122339)}
+.nasa-intel-intro h2{font:800 clamp(25px,3.7vw,36px) 'Space Grotesk',sans-serif;color:#f5e6cd;margin:10px 0 15px}
+.nasa-intel-intro>p{max-width:940px;color:#b8d1df;font-size:12px;line-height:1.75}
+.nasa-intel-connection{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:17px 0;padding:10px;background:#10283a;border:1px solid #40617c;border-radius:8px}
+.nasa-intel-connection>div{font-size:11px;color:#c9dae4;flex:1}
+.nasa-intel-connection button{flex-shrink:0}
+.nasa-intel-state{font-size:10px;letter-spacing:.6px;font-weight:800;padding:9px;border:1px solid #627286;background:#252d3b;border-radius:5px;color:#eac9a3}
+.nasa-intel-state.synced{color:#b4ebcf;border-color:#3d806e;background:#173d3c}
+.nasa-intel-state.cached{color:#f4d4a3;border-color:#846c48;background:#383337}
+.nasa-intel-error{color:#ffc2a9!important;background:#482f35;border:1px solid #bc806e;padding:12px;border-radius:7px}
+.nasa-intel-warning{color:#edcbab!important;font-size:11px!important;margin:4px 0!important}
+.nasa-intel-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.nasa-intel-summary>.panel{display:flex;flex-direction:column;gap:7px;padding:19px;background:#17334a}
+.nasa-intel-summary small{font-size:10px;font-weight:900;letter-spacing:.7px;color:#b4ccdc}
+.nasa-intel-summary strong{font:850 26px 'Space Grotesk',sans-serif;color:#f7d4a0}
+.nasa-intel-summary span{font-size:11px;color:#a9c9dc;line-height:1.5}
+.nasa-intel-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:15px;align-items:start}
+.nasa-intel-columns h3{font:800 23px 'Space Grotesk',sans-serif;color:#f4dfba;margin:11px 0}
+.nasa-intel-columns .panel>p{font-size:11px;color:#b8cddd;line-height:1.8;margin:10px 0}
+.nasa-intel-operational-note{display:flex;flex-direction:column;gap:8px;background:#143648;border:1px solid #507287;border-radius:8px;padding:14px;margin:15px 0}
+.nasa-intel-operational-note strong{font-size:12px;color:#f4d89d}
+.nasa-intel-operational-note span{font-size:11px;line-height:1.65;color:#d4e1ed}
+.nasa-intel-operational-note small{font-size:10px;line-height:1.6;color:#a9bfd2}
+.nasa-intel-operational-note a{text-decoration:underline;color:#94ceee}
+.nasa-intel-placeholder{border:1px dashed #627687;padding:15px;border-radius:7px;color:#9fb9cc!important}
+.nasa-intel-event-list,.nasa-intel-asteroids{display:grid;gap:9px;max-height:775px;overflow:auto;padding-right:2px}
+.nasa-intel-event,.nasa-asteroid{background:#11273b;border:1px solid #49647b;border-radius:8px;padding:13px;display:flex;flex-direction:column;gap:7px}
+.nasa-intel-event.elevated{border-color:#9b7c4a}
+.nasa-intel-event.high{border-color:#c78a74;background:#322d39}
+.nasa-intel-event>div:first-child{display:flex;justify-content:space-between;align-items:center;gap:7px}
+.nasa-intel-event b{font-size:12px;color:#eed2a5}
+.nasa-intel-event time{font-size:10px;color:#a5c7de}
+.nasa-intel-event p{font-size:11px;line-height:1.65;color:#c0d4e3;margin:1px 0}
+.nasa-intel-event a,.nasa-asteroid-actions>a{font-size:10px;color:#a8d8ff;text-decoration:underline}
+.nasa-asteroid.selected{border-color:#e7bb8c;background:#203a48}
+.nasa-asteroid>div:first-child{display:flex;flex-direction:column;gap:5px}
+.nasa-asteroid>div:first-child strong{font:800 16px 'Space Grotesk',sans-serif;color:#f4e4c9}
+.nasa-asteroid>div:first-child small{color:#b0cfdf;font-size:11px}
+.nasa-asteroid-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.nasa-asteroid-metrics>span{display:flex;flex-direction:column;gap:7px;background:#182f43;padding:9px;border-radius:5px;font-size:9px;color:#9fc1d4}
+.nasa-asteroid-metrics b{color:#f8d59c;font-size:11px;overflow-wrap:anywhere}
+.nasa-hazard-note{color:#ffc9a7;line-height:1.65;font-size:10px}
+.nasa-asteroid-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.nasa-asteroid-actions button{font-size:10px;min-height:37px}
+.nasa-campaign-watch,.nasa-weather-campaign-note{margin:12px 0;border-color:#6485a0;background:#122f43}
+.nasa-campaign-watch h3{font:800 19px 'Space Grotesk',sans-serif;color:#ffdeaf;margin:11px 0}
+.nasa-campaign-watch p,.nasa-weather-campaign-note p{font-size:11px;line-height:1.75;color:#bbd4e2}
+.nasa-campaign-watch .campaign-special-offer{max-width:680px}
+.nasa-weather-campaign-note strong{display:block;font-size:14px;color:#f1cb9a;margin-top:10px}
+@media(max-width:1000px){.nasa-intel-columns{grid-template-columns:1fr}}
+@media(max-width:700px){.nasa-intel-summary{grid-template-columns:1fr}.nasa-intel-connection{align-items:stretch}.nasa-intel-connection button{width:100%}}
+@media(max-width:430px){.nasa-asteroid-metrics{grid-template-columns:1fr}}
