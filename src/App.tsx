@@ -268,7 +268,7 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [activeView,setActiveView] = useState<'missions'|'rockets'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'|'nasa'|'infrastructure'|'crafts'>('missions');
   const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'|'progression'>('observation');
-  const [researchFocus,setResearchFocus]=useState<'All'|'Launch'>('All');
+  const [researchFocus,setResearchFocus]=useState<'All'|'Launch'|'Infrastructure'>('All');
   const [orbitalSelection,setOrbitalSelection]=useState<{
     mode:'earth'|'heliocentric';day:number;target:'mars'|'jupiter';
     perigee:number;eccentricity:number;}|null>(null);
@@ -477,7 +477,8 @@ export default function App() {
         assemblyUnlocked:g.orbitalAssemblyUnlocked,
         priorServiceFlights:g.rocketFlightCounts[g.rocketService]??0,
         canadianSuccesses:g.canadianMissionSuccesses,
-        productionDiscount:researchDiscount(g.researchUnlocked,g.devMode)});
+        productionDiscount:researchDiscount(g.researchUnlocked,g.devMode),
+        researched:g.researchUnlocked,devMode:g.devMode});
       if(!plan?.feasible||g.cash<plan.totalCostUsd)return previous;
       const run:NetworkDeploymentRun={
         id:'orbital-network-'+kind+'-'+plan.stage.level,
@@ -1144,6 +1145,8 @@ export default function App() {
           priorFlights={game.rocketFlightCounts[game.rocketService]??0}
           canadianSuccesses={game.canadianMissionSuccesses}
           productionDiscount={missionTechnologyDiscount}
+          researched={game.researchUnlocked} devMode={game.devMode}
+          onGoToResearch={()=>{setResearchFocus('Infrastructure');setActiveView('research')}}
           otherFlightActive={!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject)}
           onDispatch={dispatchNetwork} onComplete={finishNetwork}
           onGoToLab={()=>setActiveView('systems')}
@@ -1186,7 +1189,7 @@ export default function App() {
         {activeView==='research'&&<ResearchLab key={researchFocus+'-'+game.rocketProgramLevel}
           initialBranch={researchFocus} initialSelectedId={researchFocus==='Launch'?
             (FLEET_UPGRADES[game.rocketProgramLevel]?.requiredResearch??'canadian-heavy-lift'):
-            'production-line'}
+            researchFocus==='Infrastructure'?'orbital-edge-compute':'production-line'}
           cash={game.cash} researchPoints={game.researchPoints}
           unlocked={game.researchUnlocked} devMode={game.devMode}
           onToggleDevMode={toggleDevMode} onResearch={investResearch}/>}
