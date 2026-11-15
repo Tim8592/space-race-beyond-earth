@@ -22,6 +22,9 @@ export type SubsystemDesign = {
   solarWingCount:number;
   radiatorPanelCount:number;
   installedRadiatorAreaM2:number;
+  /** Distinct, hot radiator system on a separation boom for fission heat. */
+  reactorRadiatorAreaM2:number;
+  reactorRadiatorTemperatureK:number;
   solarCellId:string;
   batteryPackId:string;
   coatingId:string;
@@ -59,6 +62,8 @@ export const DEFAULT_SUBSYSTEM_DESIGN:SubsystemDesign={
   solarWingCount:2,
   radiatorPanelCount:2,
   installedRadiatorAreaM2:.45,
+  reactorRadiatorAreaM2:0,
+  reactorRadiatorTemperatureK:650,
   solarCellId:'azur-3g30',
   batteryPackId:'aac-optimus',
   coatingId:'gsfc-silver',
@@ -133,6 +138,11 @@ export type SystemResults={
   radiatorCapacityW:number;
   thermalMarginW:number;
   radiatorMassKg:number|null;
+  reactorRadiatorCapacityW:number;
+  reactorThermalMarginW:number|null;
+  reactorHeatLoadW:number|null;
+  reactorRadiatorRequiredAreaM2:number|null;
+  reactorCoolingMassKg:number;
   absorbedSolarFluxWm2:number;
   radiatorNetFluxWm2:number;
   tankShellMassKg:number|null;
@@ -218,6 +228,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     design.secondaryPropellantMassKg,design.thrusterCount,
     design.secondaryThrusterCount,design.solarWingCount,design.radiatorPanelCount,
     design.installedRadiatorAreaM2,
+    design.reactorRadiatorAreaM2,design.reactorRadiatorTemperatureK,
     design.busDryMassKg,design.payloadMassKg,design.busElectricalPowerW,
     design.eclipseHours,design.powerSourceCount,design.missionYears,
     design.liquidDensityKgM3,design.tankPressureBar,design.xenonStoragePressureBar,
@@ -227,6 +238,8 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
   if(inputNumbers.some(n=>!Number.isFinite(n)) || design.distanceAu<=0 ||
     design.busDryMassKg<=0||design.cellAreaM2<0||
     design.installedRadiatorAreaM2<0||design.installedRadiatorAreaM2>250||
+    design.reactorRadiatorAreaM2<0||design.reactorRadiatorAreaM2>250||
+    design.reactorRadiatorTemperatureK<250||design.reactorRadiatorTemperatureK>1200||
     design.propellantMassKg<=0||
     design.secondaryPropellantMassKg<=0||design.payloadMassKg<0||
     design.busElectricalPowerW<0||design.eclipseHours<0||
@@ -259,7 +272,10 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
   const tankReports=[pt,...(st?[st]:[])];
 
   const wingControlPowerW=design.solarWingCount*WING_CONTROL_W;
-  const radiatorControlPowerW=design.radiatorPanelCount*RADIATOR_SENSOR_W;
+  const fissionActive=POWER_SYSTEMS[design.powerSourceId].class==='fission';
+  const branchActive=fissionActive&&design.reactorRadiatorAreaM2>0;
+  const radiatorControlPowerW=design.radiatorPanelCount*RADIATOR_SENSOR_W+
+    (branchActive?8:0); // illustrative hot radiator pump/control electronics
   const instrumentPowerW=instrument?.powerW??0;
   const baseBusPowerW=design.busElectricalPowerW;
   const electricalBase=baseBusPowerW+wingControlPowerW+radiatorControlPowerW+instrumentPowerW;
@@ -313,6 +329,21 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
   const thermalMarginW=radiatorCapacityW-thermalLoadW;
   const radiatorMassKg=design.installedRadiatorAreaM2*RADIATOR_AREAL_MASS_KGM2;
 
+  // Dedicated, separated high-temperature heat rejection. Reactor heat is not
+  // assigned to the 300 K bus radiator; real heat pipes, fins, transport and
+  // reactor shielding are complex and this remains an illustrative loop.
+  const reactorHeatLoadW=fissionActive?power.generatorWasteHeatW:null;
+  const hotRadiatorFluxWm2=Math.max(0,
+    .85*STEFAN_BOLTZMANN*(design.reactorRadiatorTemperatureK**4-3**4)-
+    .08*solarFluxWm2);
+  const reactorRadiatorCapacityW=fissionActive?hotRadiatorFluxWm2*design.reactorRadiatorAreaM2:0;
+  const reactorRadiatorRequiredAreaM2=reactorHeatLoadW===null||hotRadiatorFluxWm2<=0
+    ?null:reactorHeatLoadW/hotRadiatorFluxWm2;
+  const reactorThermalMarginW=reactorHeatLoadW===null?null:
+    reactorRadiatorCapacityW-reactorHeatLoadW;
+  const reactorCoolingMassKg=branchActive?
+    design.reactorRadiatorAreaM2*7+14:0; // game-specific truss/heat loop/mounting
+
   const arrayMassKg=design.cellAreaM2*ARRAY_AREAL_MASS_KGM2+design.solarWingCount*.5;
   const radiatorMountMassKg=design.radiatorPanelCount*.35;
   function hwMass(v:ReturnType<typeof thruster>,count:number){
@@ -324,7 +355,8 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
   const instrumentMassKg=instrument?.massKg??0;
   const modeledDryMassKg=design.busDryMassKg+design.payloadMassKg+instrumentMassKg+
     arrayMassKg+batteryMassKg+(radiatorMassKg??0)+radiatorMountMassKg+
-    engineHardwareMassKg+totalTankHardwareMassKg+(power.installedGeneratorMassKg??0);
+    engineHardwareMassKg+totalTankHardwareMassKg+(power.installedGeneratorMassKg??0)+
+    reactorCoolingMassKg;
   const totalPropellantKg=design.propellantMassKg+additionalFuel;
   const modeledWetMassKg=modeledDryMassKg+totalPropellantKg;
 
@@ -366,8 +398,14 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     warnings.push('One or more propulsion modes exceed available generator output. Nominal thrust requires a lower-power throttle point or a larger power system.');
   if(design.powerSourceId!=='solar'){
     warnings.push(POWER_SYSTEMS[design.powerSourceId].note);
-    warnings.push('Generator waste heat is reported separately and is NOT automatically assigned to the bus radiator. Dedicated source heat rejection, thermal coupling and mounting are not fully modeled.');
+    warnings.push(fissionActive
+      ? 'Fission reactor heat uses a separate, idealized high-temperature radiator branch. Heat-pipe efficiency, shielding and radiation heat transfer are not validated.'
+      : 'Radioisotope waste heat is reported separately, NOT automatically coupled to the bus radiator.');
   }
+  if(fissionActive&&reactorHeatLoadW===null)
+    warnings.push('Reactor thermal power is UNKNOWN for this research option. Cooling margin cannot be confirmed; do not treat unknown as zero heat.');
+  if(fissionActive&&reactorThermalMarginW!==null&&reactorThermalMarginW<0)
+    warnings.push('Nuclear reactor has '+Math.round(-reactorThermalMarginW).toLocaleString()+' W un-rejected heat at the selected hot radiator temperature: expand the remote radiator branch.');
   if(power.installedGeneratorMassKg===null)warnings.push('Generator hardware mass is unknown and omitted from this preliminary wet/dry roll-up.');
   if(POWER_SYSTEMS[design.powerSourceId].class==='fission')
     warnings.push('Reactor shielding, heat rejection, approval, separation distances and flight readiness are not modeled.');
@@ -386,6 +424,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     {label:'Solar arrays + deployable mounts',massKg:arrayMassKg},
     {label:'Eclipse battery',massKg:batteryMassKg},
     {label:'Thermal panels + mounts',massKg:(radiatorMassKg??0)+radiatorMountMassKg},
+    {label:'Reactor cooling loop + remote panels',massKg:reactorCoolingMassKg},
     {label:'Thruster hardware / PPU allowances',massKg:engineHardwareMassKg},
     {label:'Propellant tanks + feeds',massKg:totalTankHardwareMassKg},
     {label:'Additional power generators',massKg:power.installedGeneratorMassKg??0},
@@ -402,7 +441,8 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     canPowerThruster:primaryMode.canPowerAtRatedPoint&&(!secondaryMode||secondaryMode.canPowerAtRatedPoint),
     batteryMassKg,storedBatteryEnergyWh,thermalLoadW,radiatorAreaM2,
     installedRadiatorAreaM2:design.installedRadiatorAreaM2,radiatorCapacityW,thermalMarginW,
-    radiatorMassKg,
+    radiatorMassKg,reactorRadiatorCapacityW,reactorThermalMarginW,reactorHeatLoadW,
+    reactorRadiatorRequiredAreaM2,reactorCoolingMassKg,
     absorbedSolarFluxWm2,radiatorNetFluxWm2,
     tankShellMassKg:pt.kind==='iodine'?null:pt.shellMassKg,
     tankInternalVolumeL:pt.internalVolumeL,tankRadiusM:pt.radiusM,
