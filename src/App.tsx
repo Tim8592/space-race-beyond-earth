@@ -5,6 +5,8 @@ import OrbitalLab from './OrbitalLab';
 import MissionLibrary from './MissionLibrary';
 import LearningLab from './LearningLab';
 import ResearchLab from './ResearchLab';
+import References from './References';
+import {GAME_DAY_DURATION_MS,todayGameDay} from './lib/campaignClock';
 import CampaignMissions,{type CampaignRun,type CampaignDebrief} from './CampaignMissions';
 import {dateForGameDay,orbitalRoute,type CampaignDefinition,type MissionOptions,type SolvedCampaignTransfer} from './lib/campaignMissions';
 import type {LambertSolution} from './TransferPlanner';
@@ -107,7 +109,7 @@ type Game = {
 
 const DEFAULT_GAME: Game = {
   cash: INITIAL_CASH,
-  day: 1,
+  day: todayGameDay(),
   completed: 0,
   launched: 0,
   deliveredKg: 0,
@@ -193,13 +195,14 @@ export default function App() {
   const missionTechnologyDiscount=researchDiscount(effectiveUnlocks,game.devMode);
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'>('missions');
+  const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'>('missions');
   const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'|'progression'>('observation');
   const [orbitalSelection,setOrbitalSelection]=useState<{
     mode:'earth'|'heliocentric';day:number;target:'mars'|'jupiter';
     perigee:number;eccentricity:number;}|null>(null);
   const [lastSolvedTransfer,setLastSolvedTransfer]=useState<LambertSolution|null>(null);
   const [observationResetKey,setObservationResetKey]=useState(0);
+  const [secondsToNextDay,setSecondsToNextDay]=useState(Math.ceil(GAME_DAY_DURATION_MS/1000));
   const [spacecraftDesign,setSpacecraftDesign]=useState<SubsystemDesign>(readSubsystemDesign);
   const contract = CONTRACTS.find((item) => item.id === missionId) ?? CONTRACTS[0];
   const metrics = useMemo(() => calculateVehicleMetrics(vehicle), [vehicle]);
@@ -216,6 +219,24 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch { /* private browser mode */ }
   }, [snapshot]);
+  // Seven in-game days per real minute while this tab is visible. No offline catch-up.
+  useEffect(()=>{
+    let previous=Date.now(), accumulated=0;
+    const handle=window.setInterval(()=>{
+      const now=Date.now();
+      const delta=Math.max(0,Math.min(now-previous,2000));
+      previous=now;
+      if(document.visibilityState!=='visible')return;
+      accumulated+=delta;
+      const days=Math.floor((accumulated+1e-7)/GAME_DAY_DURATION_MS);
+      if(days>0){
+        accumulated-=days*GAME_DAY_DURATION_MS;
+        setSnapshot(old=>({...old,game:{...old.game,day:old.game.day+days}}));
+      }
+      setSecondsToNextDay(Math.max(1,Math.ceil((GAME_DAY_DURATION_MS-accumulated)/1000)));
+    },500);
+    return ()=>window.clearInterval(handle);
+  },[]);
   useEffect(() => {
     try { localStorage.setItem('space-race-systems-lab-v1',JSON.stringify(spacecraftDesign)); }
     catch { /* optional browser persistence */ }
@@ -400,17 +421,12 @@ export default function App() {
   }
   function reset() {
     if (!window.confirm('Start over? This clears your locally saved campaign and blueprints.')) return;
-    setSnapshot({ game: DEFAULT_GAME, vehicle: INITIAL_VEHICLE, missionId: 'cargo' });
+    setSnapshot({ game: {...DEFAULT_GAME,day:todayGameDay()}, vehicle: INITIAL_VEHICLE, missionId: 'cargo' });
     try {localStorage.removeItem('space-race-observation-one-v1');
       localStorage.removeItem('space-race-mission-workshop-v1')}catch{/* optional storage */}
     setLastSolvedTransfer(null);
     setObservationResetKey(k=>k+1);
     setMessage('Campaign restarted, including the Earth Observation One mission.');
-  }
-  function passWeek() {
-    if(game.activeStoryRun){setMessage('Finish the active flight before advancing the calendar.');return;}
-    setSnapshot((previous) => ({ ...previous, game: { ...previous.game, day: previous.game.day + 7 } }));
-    setMessage('Seven simulated days passed. Limited-time offers may have opened or expired.');
   }
   const orbitSpeed = circularOrbitSpeedKmS(contract.altitudeKm);
   const orbitPeriod = circularOrbitPeriodMinutes(contract.altitudeKm);
@@ -425,17 +441,17 @@ export default function App() {
           <div className="brand"><span className="brand-symbol"><span className="brand-orbit" /></span><div><strong>SPACE RACE</strong><small>BEYOND EARTH</small></div></div>
           <nav aria-label="Primary" className="game-tabs" role="tablist">
               {([
-                ['missions','Play Campaign'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],
+                ['missions','Play Campaign'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>setActiveView(id)}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.0</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.1</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
       </header>
 
       <main className="main-content">
         <section className={'intro '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')}>
           <div><div className="eyebrow"><span className="small-diamond" /> YOUR SPACE PROGRAM STARTS HERE</div><h1>Build the future.<br /><em>Beyond Earth.</em></h1><p>Design capable spacecraft, accept orbital contracts, and turn engineering decisions into a thriving space economy.</p></div>
-          <div className="intro-right"><span>CAMPAIGN / EARTH ERA</span><div className="day-marker">DAY <strong>{game.day.toString().padStart(3, '0')}</strong></div><button className="ghost-button" onClick={passWeek}>Advance 7 days <span>→</span></button></div>
+          <div className="intro-right"><span>CAMPAIGN / EARTH ERA</span><div className="day-marker">DAY <strong>{game.day.toString().padStart(3, '0')}</strong></div><span className="game-clock-caption">{dateForGameDay(game.day)} · next day {secondsToNextDay}s · auto</span></div>
         </section>
 
         <section className={'kpi-grid '+(activeView==='missions'?'':'view-hidden')} aria-label="Campaign overview">
@@ -445,6 +461,10 @@ export default function App() {
           <div className="kpi"><span>TOTAL CONTRACT REVENUE</span><strong>{usd(game.revenue)}</strong><small>From completed missions</small></div>
         </section>
 
+        {activeView==='missions'&&<div className="campaign-live-clock" role="status">
+          <strong>LIVE AGENCY CLOCK</strong> · {dateForGameDay(game.day)}
+          <span>7 game days / minute · next day in {secondsToNextDay}s · pauses when hidden</span>
+        </div>}
         {activeView==='missions'&&<div className="campaign-switch" role="tablist" aria-label="Campaign mission mode">
           <button type="button" role="tab" aria-selected={campaignMode==='observation'}
             className={campaignMode==='observation'?'selected':''}
@@ -477,7 +497,7 @@ export default function App() {
             onStart={startCampaignMission} onFinish={finishCampaignMission}
             onGoToLab={()=>setActiveView('systems')}
             onGoToRocket={()=>{setCampaignMode('contracts');setActiveView('missions')}}
-            onViewOrbital={openMissionOrbit} onAdvance={passWeek}/>}
+            onViewOrbital={openMissionOrbit}/>}
         <div className={'control-layout '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')} id="mission-control">
           <div className="left-column">
             <section className="panel" id="builder">
@@ -554,6 +574,7 @@ export default function App() {
             initialEccentricity={orbitalSelection?.eccentricity??.25}
             onTransferSolved={setLastSolvedTransfer}/>
         </div>}
+        {activeView==='sources' && <div className="single-tab-page"><References/></div>}
         {activeView==='library' && <div className="single-tab-page"><MissionLibrary onOpenMap={()=>setActiveView('orbits')}/></div>}
         {activeView==='learning' && <div className="single-tab-page">
           <LearningLab onOpenBuilder={()=>setActiveView('systems')} onOpenOrbital={()=>setActiveView('orbits')}/>
