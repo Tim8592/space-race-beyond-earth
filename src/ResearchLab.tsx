@@ -89,7 +89,7 @@ export default function ResearchLab({cash,researchPoints,unlocked,devMode,onTogg
     </div>
     <div className="research-node-grid">
       {visible.map(item=><TechCard key={item.id} item={item} unlocked={unlocked}
-        devMode={devMode} cash={cash} onResearch={onResearch}/>)}
+        devMode={devMode} cash={cash} researchPoints={researchPoints} onResearch={onResearch}/>)}
     </div>
     <div className="panel research-missions">
       <div className="eyebrow">CAMPAIGN EVOLUTION / PLANNED STORY ARC</div>
