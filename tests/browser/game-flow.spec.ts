@@ -256,3 +256,62 @@ test('Observation One renders accelerated orbit motion and hardware economics on
     await expect(page.locator('.orbit-live-pill')).toHaveText('MISSION COMPLETE');
   });
 });
+
+test('Earth observation success unlocks the lunar mission and new campaign screen',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.getByRole('heading',{name:'From Earth orbit to the outer planets'})).toBeVisible();
+    await expect(page.getByText(/Complete the preceding campaign missions to unlock Lunar Relay Pathfinder/)).toBeVisible();
+    await page.getByRole('tab',{name:/Earth Observation One · Guided mission/}).click();
+    await page.getByRole('button',{name:/Launch Earth Observation One/}).click();
+    await page.getByRole('button',{name:/Finish seven-day simulation/}).click();
+    await expect(page.getByRole('heading',{name:/Mission successful/})).toBeVisible();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.getByRole('heading',{name:'Lunar Relay Pathfinder'})).toBeVisible();
+    await expect(page.getByText(/WINDOW OPEN/)).toBeVisible();
+    await page.reload();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.getByText('AVAILABLE',{exact:true}).first()).toBeVisible();
+    await page.getByRole('button',{name:/Analyze this orbit in Orbital Map/}).click();
+    await expect(page.getByRole('heading',{name:'Orbital Map & Simulation'})).toBeVisible();
+    await expect(page.getByText(/Apogee/).first()).toBeVisible();
+  });
+});
+
+test('Special elliptical offer responds to eccentricity and expires after in-game days',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.locator('.campaign-special-offer')).toBeVisible();
+    await page.getByRole('button',{name:/Advance 7 days \/ wait for opportunities/}).click();
+    await expect(page.locator('.campaign-special-offer')).toContainText('WINDOW OPEN');
+    await page.locator('.campaign-special-offer').click();
+    await expect(page.locator('.campaign-orbital-inputs')).toBeVisible();
+    const initial=await page.getByText('Elliptical target apogee').locator('..').textContent();
+    await page.getByRole('slider',{name:'Mission eccentricity'}).fill('0.78');
+    await expect(page.getByText('Elliptical target apogee').locator('..')).not.toHaveText(initial??'');
+    await page.getByRole('button',{name:/Advance 7 days \/ wait for opportunities/}).click();
+    await page.getByRole('button',{name:/Advance 7 days \/ wait for opportunities/}).click();
+    await page.getByRole('button',{name:/Advance 7 days \/ wait for opportunities/}).click();
+    await expect(page.locator('.campaign-special-offer')).toContainText('WINDOW EXPIRED');
+  });
+});
+
+test('Dev Mode opens later planetary missions and orbital solver entry points',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await page.locator('.campaign-stage-card').filter({hasText:'Mars Orbiter'}).click();
+    await expect(page.getByRole('heading',{name:'Mars Orbiter'})).toBeVisible();
+    await page.getByRole('button',{name:/Analyze this orbit in Orbital Map/}).click();
+    await expect(page.getByRole('tab',{name:'Planet positions'})).toHaveAttribute('aria-selected','true');
+    await expect(page.getByRole('heading',{name:'Earth → planetary transfer'})).toBeVisible();
+    await page.getByRole('tab',{name:'Optimize minimum Δv'}).click();
+    await expect(page.getByRole('button',{name:/Find lowest Δv/})).toBeVisible();
+  });
+});
