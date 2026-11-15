@@ -1,4 +1,4 @@
-# Space Race v1.2 — live-clock mission demonstration
+# Space Race v1.3 — live-clock mission demonstration
 
 ## First launch and research progression
 
@@ -15,6 +15,15 @@
 11. Open **Research & Roadmap → Developer / Demo Mode** to see all implemented missions without completing prerequisites. Hardware research, launch mass, power and cooling feasibility are still checked.
 12. After a feasible mission launch, click **Complete flight and mission debrief**. The game advances its calendar and pays the reward once; the next story mission unlocks.
 13. **Reset campaign** is destructive and clears normal research, currency and progress. Avoid resetting until after showing your saved mission history.
+
+## New propulsion and structural sizing demonstration (v1.3)
+
+1. Open **Engineering Lab → Propulsion**. Set **Number of thrusters** to 8 and enable a second propulsion type with 8 more thrusters.
+2. Observe **Engine mounting structure too small**, then click **Auto-fit installed thrusters**. The bus visually widens and all 16 nozzles receive distinct non-overlapping mounting positions. Structural wet/dry mass and estimated procurement cost increase.
+3. Compare **Ideal all-fuel Δv** and **Usable Δv in N days**, then change the **Propulsion evaluation window** from 90 days to 10 days. The finite-burn Δv and propellant consumed decrease, although ideal total Δv is unchanged.
+4. Compare powered engine count, **mg/s**, mission burn days, propellant remaining, and the decreasing wet-mass rows. Reduce solar area in **Power** and return to Propulsion to see how nominal electric thruster availability falls; the game does not assume arbitrary constant-Isp throttling at inadequate power.
+5. From **Play Campaign → Explore Further**, select a demanding mission and observe the revised **Transfer energy / onboard Δv** check. Onboard propulsion is now time-limited and power-limited, rather than treating every propulsion family as if it could burn for the whole mission duration.
+6. Explain why removing engines may increase the **ideal** Δv but reduce thrust, duration-limited delivered Δv and real mission readiness. This is a physically meaningful mass/thrust/power trade-off, not a software error.
 
 ## Campaign missions in scope
 
