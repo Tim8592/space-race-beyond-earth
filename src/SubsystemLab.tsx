@@ -283,11 +283,12 @@ export default function SubsystemLab({design,onDesignChange}:{
           </label>
           <NumberField label="IR emissivity (ε)" unit="assumption · 0–1" value={design.infraredEmissivity} min={0.1} max={1} step={0.05} onChange={n=>change('infraredEmissivity',n)}/>
           <NumberField label="Number of radiator panels" unit="cooling panels" value={design.radiatorPanelCount} min={1} max={8} step={1} onChange={n=>change("radiatorPanelCount",n)}/>
+          <NumberField label="Installed radiator area" unit="m² · drives heat rejection and spacecraft mass" value={design.installedRadiatorAreaM2} min={0} max={25} step={0.1} onChange={n=>change('installedRadiatorAreaM2',n)}/>
           <NumberField label="Radiator operating temperature" unit="K · assumption" value={design.radiatorTemperatureK} min={180} max={420} step={5} onChange={n=>change('radiatorTemperatureK',n)}/>
           <NumberField label="Radiator sun incidence factor" unit="assumption · 0–1" value={design.radiatorSunIncidence} min={0} max={1} step={0.05} onChange={n=>change('radiatorSunIncidence',n)}/>
         </div>
         <p className="sys-subnote">
-          Radiator sizing uses Stefan–Boltzmann emission minus direct solar absorption,
+          Required and installed radiator area are separate: the <b>installed</b> panels set the spacecraft mass and thermal capacity. Required area comes from Stefan–Boltzmann emission minus direct solar absorption,
           and assumes a 3 K sink, clear view, and no planetary albedo/IR heating.
           Surface <b>absorptivity</b> is reported; emissivity is a separate adjustable assumption. Radiator panel count divides the required total area across surfaces.
           <a href="https://www.nasa.gov/smallsat-institute/sst-soa/thermal-control/" target="_blank" rel="noreferrer"> NASA thermal survey ↗</a>
@@ -353,7 +354,10 @@ export default function SubsystemLab({design,onDesignChange}:{
             <Result label="Combined power margin" value={fmt(result.totalPowerMarginW,'W',1)} note="Power generation less bus and thruster loads" tone={result.totalPowerMarginW>=0?'good':'bad'}/>
             <Result label="Battery mass" value={fmt(result.batteryMassKg,'kg',2)} note="Bus eclipse load net of continuous generator output"/>
             <Result label="Internal thermal load" value={fmt(result.thermalLoadW,'W',1)} note="Bus and assumed propulsion heat; separate source heat excluded"/>
-            <Result label="Required radiator area" value={fmt(result.radiatorAreaM2,'m²',2)} note="Net radiative heat rejection" tone={result.radiatorAreaM2===null?'bad':undefined}/>
+            <Result label="Radiator installed / required" value={fmt(result.installedRadiatorAreaM2,'m²',2)+' / '+fmt(result.radiatorAreaM2,'m²',2)}
+              note={result.thermalMarginW>=0?'HEAT REJECTION MARGIN':'COOLING DEFICIT'} tone={result.thermalMarginW>=0?'good':'bad'}/>
+            <Result label="Radiator thermal capacity" value={fmt(result.radiatorCapacityW,'W',0)}
+              note="Installed radiative area × net flux, independent of demand"/>
             <Result label={result.massEstimateIncomplete?'Partial modeled dry mass':'Preliminary dry mass'} value={fmt(result.modeledDryMassKg,'kg',2)} note="PV + battery + thermal + propulsion + tank allowances"/>
             <Result label={result.massEstimateIncomplete?'Partial modeled wet mass':'Preliminary wet mass'} value={fmt(result.modeledWetMassKg,'kg',2)} note="Dry mass + propellant inventory"/>
             <Result label="Installed tanks + feed hardware" value={fmt(result.totalTankHardwareMassKg,'kg',2)} note={result.tankReports.length+' tank architecture(s), conceptual mass'}/>

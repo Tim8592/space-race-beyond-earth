@@ -138,7 +138,7 @@ export function ModularSpacecraft({
   selected: PartName;
   onSelect: (part: PartName)=>void;
 }) {
-  const radiatorArea = analysis?.radiatorAreaM2 ?? 0.3;
+  const radiatorArea = analysis?.installedRadiatorAreaM2 ?? design.installedRadiatorAreaM2;
   const tankReports = analysis?.tankReports ?? [];
   const primaryTankScale=Math.max(.18,Math.min(.53,.20+(tankReports[0]?.radiusM??.08)*1.3));
   const secondaryTankScale=Math.max(.18,Math.min(.43,.17+(tankReports[1]?.radiusM??.06)*1.3));

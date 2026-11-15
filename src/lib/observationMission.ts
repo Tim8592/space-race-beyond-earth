@@ -151,7 +151,7 @@ export function observationPreview(config:ObservationConfig):ObservationPreview 
   const powerLoadW=heatBase+instrumentWithHarnessW;
   const thermalLoadW=powerLoadW;
   const thermalCapacityW=Math.max(0,missionResult.radiatorNetFluxWm2)*
-    ((missionResult.radiatorAreaM2??0)+choices.radiatorExtraAreaM2);
+    (missionResult.installedRadiatorAreaM2+choices.radiatorExtraAreaM2);
   const effectPower=Math.min(1,Math.max(0,(powerCapacityW-heatBase)/instrumentWithHarnessW));
   const effectThermal=Math.min(1,Math.max(0,(thermalCapacityW-heatBase)/instrumentWithHarnessW));
   const effectEclipse=eclipseRequiredWh<=0?1:
