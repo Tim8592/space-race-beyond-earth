@@ -999,6 +999,8 @@ export default function App() {
             canadianSuccesses={game.canadianMissionSuccesses}
             nasaNeoOffer={game.neoOpportunity?.mission??null}
             weatherReserveHours={nasaWeather.reserveHours}
+            dailyNetUsd={dailyBudget.netUsd}
+            onGoToBlueprints={()=>setActiveView('crafts')}
             logisticsInProgress={!!(game.activeMoonCargoRun||game.activeNetworkRun)}
             nowMs={flightNowMs} viewerOpen={flightViewerOpen}
             onViewerOpenChange={setFlightViewerOpen}
