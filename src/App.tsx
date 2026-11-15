@@ -290,7 +290,7 @@ export default function App() {
   const ready = payloadOK && deltaVOK && thrustOK;
   const successfulLaunches = game.completed;
   const latest = game.history[0];
-  const dailyBudget=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,!!(game.activeStoryRun||game.activeMoonCargoRun));
+  const dailyBudget=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject));
   const activeFlightProgress=game.activeStoryRun?
     flightProgress(game.activeStoryRun.startedAtMs??flightNowMs,flightNowMs,
       game.activeStoryRun.viewerDurationMs??DEFAULT_FLIGHT_VIEWER_MS):null;
