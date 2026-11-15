@@ -85,7 +85,7 @@ export default function EarthObservationMission({
   launchService?:LauncherId;rocketProgramLevel?:number;
   orbitalAssemblyUnlocked?:boolean;priorServiceFlights?:number;canadianSuccesses?:number;otherMissionActive?:boolean;
   weatherReserveHours?:number;
-  onStart:(costUsd:number)=>void;
+  onStart:(costUsd:number,instrument:ObservationChoices['instrument'])=>void;
   onComplete:(result:{success:boolean;missionCostUsd:number;payoutUsd:number;
     wetMassKg:number;returnedScience:number})=>void;
 }){
@@ -119,7 +119,7 @@ export default function EarthObservationMission({
 
   function start(){
     if(!canStart||!preview)return;
-    onStart(preview.missionCostUsd);
+    onStart(preview.missionCostUsd,choices.instrument);
     setState(p=>({...p,run:{config,day:0,phase:'operations'}}));
   }
   function advance(days:number){
