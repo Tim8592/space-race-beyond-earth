@@ -1,9 +1,10 @@
 import {useEffect,useMemo,useState} from 'react';
 import {earthOrbitAtTime} from './lib/orbitalMechanics';
 import {dateForGameDay,DEFAULT_MISSION_OPTIONS,BOOSTERS,EXTERNAL_MODULES,
-  STORY_MISSIONS,reviewCampaignMission,nextSpecialOffer,specialOfferStatus,
+  STORY_MISSIONS,NASA_CUBESAT_REFERENCE,reviewCampaignMission,nextSpecialOffer,specialOfferStatus,
   unlockedStage,type CampaignDefinition,type MissionOptions,type MissionReview,
   type SolvedCampaignTransfer} from './lib/campaignMissions';
+import {AGENCY_MILESTONES,agencyMissionDefinitions} from './lib/realWorldMissions';
 import type {Vehicle} from './lib/engineering';
 import type {SubsystemDesign} from './lib/subsystemDesign';
 
@@ -109,7 +110,7 @@ function OptionCheck({label,checked,onChange,note}:{label:string;checked:boolean
 export default function CampaignMissions({
   day,cash,completed,devMode,spacecraft,launcher,productionDiscount,
   completedWithLauncherEngine=0,lockedTechnologies=[],run,debrief,
-  solvedTransfer,onStart,onFinish,onGoToLab,onGoToRocket,onViewOrbital,onAdvance,
+  solvedTransfer,onStart,onFinish,onGoToLab,onGoToRocket,onViewOrbital,
 }:{
   day:number;cash:number;completed:readonly string[];devMode:boolean;
   lockedTechnologies?:readonly string[];
@@ -120,7 +121,6 @@ export default function CampaignMissions({
   onStart:(run:CampaignRun)=>void;onFinish:()=>void;
   onGoToLab:()=>void;onGoToRocket:()=>void;
   onViewOrbital:(definition:CampaignDefinition,options:MissionOptions)=>void;
-  onAdvance:()=>void;
 }){
   const stage=unlockedStage(completed,devMode);
   const firstAvailable=STORY_MISSIONS.find(m=>stage>=m.stage&&!completed.includes(m.id))??STORY_MISSIONS[0];
@@ -128,11 +128,12 @@ export default function CampaignMissions({
   const [options,setOptions]=useState<MissionOptions>(readOptions);
   useEffect(()=>{try{localStorage.setItem(OPTIONS_KEY,JSON.stringify(options))}catch{/* private browser */}},[options]);
   const scheduled=nextSpecialOffer(day,stage);
-  const selected=STORY_MISSIONS.find(m=>m.id===selectedId)??(
+  const agencyOffers=useMemo(()=>agencyMissionDefinitions(),[]);
+  const selected=STORY_MISSIONS.find(m=>m.id===selectedId)??agencyOffers.find(m=>m.id===selectedId)??(
     scheduled?.id===selectedId?scheduled:null)??firstAvailable;
-  const stageIsLocked=!selected.special&&stage<selected.stage;
+  const stageIsLocked=stage<selected.stage;
   const completedMission=completed.includes(selected.id);
-  const status=scheduled&&selected.id===scheduled.id?specialOfferStatus(scheduled,day):null;
+  const status=selected.special?specialOfferStatus(selected,day):null;
   const draft=useMemo(()=>{
     try{return {review:reviewCampaignMission({
       definition:selected,day,options,spacecraft,launcher,capitalUsd:cash,
@@ -157,7 +158,7 @@ export default function CampaignMissions({
       route:review.route,deltaVms:review.totalDeltaVms,requiredDeltaVms:review.requiredDeltaVms});
   }
   const activeMission=run?(
-    STORY_MISSIONS.find(m=>m.id===run.id)??(scheduled?.id===run.id?scheduled:null)??{
+    STORY_MISSIONS.find(m=>m.id===run.id)??agencyOffers.find(m=>m.id===run.id)??(scheduled?.id===run.id?scheduled:null)??{
       ...selected,id:run.id,title:run.title,target:run.target,durationDays:run.durationDays,
     }):selected;
   const liveReview=run?({
@@ -204,6 +205,30 @@ export default function CampaignMissions({
           ?'OPENS IN '+(scheduled.windowStartDay!-day)+' DAYS':'WINDOW EXPIRED · NEXT OFFER IN THE NEXT CYCLE'}</span>
         <small>{usd(scheduled.payoutUsd)} reward · Required apogee {num(scheduled.ellipticalApogeeKm!)} km</small>
       </button>}
+    </div>
+    <div className="panel campaign-agency-calendar">
+      <div className="eyebrow">REAL NASA MILESTONES / FICTIONAL PLAYER CONTRACTS</div>
+      <h3>Future mission opportunities</h3>
+      <p>Challenges inspired by NASA's published future events. Player flights are fictional,
+         separate spacecraft. Game offer dates are not NASA procurement periods or
+         validated planetary launch windows.</p>
+      <div className="campaign-agency-grid">
+        {AGENCY_MILESTONES.map((m,i)=>{
+          const offer=agencyOffers[i], timing=specialOfferStatus(offer,day);
+          return <button type="button" key={m.id}
+            className={'campaign-agency-offer '+(selected.id===offer.id?'selected':'')}
+            onClick={()=>setSelectedId(offer.id)} aria-pressed={selected.id===offer.id}>
+            <small>{m.realMission} · {m.event}</small>
+            <strong>{offer.title}</strong>
+            <span>{stage<offer.stage?'CHAPTER '+offer.stage+' LOCKED':
+              timing==='open'?'OPEN · '+(offer.windowEndDay!-day)+' GAME DAYS LEFT':
+              timing==='upcoming'?'OPENS '+m.windowStart:'GAME OFFER EXPIRED'}</span>
+            <small>Game design opportunity: {m.windowStart} – {m.windowEnd}</small>
+          </button>;
+        })}
+      </div>
+      <p className="campaign-agency-links">NASA mission sources: {AGENCY_MILESTONES.map((m,i)=>
+        <span key={m.id}><a href={m.sourceUrl} target="_blank" rel="noreferrer">{m.realMission} ({m.event})</a>{i!==AGENCY_MILESTONES.length-1?' · ':''}</span>)}</p>
     </div>
     {run&&liveReview?<div className="panel campaign-flight">
       <div className="eyebrow">FLIGHT OPERATIONS / CONTRACT IN PROGRESS</div>
@@ -257,7 +282,21 @@ export default function CampaignMissions({
             <OptionCheck label={EXTERNAL_MODULES.reserveBattery.name} checked={options.reserveBattery}
               note="35 kg / 4 W / $4M; adds 6 kWh nameplate reserve" onChange={v=>change('reserveBattery',v)}/>
           </div>
-          {selected.target==='ellipse'&&<div className="campaign-orbital-inputs">
+          <label className="campaign-option-select">CubeSat rideshare / secondary dispenser
+             <select aria-label="CubeSat dispenser configuration" value={options.cubesatUnits??0}
+               onChange={e=>change('cubesatUnits',Number(e.currentTarget.value) as MissionOptions['cubesatUnits'])}>
+               <option value={0}>No secondary CubeSat installed</option>
+               {([1,3] as const).map(units=><option key={units} value={units}>
+                 {NASA_CUBESAT_REFERENCE[units].label} · {num(NASA_CUBESAT_REFERENCE[units].massKg,2)} kg payload + {num(NASA_CUBESAT_REFERENCE[units].dispenserDryKg)} kg game dispenser
+               </option>)}
+             </select>
+           </label>
+           {selected.requiredCubeSatUnits&&<p className="campaign-model-warning">
+             Required: {selected.requiredCubeSatUnits}U dispenser. NASA CubeSat 101 provides
+             the dimensions and 1U mass reference; 3U mass extrapolation,
+             dispenser hardware and prices are game assumptions.
+           </p>}
+           {selected.target==='ellipse'&&<div className="campaign-orbital-inputs">
             <div className="eyebrow">ELLIPTICAL EARTH ORBIT / ACTUAL KEPLER ELEMENTS</div>
             <label>Perigee altitude · {num(options.perigeeKm)} km
               <input type="range" aria-label="Mission perigee altitude" min="180" max="1500" step="20"
@@ -307,12 +346,10 @@ export default function CampaignMissions({
       </div>
     </>}
     <div className="campaign-time-footer">
-      <p><strong>Time matters:</strong> advancing game days may close an offer. A successful mission
-        advances the calendar by its flight duration. Special contracts use an in-game
-        procurement deadline, not a claimed ephemeris-accurate planetary launch window.</p>
-      <button type="button" className="secondary-button" onClick={onAdvance} disabled={!!run}>
-        Advance 7 days / wait for opportunities →
-      </button>
+      <p><strong>Continuous campaign time:</strong> one game week passes every 60 real seconds
+        while the game tab is visible. Hidden/closed tabs pause time; completing a
+        mission advances by its modeled flight duration. These are fictional game
+        deadlines, not confirmed interplanetary launch windows.</p>
     </div>
   </section>;
 }
