@@ -148,6 +148,22 @@ test('Earth Observation One shares spacecraft design and completes a seven-day s
   });
 });
 
+test('Guided observation engineering lab displays live mission-specific capacity and science constraints',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('button',{name:/Edit propulsion, solar and thermal/}).click();
+    await expect(page.locator('.sys-mission-brief')).toContainText('Earth Observation One');
+    await expect(page.locator('.sys-mission-brief')).toContainText('modeled capacity checks pass');
+    await expect(page.locator('.sys-mission-brief')).not.toContainText('Lunar Relay Pathfinder');
+    await page.getByRole('tab',{name:'Thermal'}).click();
+    await expect(page.getByRole('heading',{name:'Thermal hardware effect'})).toBeVisible();
+    await page.locator('label.sys-field').filter({hasText:'Installed radiator area'}).locator('input').fill('4');
+    await expect(page.locator('.sys-impact-delta')).toContainText('Heat rejection');
+    await page.getByRole('button',{name:/Return to mission design/}).click();
+    await expect(page.getByRole('heading',{name:/Earth Observation One/}).first()).toBeVisible();
+  });
+});
+
 test('Earth observation thermal and downlink limits change the forecast, not just graphics',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
