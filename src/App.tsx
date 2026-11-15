@@ -179,8 +179,9 @@ function loadSave(): Snapshot {
       rocketProgramLevel:Number.isInteger(parsed.game.rocketProgramLevel)?
         Math.max(0,Math.min(3,parsed.game.rocketProgramLevel)):0,
       orbitalAssemblyUnlocked:parsed.game.orbitalAssemblyUnlocked===true,
-      rocketFlightCounts:{custom:0,falcon9:0,falconHeavy:0,starship:0,
-        ...(parsed.game.rocketFlightCounts??{})},
+      rocketFlightCounts:Object.assign(
+        {custom:0,falcon9:0,falconHeavy:0,starship:0},
+        parsed.game.rocketFlightCounts??{}),
       moonCargoDeliveredLevel:Number.isInteger(parsed.game.moonCargoDeliveredLevel)?
         Math.max(parsed.game.moonBaseLevel??0,Math.min(3,parsed.game.moonCargoDeliveredLevel)):
         Math.max(0,parsed.game.moonBaseLevel??0),
