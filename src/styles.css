@@ -967,3 +967,35 @@
   .topbar-inner{flex-wrap:wrap}
   .topbar .game-tabs{display:flex;order:3;flex:1 0 100%;max-width:100%;padding-bottom:4px}
 }
+
+
+/* v1.8 — Flight Directorate physically propagated trajectories and CSA science-data campaigns */
+.mission-flight-scene{position:relative;overflow:hidden}
+.flight-zoom-controls{position:absolute;z-index:3;top:10px;right:10px;display:flex;gap:4px;border:1px solid #436780;background:#0a2033e8;border-radius:8px;padding:4px}
+.flight-zoom-controls button{min-width:28px;padding:5px 9px;border:1px solid #3f6784;border-radius:5px;color:#e7f2fc;background:#123148;font-size:11px;font-weight:800}
+.flight-zoom-controls button:hover:not(:disabled){background:#255072}
+.flight-zoom-controls button:disabled{opacity:.3;cursor:not-allowed}
+.flight-physics-head{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:8px;margin:10px 0}
+.flight-physics-head>div{display:flex;flex-direction:column;gap:6px;padding:10px 11px;background:#112c42;border:1px solid #38556e;border-radius:6px;min-width:0}
+.flight-physics-head small,.flight-physics-metrics small{font-size:9px;color:#a6c8d9;letter-spacing:.55px;font-weight:800}
+.flight-physics-head strong{font-size:11px;line-height:1.5;color:#f7deaf;overflow-wrap:anywhere}
+.flight-physics-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+.flight-physics-metrics>div{min-width:0;display:flex;flex-direction:column;gap:6px;padding:11px 9px;background:#132e42;border:1px solid #426179;border-radius:7px}
+.flight-physics-metrics strong{font:800 14px 'Space Grotesk',sans-serif;color:#f9dab0;overflow-wrap:anywhere}
+.mission-flight-model-note strong{color:#f5c994}
+.csa-data-programs h3,.nasa-open-source-physics h3,.csa-research-contracts h3{font:800 23px 'Space Grotesk',sans-serif;color:#f7deba;margin:10px 0}
+.csa-data-programs>p,.nasa-open-source-physics>p,.csa-research-contracts>p{font-size:11px;color:#bcd2e4;line-height:1.8}
+.csa-data-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:18px}
+.csa-data-card{border:1px solid #4d728e;border-radius:9px;background:#10273c;padding:15px;display:flex;flex-direction:column;gap:11px;min-width:0}
+.csa-data-card h4{font:800 17px 'Space Grotesk',sans-serif;color:#f3dcbb;margin:0}
+.csa-data-card>p{font-size:11px;line-height:1.7;color:#b3cddf;margin:0}
+.csa-data-card>small{font-size:10px;line-height:1.7;color:#9fc1d5}
+.csa-data-facts{display:grid;gap:5px}
+.csa-data-facts>span{display:flex;justify-content:space-between;gap:8px;background:#18364c;padding:9px;border-radius:6px;font-size:9px;color:#9ebcce}
+.csa-data-facts b{text-align:right;max-width:60%;font-size:10px;color:#f4d6a9}
+.csa-data-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:auto}
+.csa-data-actions a,.nasa-open-source-physics a{color:#98ceff;text-decoration:underline;font-size:11px;line-height:1.6}
+.csa-data-card .launch-button{font-size:10px;min-height:43px;white-space:normal}
+.csa-research-contracts .campaign-agency-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1120px){.csa-data-grid,.csa-research-contracts .campaign-agency-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.flight-physics-head{grid-template-columns:1fr 1fr}.flight-physics-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.csa-data-grid,.csa-research-contracts .campaign-agency-grid{grid-template-columns:1fr}}
