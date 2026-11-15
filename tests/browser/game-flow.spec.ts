@@ -187,7 +187,7 @@ test('Secondary propulsion gets a second tank with its own propellant class',asy
     await expect(page.getByText(/Secondary · Illustrative/)).toBeVisible();
     await page.getByRole('tab',{name:'Tanks'}).click();
     await expect(page.locator('.sys-tank-card')).toHaveCount(2);
-    await expect(page.getByText(/Hydrazine · regulated monopropellant tank/)).toBeVisible();
+    await expect(page.getByRole('heading',{name:/Hydrazine-class · regulated monopropellant tank/})).toBeVisible();
   });
 });
 
