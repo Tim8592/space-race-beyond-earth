@@ -1131,3 +1131,24 @@
 .moon-cargo-manifest .eyebrow {overflow-wrap:anywhere;line-height:1.5}
 .moon-cargo-manifest button {max-width:100%;overflow-wrap:anywhere;justify-content:center;text-align:center}
 @media (max-width:480px) {.moon-cargo-manifest > div:not(.eyebrow) {grid-template-columns:minmax(0,1fr)}.moon-cargo-manifest > div:not(.eyebrow) > strong {text-align:left}}
+
+/* One spacecraft design in Engineering Lab; flight-specific add-ons in Campaign. */
+.campaign-installed-craft{min-width:0;border:1px solid #4b7892;background:#10293c;border-radius:9px;padding:15px;display:flex;flex-direction:column;gap:10px}
+.campaign-installed-craft .eyebrow{line-height:1.5}
+.campaign-installed-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.campaign-installed-facts>span{display:flex;flex-direction:column;gap:5px;min-width:0;border:1px solid #34576e;background:#0d2335;border-radius:6px;padding:10px;color:#9ebcd1;font-size:10px;line-height:1.45}
+.campaign-installed-facts strong{font-size:12px;color:#f4dfb9;overflow-wrap:anywhere}
+.campaign-installed-craft p,.campaign-kit-guidance{font-size:11px!important;line-height:1.7!important;color:#a9c7d9!important;margin:0!important}
+.campaign-installed-craft>.secondary-button{align-self:flex-start;white-space:normal;text-align:left}
+.campaign-required-kit{border:1px solid #5d786b;background:#133034;border-radius:9px;padding:13px;display:grid;gap:10px;min-width:0}
+.campaign-required-kit .eyebrow{color:#cce2b8}
+.campaign-required-kit .campaign-external-modules:empty{display:none}
+.campaign-optional-kit{border:1px solid #3d6078;background:#11263b;border-radius:9px;min-width:0}
+.campaign-optional-kit>summary{display:flex;align-items:center;flex-wrap:wrap;gap:8px 15px;cursor:pointer;padding:14px;font-size:12px;font-weight:800;color:#e8f3fb;list-style:none}
+.campaign-optional-kit>summary::-webkit-details-marker{display:none}
+.campaign-optional-kit>summary::before{content:'▸';color:#edbf8c;font-size:16px}
+.campaign-optional-kit[open]>summary::before{content:'▾'}
+.campaign-optional-kit>summary small{font-weight:600;font-size:10px;color:#aac9df;overflow-wrap:anywhere}
+.campaign-optional-kit-body{display:grid;gap:12px;border-top:1px solid #36536a;padding:12px}
+.campaign-optional-kit .campaign-module-option{min-width:0}
+@media(max-width:520px){.campaign-installed-facts{grid-template-columns:minmax(0,1fr)}.campaign-installed-craft>.secondary-button{width:100%}}
