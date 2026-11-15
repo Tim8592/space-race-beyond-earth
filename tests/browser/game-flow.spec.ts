@@ -310,7 +310,7 @@ test('Earth observation success unlocks the lunar mission and new campaign scree
     await page.getByRole('button',{name:/Finish seven-day simulation/}).click();
     await expect(page.getByRole('heading',{name:/Mission successful/})).toBeVisible();
     await page.getByRole('tab',{name:/Explore Further/}).click();
-    await expect(page.getByRole('heading',{name:'Lunar Relay Pathfinder'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Lunar Relay Pathfinder'}).first()).toBeVisible();
     await expect(page.getByText(/WINDOW OPEN/)).toBeVisible();
     await page.reload();
     await page.getByRole('tab',{name:/Explore Further/}).click();
@@ -477,7 +477,7 @@ test('A configured lunar milestone launches, survives reload and pays exactly on
     const go=page.getByRole('button',{name:/Accept contract and launch/});
     await expect(go).toBeEnabled();
     await go.click();
-    await expect(page.getByRole('heading',{name:'Lunar Relay Pathfinder'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Lunar Relay Pathfinder'}).first()).toBeVisible();
     await expect(page.getByText('FLIGHT OPERATIONS / CONTRACT IN PROGRESS')).toBeVisible();
     await page.reload();
     await page.getByRole('tab',{name:/Explore Further/}).click();
