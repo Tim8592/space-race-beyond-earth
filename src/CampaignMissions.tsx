@@ -224,12 +224,16 @@ export default function CampaignMissions({
           return <button type="button" key={m.id}
             className={'campaign-agency-offer '+(selected.id===offer.id?'selected':'')}
             onClick={()=>onSelectedIdChange(offer.id)} aria-pressed={selected.id===offer.id}>
-            <small>{m.realMission} · {m.event}</small>
-            <strong>{offer.title}</strong>
-            <span>{stage<offer.stage?'CHAPTER '+offer.stage+' LOCKED':
-              timing==='open'?'OPEN · '+(offer.windowEndDay!-day)+' GAME DAYS LEFT':
-              timing==='upcoming'?'OPENS '+m.windowStart:'FOLLOW-ON AVAILABLE · REDUCED REWARD'}</span>
-            <small>Game design opportunity: {m.windowStart} – {m.windowEnd}</small>
+            {stage<offer.stage?<>
+              <strong>{offer.title}</strong>
+              <span>LOCKED · Complete earlier mission chapters</span>
+            </>:<>
+              <small>{m.realMission} · {m.event}</small>
+              <strong>{offer.title}</strong>
+              <span>{timing==='open'?'OPEN · '+(offer.windowEndDay!-day)+' GAME DAYS LEFT':
+                timing==='upcoming'?'OPENS '+m.windowStart:'FOLLOW-ON AVAILABLE · REDUCED REWARD'}</span>
+              <small>Game design opportunity: {m.windowStart} – {m.windowEnd}</small>
+            </>}
           </button>;
         })}
       </div>
