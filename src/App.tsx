@@ -609,7 +609,8 @@ export default function App() {
               'Earth Observation One':campaignSelection.selected.title}</span>
             <button className="secondary-button" onClick={()=>{
               setActiveView('missions');
-            }}>Return to selected mission →</button>
+            }}>{campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
+              'Return to mission design →':'Return to selected mission →'}</button>
           </div>
           <SubsystemLab design={spacecraftDesign} onDesignChange={setSpacecraftDesign}
             mission={campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
