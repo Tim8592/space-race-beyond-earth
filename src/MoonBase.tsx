@@ -1,31 +1,52 @@
 import {useState} from 'react';
 import {MOON_BASE_LEVELS,lunarEconomics} from './lib/programEconomy';
-type Props={cash:number;level:number;unlocked:boolean;devMode:boolean;
-  onInvest:()=>void;onExploreCampaign:()=>void};
+import {planMoonShipment,type LauncherId,type MoonCargoRun} from './lib/launchLogistics';
+import {flightProgress,flightEta} from './lib/flightProgress';
+import type {Vehicle} from './lib/engineering';
+import MissionFlightViewer from './MissionFlightViewer';
+type Props={
+  cash:number;level:number;unlocked:boolean;devMode:boolean;
+  cargoDeliveredLevel:number;cargoRun:MoonCargoRun|null;nowMs:number;
+  rocketService:LauncherId;rocketTier:number;orbitalAssemblyUnlocked:boolean;
+  rocketFlights:Record<LauncherId,number>;vehicle:Vehicle;otherFlightActive:boolean;
+  onInvest:()=>void;onExploreCampaign:()=>void;
+  onDispatchCargo:()=>void;onCompleteCargo:()=>void;onOpenRocketFleet:()=>void;
+};
 const fmt=(usd:number)=>'$'+(usd/1e6).toLocaleString('en-US',{maximumFractionDigits:2})+'M';
 const sites=[
   {name:'Shackleton Relay',lat:-89.9,lon:0,label:'SOUTH POLAR'},
   {name:'Malapert Data Hub',lat:-85.5,lon:0,label:'LINK STATION'},
   {name:'Industrial Plateau',lat:-82,lon:25,label:'RESOURCE SURVEY'}
 ] as const;
-export default function MoonBase({cash,level,unlocked,devMode,onInvest,onExploreCampaign}:Props){
+export default function MoonBase({cash,level,unlocked,devMode,onInvest,onExploreCampaign,
+  cargoDeliveredLevel,cargoRun,nowMs,rocketService,rocketTier,orbitalAssemblyUnlocked,
+  rocketFlights,vehicle,otherFlightActive,onDispatchCargo,onCompleteCargo,onOpenRocketFleet}:Props){
   const [zoom,setZoom]=useState(1.5);
   const income=lunarEconomics(level);
   const next=MOON_BASE_LEVELS[level];
-  const canBuild=unlocked&&!!next&&cash>=next.investmentUsd;
+  const shipment=next?planMoonShipment({stageIndex:level,service:rocketService,
+    vehicle,tier:rocketTier,assemblyUnlocked:orbitalAssemblyUnlocked,
+    priorFlights:rocketFlights[rocketService]??0}):null;
+  const delivered=cargoDeliveredLevel>level;
+  const canBuild=unlocked&&!!next&&delivered&&cash>=next.investmentUsd;
+  const cargoProgress=cargoRun?flightProgress(cargoRun.startedAtMs,nowMs,
+    cargoRun.viewerDurationMs):null;
+  const canDispatch=unlocked&&!!next&&!delivered&&!cargoRun&&!otherFlightActive&&
+    !!shipment?.manifest.feasible&&cash>=shipment.totalCostUsd;
   const cx=340,cy=214;
   const scale=zoom;
   return <section className="moon-base-page" aria-label="Moon base investment and lunar zoom map">
     <div className="panel moon-base-intro">
       <div className="eyebrow">LUNAR ECONOMIC DEVELOPMENT / INDEPENDENT INVESTMENT</div>
       <h2>Moon Base Directorate</h2>
-      <p>Expand a conceptual lunar communications and logistics network. Every base stage costs
-        upfront capital and produces recurring modeled commercial revenue—but also costs money
-        to operate. The Moon is a separate close-up environment; this is not real NASA project revenue.</p>
+      <p>Develop a lunar communications and logistics network by first purchasing real spacecraft
+        hardware, loading a fueled translunar lander into one or more separately paid launchers,
+        flying that payload to the lunar surface, and only then funding construction. Every
+        operational stage earns fictional commercial revenue and requires ongoing maintenance. The Moon is a separate close-up environment; this is not real NASA project revenue.</p>
       {!unlocked&&<div className="moon-base-lock">
         <strong>Moon Base financing locked</strong>
         <span>Complete Lunar Relay Pathfinder to establish your Moon presence.
-          {devMode?' Dev Mode previews the map, but commercial investment still requires the lunar mission.':''}</span>
+          {devMode?' Dev Mode permits demonstration access; logistics transport is still mandatory.':''}</span>
         <button type="button" className="secondary-button" onClick={onExploreCampaign}>Open Lunar Relay mission ↗</button>
       </div>}
     </div>
@@ -89,10 +110,29 @@ export default function MoonBase({cash,level,unlocked,devMode,onInvest,onExplore
           <div><small>Lunar operations / game day</small><strong>−{fmt(income.expensesDailyUsd)}</strong></div>
           <div><small>Moon net contribution / day</small><strong>{fmt(income.grossDailyUsd-income.expensesDailyUsd)}</strong></div>
         </div>
+        {cargoRun&&<div className="moon-cargo-flight">
+           <div className="eyebrow">ACTIVE CARGO TRANSFER / IN FLIGHT</div>
+           <MissionFlightViewer run={cargoRun} nowMs={nowMs}/>
+           <p>Carrying {cargoRun.payloadKg.toLocaleString('en-US')} kg of actual
+             lunar equipment, supported by {cargoRun.landerPropellantKg.toFixed(0)} kg
+             of chemical transfer/descent fuel. {cargoRun.flightsRequired} rocket launches
+             were paid at dispatch. Construction revenue remains zero until landing and funding.</p>
+           <button type="button" className="launch-button" disabled={!cargoProgress?.ready}
+             onClick={onCompleteCargo}>{cargoProgress?.ready?
+             'Confirm lunar landing & cargo receipt ↗':
+             'Cargo in transit · ETA '+flightEta(cargoProgress?.remainingMs??0)}</button>
+         </div>}
         {next?<div className="moon-next-investment">
           <div className="eyebrow">NEXT INVESTMENT / STAGE {next.level}</div>
           <h4>{next.name}</h4>
-          <p>{next.description}. All projected values are fictional space-economy assumptions.</p>
+          <p>{next.description}. All projected values are fictional space-economy assumptions.
+             Infrastructure is unavailable until a lander physically delivers the required
+             module inventory and you pay the construction cost.</p>
+          <div className="moon-cargo-steps">
+            <div className={unlocked?'done':''}><b>01</b> Lunar pathfinder authorization {unlocked?'✓':'LOCKED'}</div>
+            <div className={delivered?'done':''}><b>02</b> Hardware launches & landing {delivered?'✓ DELIVERED':cargoRun?'IN FLIGHT':'NOT DELIVERED'}</div>
+            <div className={level>=3?'done':''}><b>03</b> Fund surface construction {delivered?'READY WHEN FINANCED':'WAITING ON CARGO'}</div>
+          </div>
           <div><span>Capital required</span><strong>{fmt(next.investmentUsd)}</strong></div>
           <div><span>Additional daily gross</span><strong>+{fmt(next.dailyRevenueUsd)}</strong></div>
           <div><span>Additional daily upkeep</span><strong>−{fmt(next.dailyOperationsUsd)}</strong></div>
@@ -100,8 +140,44 @@ export default function MoonBase({cash,level,unlocked,devMode,onInvest,onExplore
             <strong>{Math.ceil(next.investmentUsd/
               (next.dailyRevenueUsd-next.dailyOperationsUsd))} game days</strong>
           </div>
+          {shipment&&!delivered&&<div className="moon-cargo-manifest" aria-label="Required lunar cargo and rocket launch manifest">
+             <div className="eyebrow">REQUIRED REAL SURFACE PAYLOAD / NEXT BUILDING</div>
+             <h4>{shipment.blueprint.name}</h4>
+             {shipment.blueprint.components.map(c=><div key={c.name}>
+               <span>{c.name}</span><strong>{c.massKg.toLocaleString('en-US')} kg</strong>
+             </div>)}
+             <div><span>Surface payload mass</span><strong>{shipment.payloadKg.toLocaleString('en-US')} kg</strong></div>
+             <div><span>Chemical lander dry hardware</span><strong>{shipment.landerDryKg.toFixed(0)} kg</strong></div>
+             <div><span>Transfer + lunar descent propellant</span><strong>{shipment.propellantKg.toFixed(0)} kg</strong></div>
+             <div><span>Total LEO manifest</span><strong>{shipment.leoManifestKg.toFixed(0)} kg</strong></div>
+             <div><span>Selected rocket / flights required</span>
+               <strong>{shipment.manifest.vehicleLabel} · {shipment.manifest.flightsRequired}</strong></div>
+             {shipment.manifest.flights.map(f=><div key={f.flight}>
+               <span>Flight {f.flight} · {f.massKg.toFixed(0)} / {f.capacityKg.toFixed(0)} kg</span>
+               <strong>{fmt(f.serviceCostUsd)}</strong></div>)}
+             <div><span>Orbital docking & assembly</span>
+               <strong>{fmt(shipment.manifest.assemblyCostUsd)}</strong></div>
+             <div><span>Equipment procurement</span><strong>{fmt(shipment.blueprint.hardwareCostUsd)}</strong></div>
+             <div className="total"><span>Transportation + cargo invoice</span>
+               <strong>{fmt(shipment.totalCostUsd)}</strong></div>
+             <p className="rocket-fleet-disclaimer">Mass budget: TLI, lunar orbit insertion,
+               descent and allowance totaling 5,550 m/s at assumed 345s Isp.
+               Fuel mass is computed from the rocket equation with installed dry lander
+               hardware. No surface cargo materializes without this manifest,
+               and multi-flight docking is required when capacity is insufficient.
+               This is a gameplay mass ledger, not a validated lunar guidance design.</p>
+             {shipment.manifest.issue&&<p className="campaign-model-warning">{shipment.manifest.issue}</p>}
+             <button className="secondary-button" type="button" onClick={onOpenRocketFleet}>
+               Change launch vehicle / upgrade orbital docking ↗</button>
+             <button className="launch-button" type="button" disabled={!canDispatch}
+                onClick={onDispatchCargo}>{cargoRun?'Cargo flight underway':
+                  !unlocked?'Lunar pathfinder required':
+                  !shipment.manifest.feasible?'Resolve rocket and assembly requirements':
+                  cash<shipment.totalCostUsd?'Insufficient cash for shipment':'Dispatch '+shipment.manifest.flightsRequired+' rocket launch(es) to Moon ↗'}</button>
+           </div>}
           <button type="button" className="launch-button" disabled={!canBuild} onClick={onInvest}>
-            {unlocked?cash>=next.investmentUsd?'Invest in '+next.name:'Insufficient capital':'Unlock via Lunar Relay Pathfinder'}
+            {!unlocked?'Lunar Pathfinder required':!delivered?'Deliver lunar hardware before constructing':
+              cash<next.investmentUsd?'Insufficient construction capital':'Construct '+next.name+' ↗'}
           </button>
         </div>:<p className="moon-base-complete">All three lunar development stages funded. Recurring base revenue continues as in-game days advance.</p>}
       </aside>
