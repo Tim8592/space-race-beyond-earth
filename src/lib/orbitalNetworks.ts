@@ -7,6 +7,7 @@ import {planLaunchManifest,type LauncherId,type LaunchManifest} from './launchLo
 import {spacecraftHardwareEconomics} from './missionEconomics';
 import {sizeSubsystemDesign,type SubsystemDesign} from './subsystemDesign';
 import {ORBITAL_SERVICE_MODULES} from './orbitalServiceModules';
+import {hasTechnology,type TechnologyId} from './technologyTree';
 import type {Vehicle} from './engineering';
 
 export type OrbitalNetworkKind='compute'|'relay';
@@ -82,6 +83,7 @@ export function planNetworkDeployment(args:{
  kind:OrbitalNetworkKind;levels:OrbitalNetworkLevels;design:SubsystemDesign;
  launcher:Vehicle;service:LauncherId;tier:number;assemblyUnlocked:boolean;
  priorServiceFlights:number;canadianSuccesses:number;productionDiscount?:number;
+ researched?:readonly TechnologyId[];devMode?:boolean;
 }):NetworkDeploymentReview|null{
  const level=args.levels[args.kind];
  const stage=ORBITAL_NETWORK_STAGES[args.kind][level];
@@ -101,7 +103,11 @@ export function planNetworkDeployment(args:{
  const hardwareUsd=stage.additionalSatellites*unitHardwareUsd;
  const totalCostUsd=hardwareUsd+manifest.launchCostUsd+
    manifest.assemblyCostUsd+stage.groundInfrastructureUsd;
+ const requiredTech=args.kind==='compute'?'orbital-edge-compute':'canadian-optical-relay';
  const checks=[
+  {name:'Infrastructure R&D funded with capital and RP',
+    passed:hasTechnology(requiredTech,args.researched??[],args.devMode??false),
+    description:'Research '+requiredTech+' in Research & Roadmap → Infrastructure to qualify this orbital service payload.'},
   {name:'Correct installed orbital-service module',passed:design.orbitalServiceModuleId===args.kind,
    description:'Install '+module.name+' in Engineering Lab → Payload and services before deployment. The hardware changes spacecraft mass and power/heat ledgers.'},
   {name:'Operating electric power + bus reserve',passed:system.totalAvailablePowerW>=system.housekeepingPowerW+45,
