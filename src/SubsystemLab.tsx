@@ -107,13 +107,13 @@ function checkPanel(label:string):SystemTab|null{
   return null; // launcher, antenna, launch window and budget are campaign controls
 }
 export default function SubsystemLab({design,onDesignChange,unlockedTechnologies=[],devMode=false,
-  mission,observation,onReturnToMission}:{
+  mission,observation,onReturnToMission,initialTab='propulsion'}:{
   design:SubsystemDesign;onDesignChange:(next:SubsystemDesign)=>void;
   unlockedTechnologies?:readonly TechnologyId[];
-  devMode?:boolean;
+  devMode?:boolean;initialTab?:SystemTab;
   mission?:MissionLabContext;observation?:ObservationLabContext;onReturnToMission?:()=>void;
 }) {
-  const [activeSystemTab,setActiveSystemTab] = useState<SystemTab>('propulsion');
+  const [activeSystemTab,setActiveSystemTab] = useState<SystemTab>(initialTab);
   const [lastEdit,setLastEdit]=useState<{
     label:string;massChangeKg:number;powerChangeW:number;thermalChangeW:number;
   }|null>(null);
@@ -198,7 +198,12 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
         <span className="sys-model-label">BETA · PRELIMINARY</span>
       </div>
       <p className="sys-intro">
-        This is separate from the launch vehicle in Mission Control. Real published component examples are used where available;
+        This is the <b>one source for installed spacecraft hardware</b>: the science sensor,
+        generic cargo, commercial service module, core power, thermal systems, tanks and propulsion.
+        Play Campaign reads these selections directly; its separate mission-only kit (kick stage,
+        high-gain communications, shielding, reserve battery and optional CubeSat) is added
+        only for that flight, not entered as base payload a second time.
+        Real published component examples are used where available;
         everything labeled <b>assumption</b> is an illustrative sizing input, not a NASA-certified design.
         Technologies marked locked are developed in Research &amp; Roadmap. Dev Mode enables all catalog parts for presentations.
       </p>
@@ -454,7 +459,7 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
                 {inst.name} · {inst.massKg} kg · {inst.powerW} W · {inst.category}{!unlocked(INSTRUMENT_RESEARCH[inst.id])?' · RESEARCH LOCKED':''}</option>)}
             </select>
           </label>
-          <NumberField label="Additional instruments / cargo mass" unit="kg · excludes selected sensor" value={design.payloadMassKg}
+          <NumberField label="Additional instruments / cargo mass" unit="kg · generic cargo only; excludes sensor and mission kit" value={design.payloadMassKg}
             min={0} max={1000} step={5} onChange={n=>change('payloadMassKg',n)}/>
         </div>
         <div className="sys-orbital-service">
@@ -495,7 +500,11 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
             <strong>{fmt(selectedInstrument.powerW,'W')}</strong><span>ACTIVE DRAW</span>
             <strong>{selectedInstrument.dataMbps} Mb/s</strong><span>ILLUSTRATIVE DATA</span></div>
         </div>:<p className="sys-subnote">Install a camera, magnetometer, spectrometer, thermal sensor or altimeter to automatically add its mass, active electric demand and heat. Values are illustrative—not certified specifications of NASA flight instruments.</p>}
-        <p className="sys-subnote">Earth Observation One uses its own chosen sensor as this payload slot and does not double-count the generic Engineering Lab payload when launching.</p>
+        <p className="sys-subnote">This payload configuration is reused automatically by Play Campaign.
+          Enter generic cargo mass here only once. Campaign-specific antennas, shielding, backup
+          batteries and CubeSat rideshares are separate physical items; they add launch weight but
+          their support-hardware mass does not satisfy science-payload quotas. Earth Observation
+          One chooses its own instrument in this same sensor slot.</p>
       </div>
 
       <div className={'sys-group '+(activeSystemTab==='power'?'':'sys-hidden')}>
