@@ -221,7 +221,7 @@ export function ModularSpacecraft({
           <circleGeometry args={[.18,24]}/><meshStandardMaterial color="#1e6089" metalness={.5} roughness={.1}/>
         </mesh>
       </group>
-    </Pick>
+    </Pick>}
     <Pick part="antenna" selected={selected} onSelect={onSelect}><Dish/></Pick>
     <mesh position={[0,-1.7,0]} rotation={[-Math.PI/2,0,0]}>
       <ringGeometry args={[.95,1.0,48]}/>
