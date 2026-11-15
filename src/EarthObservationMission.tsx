@@ -185,7 +185,7 @@ export default function EarthObservationMission({
           <div className="eyebrow">02 / SHARED SPACECRAFT DESIGN</div>
           <h3>What you'll actually launch</h3>
           <p className="ob-subtitle">This is the same spacecraft you edit in Engineering Lab. The mission substitutes the selected instrument for its generic payload mass slot.</p>
-          {preview&&<Spacecraft3D design={{...spacecraft,payloadMassKg:activeInstrument.massKg,distanceAu:1}}
+          {preview&&<Spacecraft3D design={{...spacecraft,payloadMassKg:0,payloadInstrumentId:choices.instrument,distanceAu:1}}
             analysis={preview.missionResult}/>}
           <div className="ob-link-actions">
             <button className="secondary-button" onClick={onEditSpacecraft}>Edit propulsion, solar and thermal →</button>
