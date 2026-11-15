@@ -44,3 +44,42 @@ export async function tryOrekitFlightPath(date:string,target:'mars'|'jupiter',
    return {trajectoryAu:path,model:'Orekit Lambert'};
  }catch{return null;}
 }
+
+
+/** Optional local Orekit Earth-centered two-body Keplerian propagator.
+ * The endpoint accepts real orbital elements and returns sampled kilometers.
+ * No static site / local Java server => the same Kepler physics is computed
+ * using the existing browser orbital-mechanics module. */
+export type EarthOrekitOrbit={
+  trajectoryKm:number[][];
+  periodMinutes:number;
+  propagatedMinutes:number;
+  perigeeRadiusKm:number;
+  apogeeRadiusKm:number;
+  perigeeSpeedKmS:number;
+  apogeeSpeedKmS:number;
+};
+export async function tryOrekitEarthOrbitPath(args:{
+ perigeeAltitudeKm:number;
+ eccentricity:number;
+ argumentPeriapsisDeg?:number;
+ inclinationDeg?:number;
+ halfOrbit?:boolean;
+ samples?:number;
+},signal?:AbortSignal):Promise<EarthOrekitOrbit|null>{
+ try{
+   const res=await fetch(ENDPOINT+'/api/earth-orbit',{
+     method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({...args,samples:args.samples??181}),signal,
+   });
+   if(!res.ok)return null;
+   const data=await res.json() as EarthOrekitOrbit;
+   if(!Array.isArray(data.trajectoryKm)||data.trajectoryKm.length<20||
+      data.trajectoryKm.length>500||!data.trajectoryKm.every(p=>
+        Array.isArray(p)&&p.length===3&&p.every(n=>
+          Number.isFinite(n)&&Math.abs(n)<1_000_000))||
+      !Number.isFinite(data.periodMinutes)||data.periodMinutes<=0||
+      !Number.isFinite(data.propagatedMinutes)||data.propagatedMinutes<=0)return null;
+   return data;
+ }catch{return null;}
+}
