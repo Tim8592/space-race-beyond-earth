@@ -153,3 +153,11 @@ export function planMoonShipment(args:{
  return {...req,manifest,totalCostUsd:manifest.launchCostUsd+
    manifest.assemblyCostUsd+req.blueprint.hardwareCostUsd};
 }
+
+/** A surface shipment is a genuine outbound mission, not an instant tech-tree purchase. */
+export type MoonCargoRun={
+ id:string;title:string;stageIndex:number;target:'lunar';durationDays:number;
+ launchedDay:number;departureDate:string;startedAtMs:number;viewerDurationMs:number;
+ route:{flightDays:number};service:LauncherId;flightsRequired:number;
+ costUsd:number;payloadKg:number;landerPropellantKg:number;leoManifestKg:number;
+};
