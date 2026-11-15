@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import Spacecraft3D from './Spacecraft3D';
+import Spacecraft3D, {type PartName} from './Spacecraft3D';
 import FieldHelp from './components/FieldHelp';
 import { descriptionFor } from './lib/fieldHelp';
 import {
@@ -130,7 +130,13 @@ export default function SubsystemLab({design,onDesignChange}:{
         <div><small>PEAK ELECTRICAL DRAW</small><strong>{fmt(result.totalElectricalDemandW,'W',0)}</strong></div>
         <div><small>TANKS AND FEEDS</small><strong>{fmt(result.totalTankHardwareMassKg,'kg',1)}</strong></div>
       </div>}
-      <Spacecraft3D design={design} analysis={result}/>
+      <Spacecraft3D design={design} analysis={result} onPartSelect={(part:PartName)=>{
+        const where:Record<PartName,'propulsion'|'payload'|'power'|'thermal'|'tank'|'analysis'>={
+          bus:'analysis',power:'power',radiator:'thermal',tank:'tank',
+          propulsion:'propulsion',antenna:'payload',payload:'payload',
+        };
+        setActiveSystemTab(where[part]);
+      }}/>
 
       <div className="sys-tab-strip" role="tablist" aria-label="Spacecraft subsystem">
         {([

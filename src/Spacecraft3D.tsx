@@ -301,12 +301,13 @@ function NASAReferenceMesh({url,onStatus}:{
 }
 
 export default function Spacecraft3D({
-  design,analysis,referenceModelUrl,preferReference=false,
+  design,analysis,referenceModelUrl,preferReference=false,onPartSelect,
 }:{
   design:SubsystemDesign;
   analysis:SystemResults|null;
   referenceModelUrl?:string;
   preferReference?:boolean;
+  onPartSelect?:(part:PartName)=>void;
 }) {
   const [selected,setSelected]=useState<PartName>('bus');
   const [nasaStatus,setNasaStatus]=useState<'idle'|'loading'|'loaded'|'failed'>('idle');
@@ -328,6 +329,7 @@ export default function Spacecraft3D({
     setLoadAttempt(0);
   },[referenceModelUrl,preferReference]);
   useEffect(()=>()=>{if(customUrl)URL.revokeObjectURL(customUrl)},[customUrl]);
+  const choosePart=(part:PartName)=>{setSelected(part);onPartSelect?.(part)};
   const activeExternalModelUrl = viewerSource==='nasa'?referenceModelUrl :
     viewerSource==='cad'?customUrl:null;
   function loadCadFile(file:File|undefined) {
@@ -342,7 +344,7 @@ export default function Spacecraft3D({
 
   return <div className="craft-visual-shell">
     <div className="craft-visual-head">
-      <div><b>3D spacecraft studio</b><span>Drag to orbit · scroll to zoom · click a component to inspect</span></div>
+      <div><b>3D spacecraft studio</b><span>Drag to orbit · scroll to zoom · click component to inspect or edit</span></div>
       <div className="craft-model-actions">
         <button type="button" onClick={()=>{setViewerSource('modular');setNasaStatus('idle')}}>Modular prototype</button>
         {referenceModelUrl&&<button type="button" onClick={()=>{
@@ -366,9 +368,9 @@ export default function Spacecraft3D({
         <Stars radius={45} depth={35} count={1500} factor={1.4} fade speed={0}/>
         <gridHelper args={[28,28,'#244662','#142a3b']} position={[0,-2.35,0]}/>
         {activeExternalModelUrl ? <>
-          {nasaStatus!=='loaded'&&<ModularSpacecraft design={design} analysis={analysis} selected={selected} onSelect={setSelected}/>}
+          {nasaStatus!=='loaded'&&<ModularSpacecraft design={design} analysis={analysis} selected={selected} onSelect={choosePart}/>}
           <NASAReferenceMesh key={activeExternalModelUrl+':'+loadAttempt} url={activeExternalModelUrl} onStatus={onStatus}/>
-        </> : <ModularSpacecraft design={design} analysis={analysis} selected={selected} onSelect={setSelected}/>}
+        </> : <ModularSpacecraft design={design} analysis={analysis} selected={selected} onSelect={choosePart}/>}
         <OrbitControls enablePan enableDamping minDistance={3} maxDistance={22}/>
       </Canvas>
     </div>
