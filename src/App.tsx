@@ -1,5 +1,7 @@
 import SubsystemLab, {readSubsystemDesign} from './SubsystemLab';
 import EarthObservationMission from './EarthObservationMission';
+import {DEFAULT_OBSERVATION,simulateObservation,SCIENCE_GOAL,
+  type ObservationChoices} from './lib/observationMission';
 import type { SubsystemDesign } from './lib/subsystemDesign';
 import OrbitalLab from './OrbitalLab';
 import MissionLibrary from './MissionLibrary';
@@ -190,6 +192,13 @@ function Field({
   );
 }
 
+function readObservationChoices():ObservationChoices{
+  try{
+    const saved=JSON.parse(localStorage.getItem('space-race-observation-one-v1')??'null') as
+      {choices?:Partial<ObservationChoices>}|null;
+    return {...DEFAULT_OBSERVATION,...saved?.choices};
+  }catch{return DEFAULT_OBSERVATION}
+}
 export default function App() {
   const [snapshot, setSnapshot] = useState<Snapshot>(loadSave);
   const { game, vehicle, missionId } = snapshot;
@@ -206,6 +215,7 @@ export default function App() {
   const [observationResetKey,setObservationResetKey]=useState(0);
   const [secondsToNextDay,setSecondsToNextDay]=useState(Math.ceil(GAME_DAY_DURATION_MS/1000));
   const [spacecraftDesign,setSpacecraftDesign]=useState<SubsystemDesign>(readSubsystemDesign);
+  const [labObservationChoices,setLabObservationChoices]=useState<ObservationChoices>(readObservationChoices);
   const [selectedCampaignId,setSelectedCampaignId]=useState(()=>{
     try{return localStorage.getItem('space-race-selected-campaign-mission-v1')||'lunar'}
     catch{return 'lunar'}
@@ -399,6 +409,13 @@ export default function App() {
       arrivalVInfinityKmS:lastSolvedTransfer.arrivalVInfinityKmS,
       eccentricity:lastSolvedTransfer.eccentricity}:null;
 
+  const observationLabForecast=useMemo(()=>{
+    try{return simulateObservation({
+      choices:labObservationChoices,spacecraft:spacecraftDesign,launcher:vehicle,
+      completedWithEngine:game.engineBuildCounts[vehicle.engineId]??0,
+      technologyDiscount:missionTechnologyDiscount,
+    });}catch{return null}
+  },[labObservationChoices,spacecraftDesign,vehicle,game.engineBuildCounts,missionTechnologyDiscount]);
   const selectedCampaignReview=useMemo(()=>{
     try{return reviewCampaignMission({
       definition:campaignSelection.selected,day:game.day,options:campaignOptions,
@@ -476,7 +493,10 @@ export default function App() {
           <nav aria-label="Primary" className="game-tabs" role="tablist">
               {([
                 ['missions','Play Campaign'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],
-              ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>setActiveView(id)}>{label}</button>)}
+              ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>{
+                  if(id==='systems')setLabObservationChoices(readObservationChoices());
+                  setActiveView(id);
+                }}>{label}</button>)}
             </nav>
           <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.2</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
@@ -513,7 +533,7 @@ export default function App() {
         {activeView==='missions'&&campaignMode==='observation'&&
           <EarthObservationMission key={observationResetKey} spacecraft={spacecraftDesign} launcher={vehicle}
             cash={game.cash} completedWithEngine={game.engineBuildCounts[vehicle.engineId]??0}
-            onEditSpacecraft={()=>setActiveView('systems')}
+            onEditSpacecraft={()=>{setLabObservationChoices(readObservationChoices());setActiveView('systems')}}
             onEditLauncher={()=>{setActiveView('missions');setCampaignMode('contracts')}}
             onStart={startEarthObservation}
             technologyDiscount={missionTechnologyDiscount}
@@ -584,17 +604,23 @@ export default function App() {
         </div>
 
         {activeView==='systems' && <div className="single-tab-page">
-          <div className="lab-back"><span>ENGINEERING LAB · linked to {campaignSelection.selected.title}</span>
+          <div className="lab-back"><span>ENGINEERING LAB · linked to {
+            campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
+              'Earth Observation One':campaignSelection.selected.title}</span>
             <button className="secondary-button" onClick={()=>{
-              setActiveView('missions');setCampaignMode('progression');
+              setActiveView('missions');
             }}>Return to selected mission →</button>
           </div>
           <SubsystemLab design={spacecraftDesign} onDesignChange={setSpacecraftDesign}
-            mission={{definition:campaignSelection.selected,review:selectedCampaignReview,
+            mission={campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
+              undefined:{definition:campaignSelection.selected,review:selectedCampaignReview,
               stageUnlocked:unlockedCampaignStage,completed:game.storyCompleted.includes(campaignSelection.selected.id),
               lockedTechnologyCount:lockedLabParts.length,
               activeFlight:!!game.activeStoryRun,gameDay:game.day}}
-            onReturnToMission={()=>{setActiveView('missions');setCampaignMode('progression')}}
+            observation={campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
+              {forecast:observationLabForecast,requiredScience:SCIENCE_GOAL,cash:game.cash,
+               lockedTechnologyCount:lockedLabParts.length}:undefined}
+            onReturnToMission={()=>{setActiveView('missions')}}
             unlockedTechnologies={effectiveUnlocks} devMode={game.devMode}/>
         </div>}
         {activeView==='orbits' && <div className="single-tab-page">
