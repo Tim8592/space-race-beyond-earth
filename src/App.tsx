@@ -294,6 +294,8 @@ export default function App() {
   const activeFlightProgress=game.activeStoryRun?
     flightProgress(game.activeStoryRun.startedAtMs??flightNowMs,flightNowMs,
       game.activeStoryRun.viewerDurationMs??DEFAULT_FLIGHT_VIEWER_MS):null;
+  const assemblyFraction=game.activeAssemblyProject?
+    game.activeAssemblyProject.launchesCompleted/game.activeAssemblyProject.draft.launchCount:null;
   const lunarProgress=game.activeMoonCargoRun?
     flightProgress(game.activeMoonCargoRun.startedAtMs,flightNowMs,
       game.activeMoonCargoRun.viewerDurationMs):null;
@@ -733,19 +735,21 @@ export default function App() {
           </div>
           {game.cash<0&&<div className="finance-distress">CASH DEFICIT · new investments blocked</div>}
         </section>
-        {(game.activeStoryRun&&activeFlightProgress||game.activeMoonCargoRun&&lunarProgress)&&<button type="button"
+        {(game.activeStoryRun&&activeFlightProgress||game.activeMoonCargoRun&&lunarProgress||game.activeAssemblyProject)&&<button type="button"
           className="flight-progress-pill" onClick={openFlightViewer}
           aria-label="Open active flight progress">
           <svg viewBox="0 0 52 52" aria-hidden="true">
             <circle cx="26" cy="26" r="20" fill="none" stroke="#344963" strokeWidth="5"/>
             <circle cx="26" cy="26" r="20" fill="none" stroke="#f3bd7b" strokeWidth="5"
               transform="rotate(-90 26 26)"
-              strokeDasharray={String(125.66*(lunarProgress?.fraction??activeFlightProgress?.fraction??0))+' 125.66'}/>
-            <text x="26" y="30" fill="#f6e7d0" textAnchor="middle" fontSize="11" fontWeight="800">{Math.round((lunarProgress?.fraction??activeFlightProgress?.fraction??0)*100)}%</text>
+              strokeDasharray={String(125.66*(lunarProgress?.fraction??activeFlightProgress?.fraction??assemblyFraction??0))+' 125.66'}/>
+            <text x="26" y="30" fill="#f6e7d0" textAnchor="middle" fontSize="11" fontWeight="800">{Math.round((lunarProgress?.fraction??activeFlightProgress?.fraction??assemblyFraction??0)*100)}%</text>
           </svg>
-          <span><strong>{game.activeMoonCargoRun?.title??game.activeStoryRun?.title}</strong>
+          <span><strong>{game.activeMoonCargoRun?.title??game.activeStoryRun?.title??game.activeAssemblyProject?.draft.title}</strong>
             <small>{(lunarProgress??activeFlightProgress)?.ready?
               game.activeMoonCargoRun?'LANDED · CONFIRM DELIVERY':'READY FOR DEBRIEF':
+              game.activeAssemblyProject?
+              'ORBIT INVENTORY '+game.activeAssemblyProject.launchesCompleted+'/'+game.activeAssemblyProject.draft.launchCount+' · open staging':
               'ETA '+flightEta((lunarProgress??activeFlightProgress)?.remainingMs??0)+' · open viewer'}</small></span>
         </button>}
         <section className={'intro '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')}>
@@ -915,7 +919,7 @@ export default function App() {
           rocketService={game.rocketService} rocketTier={game.rocketProgramLevel}
           orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
           rocketFlights={game.rocketFlightCounts} vehicle={vehicle}
-          otherFlightActive={!!game.activeStoryRun}
+          otherFlightActive={!!(game.activeStoryRun||game.activeAssemblyProject)}
           onDispatchCargo={startMoonCargo} onCompleteCargo={finishMoonCargo}
           onOpenRocketFleet={()=>setActiveView('rockets')}
           onInvest={investMoonBase}
