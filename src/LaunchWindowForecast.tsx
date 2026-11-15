@@ -38,7 +38,7 @@ export default function LaunchWindowForecast({target,day,options,review,netDaily
  const x=(p:WindowPoint)=>LEFT+(p.day-earliest)/Math.max(1,last-earliest)*(RIGHT-LEFT);
  const y=(v:number)=>BOTTOM-(v-lo)/Math.max(1,hi-lo)*(BOTTOM-TOP);
  const path=points.map((p,i)=>(i===0?'M':'L')+' '+x(p).toFixed(2)+' '+y(p.requiredDeltaVms).toFixed(2)).join(' ');
- const daysWait=selected?.day-day??0;
+ const daysWait=(selected?.day??day)-day;
  const treasuryAtDeparture=cashUsd+daysWait*netDailyUsd;
  if(!forecast)return <div className="panel flight-window-forecast" aria-label="Flight review and future transfer energy">
    <div className="eyebrow">FLIGHT REVIEW / CURRENT AND FUTURE Δv</div>
