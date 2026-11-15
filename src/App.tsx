@@ -564,6 +564,9 @@ export default function App() {
           <div><small>MOON REVENUE</small><strong>+{usd(dailyBudget.revenueUsd)}/d</strong></div>
           <div className={dailyBudget.netUsd>=0?'positive':'negative'}>
             <small>NET / GAME DAY</small><strong>{dailyBudget.netUsd>=0?'+':''}{usd(dailyBudget.netUsd)}/d</strong>
+            <small>{dailyBudget.netUsd>=0?'POSITIVE CASH FLOW':
+              game.cash<=0?'INSOLVENT · SEEK CONTRACT REVENUE':
+              'AT CURRENT BURN: '+Math.floor(game.cash/-dailyBudget.netUsd)+' GAME DAYS OF CASH RUNWAY'}</small>
           </div>
           {game.cash<0&&<div className="finance-distress">CASH DEFICIT · new investments blocked</div>}
         </section>
