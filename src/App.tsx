@@ -649,7 +649,8 @@ export default function App() {
       priorServiceFlights:game.rocketFlightCounts[game.rocketService]??0,
     });}catch{return null}
   },[campaignSelection.selected,game.day,campaignOptions,spacecraftDesign,vehicle,
-    game.cash,game.engineBuildCounts,missionTechnologyDiscount,lastSolvedTransfer]);
+    game.cash,game.engineBuildCounts,missionTechnologyDiscount,lastSolvedTransfer,
+    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts]);
   function startEarthObservation(costUsd:number){
     setSnapshot(previous=>{
       const g=previous.game;
