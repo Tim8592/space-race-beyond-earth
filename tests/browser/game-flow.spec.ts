@@ -14,7 +14,11 @@ test('Mission Control supports a launch, financial feedback, and save-state relo
     await page.getByRole('tab',{name:/Orbital Contracts · Classic mode/}).click();
     await expect(page.getByRole('heading',{name:/Build the future/i})).toBeVisible();
     await expect(page.getByText('AVAILABLE CAPITAL')).toBeVisible();
-    const launch=page.getByRole('button',{name:/Launch mission|Attempt mission anyway/i});
+    await page.getByRole('tab',{name:'Rocket Fleet'}).click();
+    await page.locator('.rocket-fleet-option').filter({hasText:'Falcon 9 · dedicated'}).click();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Orbital Contracts · Classic mode/}).click();
+    const launch=page.getByRole('button',{name:/Purchase launch and deliver mission/i});
     await expect(launch).toBeEnabled();
     await launch.click();
     await expect(page.getByText('SUCCESSFUL MISSIONS')).toBeVisible();
@@ -124,24 +128,22 @@ test('NASA GLB failure gives a specific error and Retry triggers a new fetch',as
   });
 });
 
-test('Campaign blueprints can be saved and loaded after changing a mass slider',async({page})=>{
+test('Rocket Fleet uses immutable preset vehicles instead of editable arbitrary mass',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
-    await page.getByRole('tab',{name:/Orbital Contracts · Classic mode/}).click();
-    const name=page.locator('#craft-name');
-    await name.fill('QA verification spacecraft');
-    await page.getByRole('button',{name:/Save blueprint/}).click();
-    const reload=page.getByRole('combobox',{name:'Load saved blueprint'});
-    await expect(reload).toBeVisible();
-    await name.fill('Changed working copy');
-    await reload.selectOption('QA verification spacecraft');
-    await expect(name).toHaveValue('QA verification spacecraft');
+    await page.getByRole('tab',{name:'Rocket Fleet'}).click();
+    await expect(page.getByRole('heading',{name:/Choose between sovereign launch/})).toBeVisible();
+    await expect(page.getByText('220 kg').first()).toBeVisible();
+    await expect(page.locator('.rocket-fleet-option')).toHaveCount(4);
+    await expect(page.locator('.rocket-custom-builder input')).toHaveCount(0);
+    await expect(page.locator('#craft-name')).toHaveCount(0);
+    await page.locator('.rocket-fleet-option').filter({hasText:'Falcon 9 · dedicated'}).click();
     await page.reload();
-    await page.getByRole('tab',{name:/Orbital Contracts · Classic mode/}).click();
-    await expect(page.getByRole('combobox',{name:'Load saved blueprint'})).toBeVisible();
+    await page.getByRole('tab',{name:'Rocket Fleet'}).click();
+    await expect(page.locator('.rocket-fleet-option.selected')).toContainText('Falcon 9');
+    await expect(page.locator('.rocket-fleet-option')).toContainText(['Aurora']);
   });
 });
-
 test('Earth Observation One shares spacecraft design and completes a seven-day scientific mission',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
@@ -247,7 +249,7 @@ test('Research investment spends agency capital and permanently unlocks technolo
   await expectNoErrors(page,async()=>{
     await page.goto('/');
     await page.getByRole('tab',{name:'Research & Roadmap'}).click();
-    await expect(page.getByRole('heading',{name:'Research the next frontier.'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Build your technology pathways.'})).toBeVisible();
     const invest=page.getByRole('button',{name:/Invest \$20M/});
     await expect(page.locator('.research-intro-side')).toContainText('10 RP');
     await invest.click();
@@ -409,13 +411,12 @@ test('Rocket Fleet prices payload by launched mass and requires orbital assembly
   await expectNoErrors(page,async()=>{
     await page.goto('/');
     await page.getByRole('tab',{name:'Rocket Fleet'}).click();
-    await expect(page.getByRole('heading',{name:'Rocket Fleet & Orbital Logistics'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:/Choose between sovereign launch/})).toBeVisible();
     await expect(page.locator('.rocket-fleet-grid')).toContainText('Starship');
-    await expect(page.locator('.rocket-fleet-option.locked')).toHaveCount(2);
+    await expect(page.locator('.rocket-fleet-option.locked')).toHaveCount(0);
     await page.getByRole('button',{name:/Commission orbital assembly facility/}).click();
     await expect(page.getByRole('button',{name:/Orbital assembly operational/})).toBeDisabled();
-    await page.locator('.rocket-custom-builder label').filter({hasText:'Payload bay design limit'})
-      .locator('input').fill('900');
+    await expect(page.locator('.rocket-custom-builder input')).toHaveCount(0);
     await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:'Research & Roadmap'}).click();
     await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
@@ -441,7 +442,8 @@ test('Heavy spacecraft launches rocket batches individually and assembles hardwa
       saved.game.cash=1000e6;
       saved.game.orbitalAssemblyUnlocked=true;
       saved.game.rocketService='custom';
-      saved.vehicle.payloadMassKg=700;
+      saved.game.rocketProgramLevel=1;
+      saved.vehicle.payloadMassKg=1000000000; // Old save cannot change preset rocket lift.
       localStorage.setItem(key,JSON.stringify(saved));
     });
     await page.reload();
