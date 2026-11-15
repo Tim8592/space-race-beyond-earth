@@ -9,6 +9,11 @@ import LearningLab from './LearningLab';
 import ResearchLab from './ResearchLab';
 import MoonBase from './MoonBase';
 import RocketFleet from './RocketFleet';
+import NASAMissionIntelligence from './NASAMissionIntelligence';
+import {loadNASAMissionIntelligence} from './lib/nasaMissionClient';
+import {readNASAMissionCache,nasaWeatherBrief,makeNeoObservationOffer,
+  type NASAMissionSnapshot,type NeoObservationOffer,type NearEarthApproach}
+  from './lib/nasaMissionIntelligence';
 import {FLEET_UPGRADES,ORBITAL_ASSEMBLY_UPGRADE_USD,planMoonShipment,
   planLaunchManifest,flightService,canadianProgramReadiness,CANADIAN_RESEARCH_BONUS_RP,
   type LauncherId,type MoonCargoRun} from './lib/launchLogistics';
@@ -24,7 +29,7 @@ import {resolveCampaignSelection} from './lib/campaignSelection';
 import type {LambertSolution} from './TransferPlanner';
 import {canResearch,TECHNOLOGIES, type TechnologyId,hasTechnology,
   THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,researchDiscount} from './lib/technologyTree';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   INITIAL_VEHICLE,
   ENGINES,
@@ -113,6 +118,7 @@ type Game = {
   rocketService:LauncherId;rocketProgramLevel:number;
   rocketFlightCounts:Record<LauncherId,number>;orbitalAssemblyUnlocked:boolean;
   canadianMissionSuccesses:number;observationLaunchService:LauncherId|null;
+  neoOpportunity:NeoObservationOffer|null;
   moonCargoDeliveredLevel:number;activeMoonCargoRun:MoonCargoRun|null;
   activeAssemblyProject:CampaignAssemblyProject|null;
   devMode: boolean;
@@ -139,6 +145,7 @@ const DEFAULT_GAME: Game = {
   rocketFlightCounts:{custom:0,falcon9:0,falconHeavy:0,starship:0},
   orbitalAssemblyUnlocked:false,moonCargoDeliveredLevel:0,activeMoonCargoRun:null,
   canadianMissionSuccesses:0,observationLaunchService:null,
+  neoOpportunity:null,
   activeAssemblyProject:null,
   devMode: false,
   storyCompleted: [],
@@ -182,6 +189,8 @@ function loadSave(): Snapshot {
       observationLaunchService:typeof parsed.game.observationLaunchService==='string'&&
         ['custom','falcon9','falconHeavy','starship'].includes(parsed.game.observationLaunchService)?
         parsed.game.observationLaunchService:null,
+      neoOpportunity:parsed.game.neoOpportunity?.mission?.id&&
+        parsed.game.neoOpportunity.sourceNeo?.id?parsed.game.neoOpportunity:null,
       rocketFlightCounts:Object.assign(
         {custom:0,falcon9:0,falconHeavy:0,starship:0},
         parsed.game.rocketFlightCounts??{}),
@@ -235,7 +244,7 @@ export default function App() {
   const missionTechnologyDiscount=researchDiscount(effectiveUnlocks,game.devMode);
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const [activeView,setActiveView] = useState<'missions'|'rockets'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'>('missions');
+  const [activeView,setActiveView] = useState<'missions'|'rockets'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'|'nasa'>('missions');
   const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'|'progression'>('observation');
   const [researchFocus,setResearchFocus]=useState<'All'|'Launch'>('All');
   const [orbitalSelection,setOrbitalSelection]=useState<{
@@ -245,6 +254,11 @@ export default function App() {
   const [observationResetKey,setObservationResetKey]=useState(0);
   const [secondsToNextDay,setSecondsToNextDay]=useState(Math.ceil(GAME_DAY_DURATION_MS/1000));
   const [flightNowMs,setFlightNowMs]=useState(Date.now());
+  const [nasaSnapshot,setNasaSnapshot]=useState<NASAMissionSnapshot|null>(readNASAMissionCache);
+  const [nasaLoading,setNasaLoading]=useState(false);
+  const [nasaError,setNasaError]=useState<string|null>(null);
+  const nasaLoadingRef=useRef(false);
+  const nasaWeather=nasaWeatherBrief(nasaSnapshot,dateForGameDay(game.day),new Date(flightNowMs));
   const [flightViewerOpen,setFlightViewerOpen]=useState(true);
   const [spacecraftDesign,setSpacecraftDesign]=useState<SubsystemDesign>(readSubsystemDesign);
   const [labObservationChoices,setLabObservationChoices]=useState<ObservationChoices>(readObservationChoices);
@@ -260,8 +274,9 @@ export default function App() {
   });
   const unlockedCampaignStage=unlockedStage(game.storyCompleted,game.devMode);
   const campaignSelection=useMemo(()=>resolveCampaignSelection(game.day,unlockedCampaignStage,
-    game.storyCompleted,selectedCampaignId),
-    [game.day,unlockedCampaignStage,game.storyCompleted,selectedCampaignId]);
+    game.storyCompleted,selectedCampaignId,
+    game.neoOpportunity?[game.neoOpportunity.mission]:[]),
+    [game.day,unlockedCampaignStage,game.storyCompleted,selectedCampaignId,game.neoOpportunity]);
   const contract = CONTRACTS.find((item) => item.id === missionId) ?? CONTRACTS[0];
   const selectedServiceQuote=flightService({
     service:game.rocketService,vehicle,tier:game.rocketProgramLevel,
@@ -284,6 +299,27 @@ export default function App() {
   const lunarProgress=game.activeMoonCargoRun?
     flightProgress(game.activeMoonCargoRun.startedAtMs,flightNowMs,
       game.activeMoonCargoRun.viewerDurationMs):null;
+  async function updateNASAIntel(force=false){
+    if(nasaLoadingRef.current)return;
+    nasaLoadingRef.current=true;setNasaLoading(true);setNasaError(null);
+    try{
+      const result=await loadNASAMissionIntelligence({force});
+      setNasaSnapshot(result);
+    }catch(e){setNasaError(e instanceof Error?e.message:'NASA services unavailable. Offline game continues.')}
+    finally{nasaLoadingRef.current=false;setNasaLoading(false);}
+  }
+  useEffect(()=>{
+    if(activeView==='nasa'&&!nasaSnapshot&&!nasaLoading&&!nasaError)
+      void updateNASAIntel();
+  },[activeView,nasaSnapshot,nasaLoading,nasaError]);
+  function chooseNASAObject(neo:NearEarthApproach){
+    const offer=makeNeoObservationOffer(neo,game.day);
+    setSnapshot(previous=>({...previous,game:{...previous.game,
+      neoOpportunity:makeNeoObservationOffer(neo,previous.game.day)}}));
+    setSelectedCampaignId(offer.id);
+    setCampaignMode('progression');setActiveView('missions');
+    setMessage('NASA close approach '+neo.name+' selected for an Earth-orbit observation scenario. No asteroid intercept is implied.');
+  }
   function openFlightViewer(){
     setFlightViewerOpen(true);
     if(game.activeMoonCargoRun)setActiveView('moon');
@@ -624,9 +660,10 @@ export default function App() {
       orbitalAssemblyUnlocked:game.orbitalAssemblyUnlocked,
       priorServiceFlights:game.rocketFlightCounts[game.rocketService]??0,
       canadianSuccesses:game.canadianMissionSuccesses,
+      weatherReserveHours:nasaWeather.reserveHours,
     });}catch{return null}
   },[labObservationChoices,spacecraftDesign,vehicle,game.engineBuildCounts,missionTechnologyDiscount,
-    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses]);
+    game.rocketService,game.rocketProgramLevel,game.orbitalAssemblyUnlocked,game.rocketFlightCounts,game.canadianMissionSuccesses,nasaWeather.reserveHours]);
   const selectedCampaignReview=useMemo(()=>{
     try{return reviewCampaignMission({
       definition:campaignSelection.selected,day:game.day,options:campaignOptions,
@@ -638,6 +675,7 @@ export default function App() {
       orbitalAssemblyUnlocked:game.orbitalAssemblyUnlocked,
       priorServiceFlights:game.rocketFlightCounts[game.rocketService]??0,
       canadianSuccesses:game.canadianMissionSuccesses,
+      weatherReserveHours:nasaWeather.reserveHours,
     });}catch{return null}
   },[campaignSelection.selected,game.day,campaignOptions,spacecraftDesign,vehicle,
     game.cash,game.engineBuildCounts,missionTechnologyDiscount,lastSolvedTransfer,
@@ -720,14 +758,14 @@ export default function App() {
           <div className="brand"><span className="brand-symbol"><span className="brand-orbit" /></span><div><strong>SPACE RACE</strong><small>BEYOND EARTH</small></div></div>
           <nav aria-label="Primary" className="game-tabs" role="tablist">
               {([
-                ['missions','Play Campaign'],['rockets','Rocket Fleet'],['systems','Engineering Lab'],['moon','Moon Base'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],
+                ['missions','Play Campaign'],['rockets','Rocket Fleet'],['systems','Engineering Lab'],['moon','Moon Base'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],['nasa','NASA Intel'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>{
                   if(id==='systems')setLabObservationChoices(readObservationChoices());
                   if(id==='research')setResearchFocus('All');
                   setActiveView(id);
                 }}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.6</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.7</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
       </header>
 
@@ -813,6 +851,8 @@ export default function App() {
             orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
             priorServiceFlights={game.rocketFlightCounts[game.rocketService]??0}
             canadianSuccesses={game.canadianMissionSuccesses}
+            nasaNeoOffer={game.neoOpportunity?.mission??null}
+            weatherReserveHours={nasaWeather.reserveHours}
             logisticsInProgress={!!game.activeMoonCargoRun}
             nowMs={flightNowMs} viewerOpen={flightViewerOpen}
             onViewerOpenChange={setFlightViewerOpen}
@@ -956,6 +996,12 @@ export default function App() {
           onExploreCampaign={()=>{
             setSelectedCampaignId('lunar');setCampaignMode('progression');setActiveView('missions');
           }}/>}
+        {activeView==='nasa'&&<NASAMissionIntelligence
+          snapshot={nasaSnapshot} loading={nasaLoading} error={nasaError}
+          gameDate={dateForGameDay(game.day)} gameDay={game.day} brief={nasaWeather}
+          selectedNeoId={game.neoOpportunity?.sourceNeo.id??null}
+          onRefresh={()=>void updateNASAIntel(true)}
+          onSelectNeo={chooseNASAObject}/>}
         {activeView==='sources' && <div className="single-tab-page"><References/></div>}
         {activeView==='library' && <div className="single-tab-page"><MissionLibrary onOpenMap={()=>setActiveView('orbits')}/></div>}
         {activeView==='learning' && <div className="single-tab-page">
