@@ -304,7 +304,7 @@ export default function App() {
                 ['missions','Play Campaign'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>setActiveView(id)}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.7</span></div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.8</span></div>
         </div>
       </header>
 

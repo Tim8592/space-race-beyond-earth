@@ -6,7 +6,7 @@
 
 The goal is **not** to reproduce a professional flight dynamics package inside a video game. Instead, it is to make real engineering trade-offs understandable and engaging, while clearly distinguishing sourced physics from simplified mechanics.
 
-**Status:** Hackathon prototype, v0.7. The game has Play Campaign, Engineering Lab, Orbital Map, Mission Library, Learn Physics, and Research tabs. The Spacecraft Builder includes a selectable modular Three.js spacecraft preview (solar panels, radiators, tank, propulsion, antenna) and can import a GLB file exported from Onshape/FreeCAD for visual inspection. The Mission Library includes NASA-sourced Dawn, Psyche, New Horizons, and Voyager examples, reference models/images, statistics, milestone timelines, and on-demand historical JPL Horizons spacecraft paths when ephemerides are available. An **optional local Orekit Java service** now solves and plots impulsive Sun-centered Lambert transfers between approximate planetary positions. The new Earth Observation One mission shares the spacecraft sizing configuration, rocket performance and 3D design to run a seven-day imaging/data-downlink mission. Interplanetary transfer solutions remain an advanced separate tool; low-thrust electric trajectories, real launch-window optimization, gravity assists and flight qualification are NOT implemented.
+**Status:** Hackathon prototype, v0.8. The game has Play Campaign, Engineering Lab, Orbital Map, Mission Library, Learn Physics, and Research tabs. The Spacecraft Builder includes a selectable modular Three.js spacecraft preview (solar panels, radiators, tank, propulsion, antenna) and can import a GLB file exported from Onshape/FreeCAD for visual inspection. The Mission Library includes NASA-sourced Dawn, Psyche, New Horizons, Voyager, and the cancelled Project Prometheus/JIMO concept, reference models/images, statistics, milestone timelines, and on-demand historical JPL Horizons spacecraft paths when ephemerides are available. An **optional local Orekit Java service** now solves and plots impulsive Sun-centered Lambert transfers between approximate planetary positions. The new Earth Observation One mission shares the spacecraft sizing configuration, rocket performance and 3D design to run a seven-day imaging/data-downlink mission. Interplanetary transfer solutions remain an advanced separate tool; low-thrust electric trajectories, real launch-window optimization, gravity assists and flight qualification are NOT implemented.
 
 ## Challenge-aligned game plan and browser reliability tests
 
@@ -16,9 +16,39 @@ The official *Space Mission Design Game* asks for a complete space mission exper
 - **Automated browser smoke checks:** `npm run test:browser` (first install Chromium using `npx playwright install chromium`). GitHub Actions runs Chromium on every push to catch tab failures, browser exceptions, campaign persistence and NASA model retry regressions.
 - The independent core game must be deployable to an ordinary website without asking judges to install Java. Orekit and JPL historical position services are optional advanced modes.
 
+## New in v0.8 — smarter spacecraft architecture and ion propulsion
+
+### Ion and Hall propulsion catalogue
+
+The Engineering Lab now includes additional published reference operating points: NASA NSTAR (Dawn/Deep Space 1), NASA NEXT-C (DART hardware), QinetiQ T6 (BepiColombo), and SPT-140 Hall, alongside Busek BHT-100, BHT-200 and BIT-3 and an illustrative chemical monopropellant option. The [ion thruster taxonomy on Wikipedia](https://en.wikipedia.org/wiki/Ion_thruster) was a discovery starting point; **numerical hardware claims are grounded in linked NASA/NTRS engineering references**, and any unmatched electrical points or missing dry masses are flagged.
+
+You can choose **two propulsion architectures** with independent propellant inventories, thruster quantities and separate tank/feed estimates. Both systems contribute to spacecraft launch mass. The performance model assumes the propulsion families are operated **sequentially**, reports nominal single-family power requirements, and applies the ideal rocket equation once to each propellant burn in the chosen order. This is *not* a real finite-thrust trajectory, and it does not model simultaneous operation of different families or gimbal/power-bus scheduling.
+
+### Application-specific tank sizing
+
+- **Liquid hydrazine-class monopropellant:** approximately 1020 kg/m³ assumed liquid density, 5% ullage, configurable diaphragm/bellows/capillary feed and regulated pressure
+- **Dense xenon:** pressure-vessel design at a user-adjustable gas/supercritical reference pressure, but with **assumed** bulk xenon density (1000 kg/m³ at the default reference conditions), rather than a validated real-gas EOS
+- **Iodine:** solid heated-feed reservoir and containment allowances, not a pressurized liquid spherical tank
+
+For spherical pressure vessels the game reports a **membrane Tmin** using an internal-pressure stress relationship `t ≈ P·R/(2·S·E − 0.2·P)`, an assumed joint efficiency of 0.85, a non-code minimum manufacturing thickness and a feed/fit-up allowance. These are **conceptual engineering calculations, not ASME VIII or spacecraft pressure-vessel compliance**. Flight design needs pressure/temperature EOS, material compatibility, liner, weld, proof/burst factors, vibration loads, fracture control, qualification, PMDs and detailed thermal-structural FEA. For iodine, no pressure-vessel Tmin is calculated.
+
+### Automatic power, mass and thermal consequences
+
+- **Solar-array mass:** total active PV area × an explicitly assumed **2.5 kg/m²**, plus **0.5 kg per deployable wing**. Increasing solar area *does increase wet spacecraft mass*.
+- **Power:** editable baseline avionics watts + estimated wing controller watts + radiator sensor watts + selected science instrument active watts + assumed distribution/wiring inefficiency (94% electrical efficiency) + worst-active propulsion power and PPU losses.
+- **Science instruments:** Earth imagers, multispectral/hyperspectral cameras, thermal infrared radiometer, magnetometer, visible/IR mapper, gamma-ray/neutron spectrometer and laser altimeter. The payload catalog provides illustrative size/mass/watts/data and NASA science mission inspiration links—not certified flight instrument data.
+- **Radiators:** player chooses **installed thermal area** (with its own mass and visible geometry) separately from *calculated required area*. If installed radiator heat rejection is insufficient, the engineering margin and Earth Observation One mission performance suffer. Radiator mounting adds mass per panel.
+- **Breakdown:** Engineering Lab now shows a permanent mass/power summary strip, a component power ledger, two tank cards when dual propulsion is fitted, and a wet-mass roll-up. Clicking the modular 3D spacecraft's power, radiator, tank, nozzle or instrument geometry opens the corresponding engineering controls.
+
+### Project Prometheus is a research reference, not a flown satellite
+
+**Mission Library → Project Prometheus / Jupiter Icy Moons Orbiter (JIMO)** now includes NASA/GAO context on the 2003–2005 nuclear-electric studies. This program was **cancelled before flight**. The library does not fabricate a spacecraft model, position track, validated reactor mass or real flight-science manifest. Reference material: [NASA 2021 technical memorandum](https://ntrs.nasa.gov/api/citations/20210016968/downloads/TM-20210016968_final.pdf) and [GAO historical assessment](https://www.gao.gov/products/gao-05-242).
+
+**Model limitations:** solar attitude, electrical control losses, tank fluid density, dynamic thermal margins and installed power/propulsion hardware allowances remain educational. Electricity and tank sizing calculations are estimates with provenance, not engineering authorization. In-flight science collection, telemetry and downlink remain deterministic first-order game approximations.
+
 ## New in v0.7 — Earth Observation One
 
-**Play Campaign → Earth Observation One** is a guided complete mission demonstration. Pick a compact/multispectral/hyperspectral instrument, radio, recorder, observation duty cycle, orbit altitude, payload allocation and optional radiator/battery upgrades. The mission uses the **same spacecraft design** as Engineering Lab, replacing its generic instrument payload mass slot with the chosen real-world-shaped game instrument. The original rocket builder determines the launch performance for the actual spacecraft wet mass.
+**Play Campaign → Earth Observation One** is a guided complete mission demonstration. Pick a compact/multispectral/hyperspectral/thermal instrument, radio, recorder, observation duty cycle, orbit altitude, payload allocation and optional radiator/battery upgrades. The mission uses the **same spacecraft design** as Engineering Lab, replacing its generic instrument payload mass slot with the chosen real-world-shaped game instrument. The original rocket builder determines the launch performance for the actual spacecraft wet mass.
 
 Live horizontal bars compare **launch payload (kg), sunlit electrical load (W), thermal load (W), eclipse energy (Wh), daily science data/downlink (Mb/day), and total cost ($M)** with their modeled capacities. Overages are red; each shows consequences. Launch a viable design and advance through seven days of simulated operations; data can be buffered, overflow and be downlinked, with **science counted only after downlink**. The final debrief explains failure causes and financial outcome. No Orekit server required.
 
@@ -120,7 +150,7 @@ npm run build
 
 The game saves campaign progress and saved vehicle blueprints in the browser's `localStorage`. The **Reset campaign** action clears the current save. No account or backend is required.
 
-## Current features (v0.7)
+## Current features (v0.8)
 
 | Feature | How it works | Status |
 | --- | --- | --- |

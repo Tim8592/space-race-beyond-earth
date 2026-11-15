@@ -2,6 +2,12 @@
 
 Updated: November 14, 2026. This is the **planned next iteration**, not an implemented feature list.
 
+## v0.8 implementation status
+
+**Already connected:** optional second propulsion system with independent tank/feed estimate; application-specific preliminary xenon/iodine/monopropellant containment; installed science instruments and automatic electrical load/mass addition; separate installed-versus-required radiator area; component-click navigation to matching Engineering Lab control pages; Project Prometheus heritage reference (unflown).
+
+**Next engineering improvements:** use real-gas xenon EOS at specified storage pressure/temperature instead of assumed fixed density; enforce code-like pressure vessel sizing with proper load cases and material/safety criteria rather than preliminary membrane tmin; link engine PPU/bus voltage and actual throttle operating envelopes; allow instrument duty-cycle scheduling, active/standby power and a real communications link budget; generate CAD bill of materials with absolute per-part mass properties.
+
 ## Current v0.7 architecture
 
 **Play Campaign** has a new guided **Earth Observation One** mission and the original **Orbital Contracts / Classic mode**. The guided mission has a visible science briefing, instrument/radio/storage choice, orbit and launch-slot choices, budget and six live resource-capacity bars, a shared spacecraft 3D view, a link to the Engineering Lab, seven-day satellite operations and a science-downlink debrief.
@@ -56,4 +62,4 @@ Primary source: https://www.spaceappschallenge.org/2026/find-a-team/project_mora
 - The chosen instrument replaces a generic payload placeholder in the engineering lab; external comms and data storage hardware are added explicitly.
 - Negative resource margin cuts operational science duty rather than instantly killing the spacecraft. This is educational game logic, not real fault protection.
 - Mission launch cost is deducted immediately; successful science-return payouts are credited at the debrief. Mission outcomes are deterministic forecasts, not stochastic event simulations.
-- The propulsion system still has incomplete stored-gas mass/PPU/tank and detailed radiation/thermal integration. The 3D assembly is only schematic.
+- Xenon, liquid and iodine hardware now have application-specific preliminary tank/feed allowances, but the gas EOS, structural qualification, PPU mass/power provenance, radiation and generator thermal integration remain incomplete. The 3D assembly is still schematic.

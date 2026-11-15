@@ -1,6 +1,6 @@
 # Sources, tools, and SI/AI attribution
 
-This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.6**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
+This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v0.8**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
 
 ## NASA / JPL resources used in the application
 
@@ -100,6 +100,23 @@ This version dynamically partitions a player-specified total active cell area ov
 - **Educational game assumptions, not NASA technical specifications:** compact/multispectral/hyperspectral instrument mass, power and data rates; UHF/S-band/X-band communications performance and pricing; contact windows; storage capacity hardware mass/cost; 7-day science point targets; mission budget, rewards, radiator extension and battery pricing; power/thermal-driven observation duty factor; mission score
 - **Science/data bookkeeping:** deterministic daily generation, buffer cap, overflow and downlink. Science credit is proportional to the data actually downlinked, not merely observed. This is illustrative game mechanics, not a flight communications or imaging model.
 - The real spacecraft bus and launch vehicle configurations are now shared between Play Campaign and Engineering Lab, with a snapshot taken when the user launches; the generic instrument payload field is replaced by the selected observation instrument mass.
+
+## v0.8 reference propulsion, science instruments and Prometheus
+
+**Wikipedia discovery pages (taxonomy and historical context, not the numerical authority):**
+- [Ion thruster](https://en.wikipedia.org/wiki/Ion_thruster) — explains gridded-ion, Hall, electromagnetic, field-emission and laboratory propulsion families. Not all are simulated because published matched operating conditions and complete spacecraft masses are unavailable.
+- [Project Prometheus](https://en.wikipedia.org/wiki/Project_Prometheus) — directed us to NASA and government sources; concept is explicitly unflown.
+
+**Technical basis for additional selectable thrusters:**
+- [NASA Dawn ion-propulsion background](https://science.nasa.gov/mission/dawn/technology/ion-propulsion/) — ~91 mN max thrust for NSTAR, xenon, three installed engines with one operating at a time
+- [NASA/NTRS 2011 NEXT overview](https://ntrs.nasa.gov/api/citations/20110007141/downloads/20110007141.pdf) — NSTAR/NEXT comparative Isp and full power, 91 mN, ~3120 s, 2.3 kW class
+- [NASA/NTRS NEXT-C performance table](https://ntrs.nasa.gov/api/citations/20205005694/downloads/AIAA_NEXT-C_Flight_Ion_System_Status_Aug2020_8_04_2020.pdf) — 235 mN, 4155 s at 7.33 kW PPU input
+- [NASA/NTRS T6 performance testing](https://ntrs.nasa.gov/citations/20150008918) — 143 mN, 4120 s at a high-power operating point; the game's 5 kW planning allocation is approximate
+- [NASA/NTRS SPT-140 Hall study](https://ntrs.nasa.gov/api/citations/20170003033/downloads/20170003033.pdf) — ~4.5 kW, 300 V/15 A, reference hall thruster operating behavior
+- [NASA/NTRS nuclear-electric propulsion history](https://ntrs.nasa.gov/api/citations/20210016968/downloads/TM-20210016968_final.pdf) — Project Prometheus/JIMO reactor-electric studies; the program was cancelled in 2005 without a flight vehicle
+- [GAO Project Prometheus](https://www.gao.gov/products/gao-05-242) — independent government historical assessment of the project's changing goals and resource constraints
+
+**Clearly illustrative game assumptions:** all numerical mass, power, data rates, mission scores and prices in `src/lib/instrumentCatalog.ts`; assumed xenon bulk density, liquid propellant density, storage pressure choice, iodine packing, spherical tank fitting/feed mass and minimum wall thickness; electrical controller loads of 1.5 W per wing and 0.65 W per radiator panel, a 94% distribution efficiency, 88% PPU planning efficiency, and 2.5 kg/m² solar array are not product-certified performance claims. The user-entered tank strength is a conceptual allowable, and the spherical membrane pressure relationship **does not constitute ASME VIII compliance** or an appropriately safety-factored spacecraft pressure-vessel design. Radioisotope/fission generator waste heat and structural shielding are not completely modeled.
 
 ## Other frameworks and external sources
 
