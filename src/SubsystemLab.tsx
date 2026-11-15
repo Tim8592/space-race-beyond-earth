@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Spacecraft3D, {type PartName} from './Spacecraft3D';
 import {dateForGameDay,type CampaignDefinition,type MissionReview} from './lib/campaignMissions';
+import {type ObservationPreview} from './lib/observationMission';
 import FieldHelp from './components/FieldHelp';
 import { descriptionFor } from './lib/fieldHelp';
 import {
@@ -90,8 +91,14 @@ export type MissionLabContext={
   stageUnlocked:number;completed:boolean;lockedTechnologyCount:number;
   activeFlight:boolean;gameDay:number;
 };
+export type ObservationLabContext={
+  forecast:{preview:ObservationPreview;scienceReturned:number;successful:boolean}|null;
+  requiredScience:number;cash:number;lockedTechnologyCount:number;
+};
 type SystemTab='propulsion'|'payload'|'power'|'thermal'|'tank'|'analysis';
 function checkPanel(label:string):SystemTab|null{
+  if(/launch payload|rocket payload/i.test(label))return null;
+  if(/eclipse/i.test(label))return 'power';
   if(/thermal|heat|radiator|reactor/i.test(label))return 'thermal';
   if(/power|electric|generator/i.test(label))return 'power';
   if(/payload|science|instrument/i.test(label))return 'payload';
@@ -99,11 +106,11 @@ function checkPanel(label:string):SystemTab|null{
   return null; // launcher, antenna, launch window and budget are campaign controls
 }
 export default function SubsystemLab({design,onDesignChange,unlockedTechnologies=[],devMode=false,
-  mission,onReturnToMission}:{
+  mission,observation,onReturnToMission}:{
   design:SubsystemDesign;onDesignChange:(next:SubsystemDesign)=>void;
   unlockedTechnologies?:readonly TechnologyId[];
   devMode?:boolean;
-  mission?:MissionLabContext;onReturnToMission?:()=>void;
+  mission?:MissionLabContext;observation?:ObservationLabContext;onReturnToMission?:()=>void;
 }) {
   const [activeSystemTab,setActiveSystemTab] = useState<SystemTab>('propulsion');
   const [lastEdit,setLastEdit]=useState<{
@@ -202,6 +209,57 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
         <div><small>SOLAR ARRAY + MOUNTS</small><strong>{fmt(result.arrayMassKg,'kg',1)}</strong></div>
         <div><small>PEAK ELECTRICAL DRAW</small><strong>{fmt(result.totalElectricalDemandW,'W',0)}</strong></div>
         <div><small>TANKS AND FEEDS</small><strong>{fmt(result.totalTankHardwareMassKg,'kg',1)}</strong></div>
+      </div>}
+      {observation&&<div className="sys-mission-brief" aria-label="Earth Observation One current bottlenecks">
+        <div className="sys-mission-top">
+          <div><div className="eyebrow">GUIDED FIRST MISSION / LIVE ENGINEERING READINESS</div>
+            <h3>Earth Observation One</h3>
+            <p>The same spacecraft powers this guided science mission.
+              Radio, data storage and launch slot are configured in Mission Control.</p></div>
+          <button type="button" className="secondary-button" onClick={onReturnToMission}>
+            Return to Earth Observation One ↗
+          </button>
+        </div>
+        {observation.forecast?<>
+          <div className="sys-mission-readiness">
+            <strong>{observation.forecast.preview.capacities.filter(c=>c.used<=c.limit).length}/
+              {observation.forecast.preview.capacities.length} modeled capacity checks pass</strong>
+            <span>Projected science return: {fmt(observation.forecast.scienceReturned,'points',1)}
+              {' / '}{observation.requiredScience} required
+              {observation.lockedTechnologyCount>0?' · Research-locked equipment installed':''}</span>
+          </div>
+          <div className="sys-mission-bottlenecks">
+            {observation.forecast.preview.capacities.filter(c=>c.used>c.limit).map(cap=>{
+              const panel=checkPanel(cap.name);
+              return <div className="sys-mission-issue" key={cap.name}>
+                <span className="sys-mission-issue-icon">!</span>
+                <div><strong>{cap.name}</strong>
+                  <small>{fmt(cap.used,cap.unit,1)} required · {fmt(cap.limit,cap.unit,1)} available</small></div>
+                {panel?<button type="button" onClick={()=>setActiveSystemTab(panel)}>Open {panel} ↗</button>:
+                  <small className="sys-campaign-only">Guided mission / rocket controls</small>}
+              </div>;
+            })}
+            {observation.forecast.scienceReturned<observation.requiredScience&&
+              <div className="sys-mission-issue">
+                <span className="sys-mission-issue-icon">!</span>
+                <div><strong>Projected science below mission goal</strong>
+                  <small>{fmt(observation.forecast.scienceReturned,'points',1)} returned /
+                    {observation.requiredScience} target; consider science duty cycle, power, radiators and radio</small></div>
+                <button type="button" onClick={()=>setActiveSystemTab('payload')}>Open science payload ↗</button>
+              </div>}
+            {observation.forecast.preview.missionCostUsd>observation.cash&&
+              <div className="sys-mission-issue"><span className="sys-mission-issue-icon">!</span>
+                <div><strong>Agency funds insufficient</strong>
+                  <small>Mission cost {fmt(observation.forecast.preview.missionCostUsd/1e6,'$M',1)}
+                    {' · '}available {fmt(observation.cash/1e6,'$M',1)}</small></div>
+                <small className="sys-campaign-only">Mission economics</small>
+              </div>}
+            {observation.forecast.preview.capacities.every(c=>c.used<=c.limit)&&
+              observation.forecast.scienceReturned>=observation.requiredScience&&
+              <p className="sys-mission-ready-text">All first-order capacity checks pass. Return to the
+                guided mission for the final launch and science review.</p>}
+          </div>
+        </>:<p className="sys-mission-ready-text">Invalid mission inputs. See Engineering Analysis.</p>}
       </div>}
       {mission&&<div className="sys-mission-brief" aria-label="Selected mission and engineering bottlenecks">
         <div className="sys-mission-top">
