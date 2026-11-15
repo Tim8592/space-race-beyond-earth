@@ -290,12 +290,12 @@ test('Special elliptical offer responds to eccentricity and expires after in-gam
     await expect(page.locator('.campaign-special-offer')).toContainText('WINDOW OPEN');
     await page.locator('.campaign-special-offer').click();
     await expect(page.locator('.campaign-orbital-inputs')).toBeVisible();
-    const initial=await page.getByText('Elliptical target apogee').locator('..').textContent();
+    const apogeeCheck=page.locator('.campaign-system-check').filter({hasText:'Elliptical target apogee'});
+    const initial=await apogeeCheck.textContent();
     await page.getByRole('slider',{name:'Mission eccentricity'}).fill('0.78');
-    await expect(page.getByText('Elliptical target apogee').locator('..')).not.toHaveText(initial??'');
-    await page.getByRole('button',{name:/Advance 7 days \/ wait for opportunities/}).click();
-    await page.getByRole('button',{name:/Advance 7 days \/ wait for opportunities/}).click();
-    await page.getByRole('button',{name:/Advance 7 days \/ wait for opportunities/}).click();
+    await expect(apogeeCheck).not.toHaveText(initial??'');
+    for(let i=0;i<4;i++)await page.getByRole('button',
+      {name:/Advance 7 days \/ wait for opportunities/}).click();
     await expect(page.locator('.campaign-special-offer')).toContainText('WINDOW EXPIRED');
   });
 });
