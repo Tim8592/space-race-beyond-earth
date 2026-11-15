@@ -162,6 +162,14 @@ test('Earth Observation One shares spacecraft design and completes a seven-day s
     const balance=page.locator('.kpi').filter({hasText:'AVAILABLE CAPITAL'}).locator('strong');
     const balanceBefore=await balance.textContent();
     await start.click();
+    const flown=await page.evaluate(()=>{
+      const saved=JSON.parse(localStorage.getItem('space-race-v01-save')!);
+      return saved.game.spacecraftBlueprints.find(
+        (b:{usedOnMissions:string[]})=>b.usedOnMissions.includes('Earth Observation One')
+      )?.design;
+    });
+    expect(flown?.payloadInstrumentId).toBe('multispectral');
+    expect(flown?.payloadMassKg).toBe(0);
     await expect(balance).not.toHaveText(balanceBefore??'');
     await expect(page.getByRole('heading',{name:/Satellite in orbit/})).toBeVisible();
     await page.getByRole('button',{name:/Advance one day/}).click();
@@ -200,6 +208,7 @@ test('Earth observation thermal and downlink limits change the forecast, not jus
     await page.getByRole('combobox',{name:'Communications / antenna'}).selectOption('uhf');
     await expect(page.getByText(/Data generation exceeds daily contact capacity/)).toBeVisible();
     await page.getByRole('combobox',{name:'Communications / antenna'}).selectOption('sband');
+    await page.locator('.ob-mission-upgrades > summary').click();
     await page.getByRole('slider',{name:'Additional radiator area'}).fill('0');
     await expect(page.getByText(/Insufficient modeled radiator heat rejection/)).toBeVisible();
   });
@@ -208,6 +217,7 @@ test('Earth observation thermal and downlink limits change the forecast, not jus
 test('Science instrument selection automatically changes mass, electrical load and catalog details',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
+    await page.getByRole('tab',{name:/Explore Further/}).click();
     await page.getByRole('tab',{name:'Engineering Lab'}).click();
     const mass=page.locator('.sys-live-strip').getByText('MODELED WET MASS').locator('..').locator('strong');
     const before=await mass.textContent();
@@ -788,5 +798,22 @@ test('Campaign draws its payload from Engineering Lab and keeps mission add-ons 
     await kit.locator('summary').click();
     await page.getByRole('checkbox',{name:/Extended-duration energy module/}).check();
     await expect(kit.locator('summary')).toContainText('energy reserve');
+  });
+});
+
+test('Guided observation has one active mission-camera selector and shows Lab hardware as reusable',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await expect(page.getByRole('heading',{name:'Guided mission payload & operations'})).toBeVisible();
+    await page.getByRole('combobox',{name:'Guided science instrument'}).selectOption('compact');
+    const extras=page.locator('.ob-mission-upgrades');
+    await expect(extras).not.toHaveAttribute('open','');
+    await expect(extras.locator('summary')).toContainText('+0.6 m² radiator');
+    await page.getByRole('button',{name:/Edit propulsion, solar and thermal/}).click();
+    await page.getByRole('tab',{name:'Science payload'}).click();
+    await expect(page.locator('.sys-guided-payload-notice')).toContainText('Compact Earth imager');
+    await expect(page.getByRole('combobox',{name:/Installed science sensor/})).toHaveCount(0);
+    await page.getByRole('button',{name:/Change guided camera in Play Campaign/}).click();
+    await expect(page.getByRole('combobox',{name:'Guided science instrument'})).toHaveValue('compact');
   });
 });
