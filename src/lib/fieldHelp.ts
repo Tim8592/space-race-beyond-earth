@@ -3,6 +3,15 @@
  * Numeric values and sourced assumptions live in the engineering modules.
  */
 export const FIELD_HELP: Record<string,string> = {
+  'Optional second propulsion system': 'Install a second in-space engine architecture. It gets its own propellant inventory and tank, and both engine systems contribute to dry mass. The design estimator assumes they fire one family at a time and uses sequential ideal rocket equations.',
+  'Burn sequence': 'Select which installed propulsion system consumes propellant first in the ideal two-burn calculation. Delta-V changes with the changing spacecraft mass; actual flight maneuver timing is NOT modeled.',
+  'Primary propellant inventory': 'Mass of propellant stored for the primary selected engine. Xenon, iodine, or hydrazine-class liquid determines the storage model automatically.',
+  'Secondary propellant': 'Independent fuel mass for the second engine. It adds a separate tank/feed system and launch mass.',
+  'Secondary thruster count': 'Number of secondary engine heads. Thrust, nominal peak electrical consumption, electronics mass and potentially mounting complexity increase.',
+  'Installed science sensor': 'An instrument automatically adds mass, peak science operating power, heat generation and a data generation reference to the spacecraft design. Hardware specifications here are illustrative game assumptions.',
+  'Additional instruments / cargo mass': 'Additional mass not captured by the chosen catalog sensor, such as other experiment packages or cargo. Avoid entering the same sensor mass twice.',
+  'Base avionics load': 'Only the platform electronics baseline power. The calculator adds solar wing controllers, radiator sensors, the selected science payload and distribution/wiring losses automatically, as well as whichever installed propulsion system needs the highest power.',
+  'Xenon storage pressure': 'Assumed internal pressure of the dense xenon reservoir. The program sizes a conceptual spherical vessel for its stated pressure; xenon density is a separate nonideal thermodynamic assumption, not calculated with an equation of state.',
   'In-space engine / technology': 'Select the propulsion hardware. Specific impulse changes propellant efficiency; thrust changes acceleration and burn time; electric thrusters also need electrical power. These engines do not launch from Earth.',
   'Number of thrusters': 'Number of identical engines fitted and assumed to fire together. More engines raise total thrust, electrical demand, hardware mass and heat, but do not multiply Isp.',
   'Propellant inventory': 'Usable propellant carried in kg. It increases initial/wet spacecraft mass; as fuel is burned, spacecraft mass decreases. Tank residuals and reserves remain unmodeled.',

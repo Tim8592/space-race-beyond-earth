@@ -331,3 +331,41 @@
 @media(max-width:1100px){.ob-mission-grid{grid-template-columns:1fr}.ob-forecast{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:780px){.ob-capacity-grid,.ob-operations-grid{grid-template-columns:1fr}.ob-brief-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.ob-phase{white-space:normal}.ob-hero-title{flex-direction:column}}
 @media(max-width:540px){.ob-forecast,.ob-live-stats,.ob-debrief .ob-forecast{grid-template-columns:1fr}.ob-action,.lab-back{flex-direction:column;align-items:stretch}.ob-action .launch-button{min-width:0;width:100%}.ob-day-tile{font-size:8px;padding:8px 1px}.ob-capacity-top{flex-wrap:wrap}}
+
+/* v0.8 — connected spacecraft architecture cards / automated engineering ledgers */
+.sys-live-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0 13px}
+.sys-live-strip>div{background:linear-gradient(150deg,#163a56,#11243a);border:1px solid #44647e;border-radius:10px;padding:15px 13px;display:flex;flex-direction:column;gap:8px}
+.sys-live-strip small{font-size:9px;color:#a7c4dc;letter-spacing:1px;font-weight:800;line-height:1.6}
+.sys-live-strip strong{font-size:clamp(16px,2vw,23px);color:#ffdfac;font-family:'Space Grotesk',sans-serif;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.sys-architecture{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.sys-architecture>div{border:1px solid #56728f;background:linear-gradient(132deg,#142e46,#152036);border-radius:9px;padding:15px;display:flex;flex-direction:column;gap:8px}
+.sys-architecture>div strong{font-size:13px;color:#edf5fb}
+.sys-architecture>div span{font-size:11px;line-height:1.5;color:#e2caa7}
+.sys-architecture p{grid-column:1/-1;font-size:11px;line-height:1.65;color:#9ebad0;margin:0}
+.sys-sensor-card{display:grid;grid-template-columns:1.5fr .8fr;gap:12px;background:linear-gradient(135deg,#172e42,#1e283e);border:1px solid #3d6682;border-radius:10px;padding:19px;margin:16px 0}
+.sys-chip{display:inline-block;padding:4px 8px;background:#304658;border:1px solid #55718b;border-radius:4px;letter-spacing:.8px;color:#b7dbef;font-size:9px;font-weight:800;line-height:1.4}
+.sys-sensor-card h4,.sys-tank-card h4{font-family:'Space Grotesk',sans-serif;font-size:18px;color:#f2f7fe;margin:10px 0}
+.sys-sensor-card p{font-size:12px;line-height:1.7;color:#acccdf}
+.sys-sensor-card a{font-size:11px;color:#8dcdf5;text-decoration:underline}
+.sys-sensor-numbers{display:grid;grid-template-columns:1fr;gap:4px;align-content:center;border-left:1px solid #415970;padding:0 15px}
+.sys-sensor-numbers strong{font-family:'Space Grotesk';font-size:16px;color:#ffd69b}
+.sys-sensor-numbers span{font-size:9px;color:#abc5d7;letter-spacing:1px;margin-bottom:6px}
+.sys-auto-ledger{border:1px solid #3c5d77;background:#10263a;border-radius:10px;padding:16px;margin:14px 0;max-width:1080px}
+.sys-auto-ledger>.eyebrow{margin-bottom:13px}
+.sys-auto-ledger>div:not(.eyebrow){display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid #29435b;padding:9px 2px;font-size:12px;line-height:1.45}
+.sys-auto-ledger>div span{color:#b9d1e1}
+.sys-auto-ledger>div strong{color:#e6f1fd;font-variant-numeric:tabular-nums;text-align:right}
+.sys-auto-ledger>.total{border-top:1px solid #6d92ab;border-bottom:0!important;padding-top:15px!important;margin-top:8px;font-weight:800}
+.sys-auto-ledger>.total strong{color:#ffda9a!important}
+.sys-tank-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.sys-tank-card{padding:16px;border:1px solid #4f7590;border-radius:9px;background:linear-gradient(145deg,#112d44,#141e33)}
+.sys-tank-card>div:not(.sys-chip){display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #2a4458;padding:8px 0;font-size:11px}
+.sys-tank-card>div>span{color:#a9c5da}
+.sys-tank-card>div>strong{color:#ecd1a1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sys-tank-card>div.total{border-top:1px solid #5f8099;border-bottom:0;margin-top:7px;padding-top:14px;font-weight:700}
+.sys-tank-card p{font-size:10px;line-height:1.65;color:#a6c1d4;margin:13px 0 0}
+.heritage-concept-note{padding:12px 5px}
+.heritage-concept-note h3{font-family:'Space Grotesk';font-size:20px;margin:12px 0;color:#f0d2a0}
+.heritage-concept-note p{font-size:12px;line-height:1.7;color:#b5cde0}
+@media(max-width:940px){.sys-live-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.sys-tank-grid{grid-template-columns:1fr}}
+@media(max-width:580px){.sys-live-strip,.sys-architecture,.sys-sensor-card{grid-template-columns:1fr}.sys-architecture p{grid-column:auto}.sys-sensor-numbers{border-left:0;border-top:1px solid #415970;padding:14px 0 0;grid-template-columns:repeat(3,1fr)}.sys-tank-card>div:not(.sys-chip){flex-wrap:wrap}}
