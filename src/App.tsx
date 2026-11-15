@@ -8,6 +8,9 @@ import MissionLibrary from './MissionLibrary';
 import LearningLab from './LearningLab';
 import ResearchLab from './ResearchLab';
 import MoonBase from './MoonBase';
+import RocketFleet from './RocketFleet';
+import {FLEET_UPGRADES,ORBITAL_ASSEMBLY_UPGRADE_USD,planMoonShipment,
+  planLaunchManifest,type LauncherId,type MoonCargoRun} from './lib/launchLogistics';
 import {advanceProgramDay,dailyEconomics,MOON_BASE_LEVELS,RESEARCH_POINTS_START,
   researchPointsCost} from './lib/programEconomy';
 import {flightProgress,DEFAULT_FLIGHT_VIEWER_MS,flightEta} from './lib/flightProgress';
@@ -111,6 +114,9 @@ type Game = {
   researchSpentUsd: number;
   researchPoints:number;moonBaseLevel:number;
   operatingSpentUsd:number;passiveRevenueUsd:number;
+  rocketService:LauncherId;rocketProgramLevel:number;
+  rocketFlightCounts:Record<LauncherId,number>;orbitalAssemblyUnlocked:boolean;
+  moonCargoDeliveredLevel:number;activeMoonCargoRun:MoonCargoRun|null;
   devMode: boolean;
   storyCompleted: string[];
   activeStoryRun: CampaignRun|null;
@@ -131,6 +137,9 @@ const DEFAULT_GAME: Game = {
   researchSpentUsd: 0,
   researchPoints: RESEARCH_POINTS_START,moonBaseLevel:0,
   operatingSpentUsd:0,passiveRevenueUsd:0,
+  rocketService:'custom',rocketProgramLevel:0,
+  rocketFlightCounts:{custom:0,falcon9:0,falconHeavy:0,starship:0},
+  orbitalAssemblyUnlocked:false,moonCargoDeliveredLevel:0,activeMoonCargoRun:null,
   devMode: false,
   storyCompleted: [],
   activeStoryRun: null,
@@ -163,6 +172,19 @@ function loadSave(): Snapshot {
         Math.min(3,Math.max(0,parsed.game.moonBaseLevel)):0,
       operatingSpentUsd:Number.isFinite(parsed.game.operatingSpentUsd)?parsed.game.operatingSpentUsd:0,
       passiveRevenueUsd:Number.isFinite(parsed.game.passiveRevenueUsd)?parsed.game.passiveRevenueUsd:0,
+      rocketService:['custom','falcon9','falconHeavy','starship'].includes(parsed.game.rocketService)?
+        parsed.game.rocketService:'custom',
+      rocketProgramLevel:Number.isInteger(parsed.game.rocketProgramLevel)?
+        Math.max(0,Math.min(3,parsed.game.rocketProgramLevel)):0,
+      orbitalAssemblyUnlocked:parsed.game.orbitalAssemblyUnlocked===true,
+      rocketFlightCounts:{custom:0,falcon9:0,falconHeavy:0,starship:0,
+        ...(parsed.game.rocketFlightCounts??{})},
+      moonCargoDeliveredLevel:Number.isInteger(parsed.game.moonCargoDeliveredLevel)?
+        Math.max(parsed.game.moonBaseLevel??0,Math.min(3,parsed.game.moonCargoDeliveredLevel)):
+        Math.max(0,parsed.game.moonBaseLevel??0),
+      activeMoonCargoRun:parsed.game.activeMoonCargoRun?.id&&
+        Number.isFinite(parsed.game.activeMoonCargoRun.costUsd)?
+          parsed.game.activeMoonCargoRun:null,
       devMode:parsed.game.devMode===true,
       storyCompleted:Array.isArray(parsed.game.storyCompleted)
         ?parsed.game.storyCompleted.filter(id=>typeof id==='string'):
@@ -225,7 +247,7 @@ export default function App() {
   const missionTechnologyDiscount=researchDiscount(effectiveUnlocks,game.devMode);
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'>('missions');
+  const [activeView,setActiveView] = useState<'missions'|'rockets'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'>('missions');
   const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'|'progression'>('observation');
   const [orbitalSelection,setOrbitalSelection]=useState<{
     mode:'earth'|'heliocentric';day:number;target:'mars'|'jupiter';
@@ -262,14 +284,17 @@ export default function App() {
   const ready = payloadOK && deltaVOK && thrustOK;
   const successfulLaunches = game.completed;
   const latest = game.history[0];
-  const dailyBudget=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,!!game.activeStoryRun);
+  const dailyBudget=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,!!(game.activeStoryRun||game.activeMoonCargoRun));
   const activeFlightProgress=game.activeStoryRun?
     flightProgress(game.activeStoryRun.startedAtMs??flightNowMs,flightNowMs,
       game.activeStoryRun.viewerDurationMs??DEFAULT_FLIGHT_VIEWER_MS):null;
+  const lunarProgress=game.activeMoonCargoRun?
+    flightProgress(game.activeMoonCargoRun.startedAtMs,flightNowMs,
+      game.activeMoonCargoRun.viewerDurationMs):null;
   function openFlightViewer(){
     setFlightViewerOpen(true);
-    setCampaignMode('progression');
-    setActiveView('missions');
+    if(game.activeMoonCargoRun)setActiveView('moon');
+    else{setCampaignMode('progression');setActiveView('missions');}
   }
 
   useEffect(() => {
@@ -319,13 +344,81 @@ export default function App() {
     });
     setMessage(tech.label+' researched using cash and '+researchPointsCost(tech.researchUsd)+' RP.');
   }
+  function buyFleetUpgrade(){
+    setSnapshot(previous=>{
+      const next=FLEET_UPGRADES[previous.game.rocketProgramLevel];
+      if(!next||previous.game.cash<next.costUsd)return previous;
+      return {...previous,game:{...previous.game,
+        cash:previous.game.cash-next.costUsd,
+        rocketProgramLevel:previous.game.rocketProgramLevel+1}};
+    });
+  }
+  function buyOrbitalAssembly(){
+    setSnapshot(previous=>{
+      if(previous.game.orbitalAssemblyUnlocked||
+        previous.game.cash<ORBITAL_ASSEMBLY_UPGRADE_USD)return previous;
+      return {...previous,game:{...previous.game,
+        cash:previous.game.cash-ORBITAL_ASSEMBLY_UPGRADE_USD,
+        orbitalAssemblyUnlocked:true}};
+    });
+  }
+  function startMoonCargo(){
+    setSnapshot(previous=>{
+      const g=previous.game,stage=g.moonBaseLevel;
+      if((!g.storyCompleted.includes('lunar')&&!g.devMode)||
+        g.activeMoonCargoRun||g.activeStoryRun||
+        g.moonCargoDeliveredLevel>stage||stage>=MOON_BASE_LEVELS.length)return previous;
+      const logistics=planMoonShipment({stageIndex:stage,
+        service:g.rocketService,vehicle:previous.vehicle,
+        tier:g.rocketProgramLevel,assemblyUnlocked:g.orbitalAssemblyUnlocked,
+        priorFlights:g.rocketFlightCounts[g.rocketService]??0});
+      if(!logistics.manifest.feasible||g.cash<logistics.totalCostUsd)return previous;
+      const cargo:MoonCargoRun={id:'moon-cargo-stage-'+stage,title:logistics.blueprint.name,
+        stageIndex:stage,target:'lunar',durationDays:8,
+        launchedDay:g.day,departureDate:dateForGameDay(g.day),
+        startedAtMs:Date.now(),viewerDurationMs:DEFAULT_FLIGHT_VIEWER_MS,
+        route:{flightDays:8},service:g.rocketService,
+        flightsRequired:logistics.manifest.flightsRequired,
+        costUsd:logistics.totalCostUsd,payloadKg:logistics.payloadKg,
+        landerPropellantKg:logistics.propellantKg,
+        leoManifestKg:logistics.leoManifestKg};
+      return {...previous,game:{...g,cash:g.cash-logistics.totalCostUsd,
+        activeMoonCargoRun:cargo,
+        launched:g.launched+logistics.manifest.flightsRequired,
+        rocketFlightCounts:{...g.rocketFlightCounts,
+          [g.rocketService]:(g.rocketFlightCounts[g.rocketService]??0)+logistics.manifest.flightsRequired}}};
+    });
+    setFlightNowMs(Date.now());
+    setMessage('Lunar cargo launch manifests paid and dispatched. Land the shipment before construction can begin.');
+  }
+  function finishMoonCargo(){
+    setSnapshot(previous=>{
+      const g=previous.game,run=g.activeMoonCargoRun;
+      if(!run||!flightProgress(run.startedAtMs,Date.now(),run.viewerDurationMs).ready)return previous;
+      const advanced=advanceProgramDay(g,run.durationDays);
+      const event:HistoryItem={
+        id:Date.now(),day:run.launchedDay,contract:run.title+' · lunar cargo delivered',
+        craft:run.service+' / lunar descent lander',success:true,cost:run.costUsd,payout:0,
+        deliveredKg:run.payloadKg};
+      return {...previous,game:{...advanced,
+        activeMoonCargoRun:null,
+        moonCargoDeliveredLevel:Math.max(g.moonCargoDeliveredLevel,run.stageIndex+1),
+        completed:g.completed+1,deliveredKg:g.deliveredKg+run.payloadKg,
+        researchPoints:advanced.researchPoints+2,
+        history:[event,...g.history].slice(0,12)}};
+    });
+    setMessage('Lunar cargo delivered. The associated surface facility can now be constructed.');
+  }
   function investMoonBase(){
     setSnapshot(previous=>{
       const g=previous.game,next=MOON_BASE_LEVELS[g.moonBaseLevel];
-      if(!next||(!g.storyCompleted.includes('lunar')&&!g.devMode)||g.cash<next.investmentUsd)return previous;
-      return {...previous,game:{...g,cash:g.cash-next.investmentUsd,moonBaseLevel:g.moonBaseLevel+1}};
+      if(!next||(!g.storyCompleted.includes('lunar')&&!g.devMode)||
+        g.moonCargoDeliveredLevel<=g.moonBaseLevel||
+        g.activeMoonCargoRun||g.cash<next.investmentUsd)return previous;
+      return {...previous,game:{...g,cash:g.cash-next.investmentUsd,
+        moonBaseLevel:g.moonBaseLevel+1}};
     });
-    setMessage('Lunar base investment funded. Gross income and upkeep now settle each game day.');
+    setMessage('Delivered lunar hardware constructed. Base income and upkeep begin with the next game day.');
   }
   function toggleDevMode(){
     setSnapshot(previous=>({...previous,game:{...previous.game,devMode:!previous.game.devMode}}));
