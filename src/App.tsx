@@ -322,7 +322,7 @@ export default function App() {
   function investMoonBase(){
     setSnapshot(previous=>{
       const g=previous.game,next=MOON_BASE_LEVELS[g.moonBaseLevel];
-      if(!next||!g.storyCompleted.includes('lunar')||g.cash<next.investmentUsd)return previous;
+      if(!next||(!g.storyCompleted.includes('lunar')&&!g.devMode)||g.cash<next.investmentUsd)return previous;
       return {...previous,game:{...g,cash:g.cash-next.investmentUsd,moonBaseLevel:g.moonBaseLevel+1}};
     });
     setMessage('Lunar base investment funded. Gross income and upkeep now settle each game day.');
@@ -725,7 +725,7 @@ export default function App() {
             onTransferSolved={setLastSolvedTransfer}/>
         </div>}
         {activeView==='moon'&&<MoonBase cash={game.cash} level={game.moonBaseLevel}
-          unlocked={game.storyCompleted.includes('lunar')} devMode={game.devMode}
+          unlocked={game.storyCompleted.includes('lunar')||game.devMode} devMode={game.devMode}
           onInvest={investMoonBase}
           onExploreCampaign={()=>{
             setSelectedCampaignId('lunar');setCampaignMode('progression');setActiveView('missions');
