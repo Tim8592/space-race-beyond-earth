@@ -420,13 +420,56 @@ test('Rocket Fleet prices payload by launched mass and requires orbital assembly
     await page.getByRole('tab',{name:'Engineering Lab'}).click();
     await page.getByRole('tab',{name:'Science payload'}).click();
     await page.locator('label.sys-field').filter({hasText:'Additional instruments / cargo mass'})
-      .locator('input').fill('2500');
+      .locator('input').fill('1000');
     await page.getByRole('tab',{name:'Thermal'}).click();
     await page.locator('label.sys-field').filter({hasText:'Installed radiator area'}).locator('input').fill('5');
     await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await expect(page.locator('.campaign-logistics-breakdown')).toContainText('Rocket 2:');
     await expect(page.locator('.campaign-logistics-breakdown')).toContainText('Docking/assembly joins');
+  });
+});
+test('Heavy spacecraft launches rocket batches individually and assembles hardware before the transfer flight',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.evaluate(()=>{
+      const key='space-race-v01-save',saved=JSON.parse(localStorage.getItem(key)!);
+      saved.game.storyCompleted=['observation'];
+      saved.game.devMode=true;
+      saved.game.cash=1000e6;
+      saved.game.orbitalAssemblyUnlocked=true;
+      saved.game.rocketService='custom';
+      saved.vehicle.payloadMassKg=700;
+      localStorage.setItem(key,JSON.stringify(saved));
+    });
+    await page.reload();
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    await page.getByRole('tab',{name:'Thermal'}).click();
+    await page.locator('label.sys-field').filter({hasText:'Installed radiator area'})
+      .locator('input').fill('5');
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await page.getByRole('combobox',{name:'External kick stage'}).selectOption('cryogenic');
+    await page.getByRole('checkbox',{name:/Extended-duration energy module/}).check();
+    await expect(page.locator('.campaign-logistics-breakdown')).toContainText('Rocket 2:');
+    const launch=page.getByRole('button',{name:/Accept contract and launch/});
+    await expect(launch).toBeEnabled();
+    await launch.click();
+    await expect(page.locator('.campaign-assembly-progress')).toBeVisible();
+    const batchCount=await page.locator('.rocket-assembly-items > div').count();
+    expect(batchCount).toBeGreaterThan(1);
+    await expect(page.locator('.flight-progress-pill')).toContainText('ORBIT INVENTORY 0/');
+    await page.getByRole('button',{name:/Launch and dock hardware batch/}).click();
+    await expect(page.locator('.flight-progress-pill')).toContainText('ORBIT INVENTORY 1/');
+    await page.reload();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.locator('.rocket-assembly-items .launched')).toHaveCount(1);
+    for(let i=1;i<batchCount;i++)
+      await page.getByRole('button',{name:/Launch and dock hardware batch/}).click();
+    await expect(page.locator('.rocket-assembly-items .launched')).toHaveCount(batchCount);
+    await page.getByRole('button',{name:/Assemble spacecraft and begin transfer flight/}).click();
+    await expect(page.getByText('FLIGHT OPERATIONS / CONTRACT IN PROGRESS')).toBeVisible();
+    await expect(page.locator('.flight-progress-pill')).not.toContainText('ORBIT INVENTORY');
   });
 });
 test('NASA datasets, source linkage and future mission calendar remain navigable',async({page})=>{
