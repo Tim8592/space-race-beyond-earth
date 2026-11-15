@@ -268,6 +268,7 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [activeView,setActiveView] = useState<'missions'|'rockets'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'|'nasa'|'infrastructure'|'crafts'>('missions');
   const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'|'progression'>('observation');
+  const [labEntryTab,setLabEntryTab]=useState<'propulsion'|'payload'>('propulsion');
   const [researchFocus,setResearchFocus]=useState<'All'|'Launch'|'Infrastructure'>('All');
   const [orbitalSelection,setOrbitalSelection]=useState<{
     mode:'earth'|'heliocentric';day:number;target:'mars'|'jupiter';
@@ -910,7 +911,7 @@ export default function App() {
                 {group.tabs.map(([id,label])=><button key={id} type="button"
                   role="tab" aria-selected={activeView===id}
                   className={activeView===id?'current':''} onClick={()=>{
-                    if(id==='systems')setLabObservationChoices(readObservationChoices());
+                    if(id==='systems'){setLabObservationChoices(readObservationChoices());setLabEntryTab('propulsion');}
                     if(id==='research')setResearchFocus('All');
                     setActiveView(id);
                   }}>{label}</button>)}
@@ -1024,7 +1025,7 @@ export default function App() {
             run={game.activeStoryRun} debrief={game.lastStoryDebrief}
             solvedTransfer={missionSolved}
             onStart={startCampaignMission} onFinish={finishCampaignMission}
-            onGoToLab={()=>setActiveView('systems')}
+            onGoToLab={()=>{setLabEntryTab('payload');setActiveView('systems')}}
             onGoToRocket={()=>setActiveView('rockets')}
             onViewOrbital={openMissionOrbit}/>}
         <div className={'control-layout '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')} id="mission-control">
@@ -1094,7 +1095,7 @@ export default function App() {
             }}>{campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
               'Return to mission design →':'Return to selected mission →'}</button>
           </div>
-          <SubsystemLab design={spacecraftDesign} onDesignChange={setSpacecraftDesign}
+          <SubsystemLab key={labEntryTab} initialTab={labEntryTab} design={spacecraftDesign} onDesignChange={setSpacecraftDesign}
             mission={campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
               undefined:{definition:campaignSelection.selected,review:selectedCampaignReview,
               stageUnlocked:unlockedCampaignStage,completed:game.storyCompleted.includes(campaignSelection.selected.id),
