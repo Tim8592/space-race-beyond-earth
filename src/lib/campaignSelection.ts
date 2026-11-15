@@ -9,12 +9,12 @@ export type CampaignSelection={
  * Source-of-truth selection belongs to App, not a locally mounted panel.
  */
 export function resolveCampaignSelection(day:number,stage:number,
-  completed:readonly string[],requestedId:string):CampaignSelection{
+  completed:readonly string[],requestedId:string,extra:readonly CampaignDefinition[]=[]):CampaignSelection{
   const agency=agencyMissionDefinitions(day);
   const special=nextSpecialOffer(day,stage);
   const first=STORY_MISSIONS.find(m=>stage>=m.stage&&!completed.includes(m.id))??STORY_MISSIONS[0];
   return {selected:STORY_MISSIONS.find(m=>m.id===requestedId)??
-      agency.find(m=>m.id===requestedId)??
+      agency.find(m=>m.id===requestedId)??extra.find(m=>m.id===requestedId)??
       (special?.id===requestedId?special:null)??first,
     story:STORY_MISSIONS,agency,special};
 }
