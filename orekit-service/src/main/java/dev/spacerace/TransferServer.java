@@ -88,6 +88,33 @@ public final class TransferServer {
                 exchange.close();
             }
         });
+        server.createContext("/api/earth-orbit", exchange -> {
+            addCors(exchange);
+            try {
+                if (exchange.getRequestMethod().equals("OPTIONS")) {
+                    exchange.sendResponseHeaders(204,-1);
+                } else if (!exchange.getRequestMethod().equals("POST")) {
+                    response(exchange,405,Map.of("error","POST required"));
+                } else {
+                    final byte[] payload=exchange.getRequestBody().readNBytes(16385);
+                    if(payload.length>16384)response(exchange,413,Map.of("error","Orbit request too large"));
+                    else {
+                        try {
+                            EarthOrbitMath.Request req=JSON.readValue(payload,EarthOrbitMath.Request.class);
+                            response(exchange,200,EarthOrbitMath.solve(req));
+                        } catch (IllegalArgumentException e) {
+                            response(exchange,422,Map.of("error",
+                                e.getMessage()==null?"Invalid orbit elements":e.getMessage()));
+                        } catch (Exception e) {
+                            System.err.println("Orbit propagation failed: "+e.getMessage());
+                            response(exchange,422,Map.of("error","Orekit could not propagate the Earth orbit"));
+                        }
+                    }
+                }
+            } finally {
+                exchange.close();
+            }
+        });
         server.createContext("/api/optimize", exchange -> {
             addCors(exchange);
             try {
@@ -148,6 +175,6 @@ public final class TransferServer {
         });
         server.start();
         System.out.println("Space Race Orekit transfer server listening on http://127.0.0.1:"+port);
-        System.out.println("GET /health, POST /api/lambert, POST /api/optimize, GET /api/heritage-track; Control+C to stop.");
+        System.out.println("GET /health, POST /api/lambert, POST /api/earth-orbit, POST /api/optimize, GET /api/heritage-track; Control+C to stop.");
     }
 }
