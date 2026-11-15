@@ -8,6 +8,14 @@ import MissionLibrary from './MissionLibrary';
 import LearningLab from './LearningLab';
 import ResearchLab from './ResearchLab';
 import MoonBase from './MoonBase';
+import OrbitalInfrastructure from './OrbitalInfrastructure';
+import SpacecraftLibrary from './SpacecraftLibrary';
+import {EMPTY_ORBITAL_NETWORKS,planNetworkDeployment,
+  type OrbitalNetworkLevels,type OrbitalNetworkKind,type NetworkDeploymentRun}
+  from './lib/orbitalNetworks';
+import {DEFAULT_SUBSYSTEM_DESIGN} from './lib/subsystemDesign';
+import {saveSpacecraftBlueprint,cloneSpacecraftDesign,safeBlueprints,duplicateSpacecraftBlueprint,
+  markSpacecraftDeployed,type SpacecraftBlueprint} from './lib/spacecraftBlueprints';
 import RocketFleet from './RocketFleet';
 import NASAMissionIntelligence from './NASAMissionIntelligence';
 import {loadNASAMissionIntelligence} from './lib/nasaMissionClient';
@@ -120,6 +128,8 @@ type Game = {
   rocketFlightCounts:Record<LauncherId,number>;orbitalAssemblyUnlocked:boolean;
   canadianMissionSuccesses:number;observationLaunchService:LauncherId|null;
   neoOpportunity:NeoObservationOffer|null;
+  networkLevels:OrbitalNetworkLevels;activeNetworkRun:NetworkDeploymentRun|null;
+  spacecraftBlueprints:SpacecraftBlueprint[];
   moonCargoDeliveredLevel:number;activeMoonCargoRun:MoonCargoRun|null;
   activeAssemblyProject:CampaignAssemblyProject|null;
   devMode: boolean;
@@ -147,6 +157,7 @@ const DEFAULT_GAME: Game = {
   orbitalAssemblyUnlocked:false,moonCargoDeliveredLevel:0,activeMoonCargoRun:null,
   canadianMissionSuccesses:0,observationLaunchService:null,
   neoOpportunity:null,
+  networkLevels:{...EMPTY_ORBITAL_NETWORKS},activeNetworkRun:null,spacecraftBlueprints:[],
   activeAssemblyProject:null,
   devMode: false,
   storyCompleted: [],
@@ -190,6 +201,16 @@ function loadSave(): Snapshot {
       observationLaunchService:typeof parsed.game.observationLaunchService==='string'&&
         ['custom','falcon9','falconHeavy','starship'].includes(parsed.game.observationLaunchService)?
         parsed.game.observationLaunchService:null,
+      networkLevels:{
+        compute:Number.isInteger(parsed.game.networkLevels?.compute)?
+          Math.max(0,Math.min(3,parsed.game.networkLevels.compute)):0,
+        relay:Number.isInteger(parsed.game.networkLevels?.relay)?
+          Math.max(0,Math.min(3,parsed.game.networkLevels.relay)):0,
+      },
+      activeNetworkRun:parsed.game.activeNetworkRun?.id&&
+        Number.isFinite(parsed.game.activeNetworkRun.costUsd)?
+        parsed.game.activeNetworkRun:null,
+      spacecraftBlueprints:safeBlueprints(parsed.game.spacecraftBlueprints),
       neoOpportunity:parsed.game.neoOpportunity?.mission?.id&&
         parsed.game.neoOpportunity.sourceNeo?.id?parsed.game.neoOpportunity:null,
       rocketFlightCounts:Object.assign(
@@ -245,7 +266,7 @@ export default function App() {
   const missionTechnologyDiscount=researchDiscount(effectiveUnlocks,game.devMode);
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const [activeView,setActiveView] = useState<'missions'|'rockets'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'|'nasa'>('missions');
+  const [activeView,setActiveView] = useState<'missions'|'rockets'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'|'nasa'|'infrastructure'|'crafts'>('missions');
   const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'|'progression'>('observation');
   const [researchFocus,setResearchFocus]=useState<'All'|'Launch'>('All');
   const [orbitalSelection,setOrbitalSelection]=useState<{
@@ -291,12 +312,17 @@ export default function App() {
     !game.activeStoryRun&&!game.activeMoonCargoRun&&!game.activeAssemblyProject;
   const successfulLaunches = game.completed;
   const latest = game.history[0];
-  const dailyBudget=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject));
+  const dailyBudget=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,
+    !!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject||game.activeNetworkRun),
+    game.networkLevels);
   const activeFlightProgress=game.activeStoryRun?
     flightProgress(game.activeStoryRun.startedAtMs??flightNowMs,flightNowMs,
       game.activeStoryRun.viewerDurationMs??DEFAULT_FLIGHT_VIEWER_MS):null;
   const assemblyFraction=game.activeAssemblyProject?
     game.activeAssemblyProject.launchesCompleted/game.activeAssemblyProject.draft.launchCount:null;
+  const networkProgress=game.activeNetworkRun?
+    flightProgress(game.activeNetworkRun.startedAtMs,flightNowMs,
+      game.activeNetworkRun.viewerDurationMs):null;
   const lunarProgress=game.activeMoonCargoRun?
     flightProgress(game.activeMoonCargoRun.startedAtMs,flightNowMs,
       game.activeMoonCargoRun.viewerDurationMs):null;
@@ -330,7 +356,8 @@ export default function App() {
   }
   function openFlightViewer(){
     setFlightViewerOpen(true);
-    if(game.activeMoonCargoRun)setActiveView('moon');
+    if(game.activeNetworkRun)setActiveView('infrastructure');
+    else if(game.activeMoonCargoRun)setActiveView('moon');
     else{setCampaignMode('progression');setActiveView('missions');}
   }
 
