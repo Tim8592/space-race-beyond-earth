@@ -8,13 +8,16 @@ import {networkEconomics,networkSatellites,planNetworkDeployment,
 import type {SubsystemDesign} from './lib/subsystemDesign';
 import type {Vehicle} from './lib/engineering';
 import type {LauncherId} from './lib/launchLogistics';
+import type {TechnologyId} from './lib/technologyTree';
 type Props={
  levels:OrbitalNetworkLevels;activeRun:NetworkDeploymentRun|null;
  design:SubsystemDesign;cash:number;day:number;nowMs:number;unlocked:boolean;
  launcher:Vehicle;service:LauncherId;tier:number;assemblyUnlocked:boolean;
  priorFlights:number;canadianSuccesses:number;productionDiscount:number;
+ researched:readonly TechnologyId[];devMode:boolean;
  otherFlightActive:boolean;onDispatch:(kind:OrbitalNetworkKind)=>void;
- onComplete:()=>void;onGoToLab:()=>void;onGoToFleet:()=>void;onGoToMission:()=>void;
+ onComplete:()=>void;onGoToLab:()=>void;onGoToFleet:()=>void;
+ onGoToMission:()=>void;onGoToResearch:()=>void;
 };
 const money=(n:number)=>'$'+(n/1e6).toLocaleString('en-US',{maximumFractionDigits:2})+'M';
 export default function OrbitalInfrastructure(p:Props){
@@ -26,8 +29,10 @@ export default function OrbitalInfrastructure(p:Props){
    kind:selected,levels:p.levels,design:p.design,launcher:p.launcher,
    service:p.service,tier:p.tier,assemblyUnlocked:p.assemblyUnlocked,
    priorServiceFlights:p.priorFlights,canadianSuccesses:p.canadianSuccesses,
-   productionDiscount:p.productionDiscount}),[selected,p.levels,p.design,p.launcher,
-     p.service,p.tier,p.assemblyUnlocked,p.priorFlights,p.canadianSuccesses,p.productionDiscount]);
+   productionDiscount:p.productionDiscount,researched:p.researched,devMode:p.devMode}),
+   [selected,p.levels,p.design,p.launcher,
+     p.service,p.tier,p.assemblyUnlocked,p.priorFlights,p.canadianSuccesses,
+     p.productionDiscount,p.researched,p.devMode]);
  const progress=p.activeRun?flightProgress(p.activeRun.startedAtMs,p.nowMs,p.activeRun.viewerDurationMs):null;
  const satellites=networkSatellites(selected,p.levels[selected]);
  const totalProjected=review?.totalCostUsd??0;
@@ -159,6 +164,8 @@ export default function OrbitalInfrastructure(p:Props){
            <b>{c.passed?'✓':'!'} {c.name}</b><span>{c.description}</span>
          </div>)}</div>
          <div className="orbital-business-actions">
+           <button className="secondary-button" type="button"
+             onClick={p.onGoToResearch}>Research Infrastructure branch / cash + RP ↗</button>
            <button className="secondary-button" type="button"
              onClick={p.onGoToLab}>Engineer service module / radiator ↗</button>
            <button className="secondary-button" type="button"
