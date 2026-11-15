@@ -784,7 +784,7 @@ test('Campaign draws its payload from Engineering Lab and keeps mission add-ons 
     await page.getByRole('button',{name:/Return to selected mission/}).click();
     await expect(page.locator('.campaign-installed-craft')).toContainText('100 kg');
     const kit=page.locator('.campaign-optional-kit');
-    await expect(kit).not.toHaveAttribute('open');
+    await expect(kit).not.toHaveAttribute('open','');
     await kit.locator('summary').click();
     await page.getByRole('checkbox',{name:/Extended-duration energy module/}).check();
     await expect(kit.locator('summary')).toContainText('energy reserve');
