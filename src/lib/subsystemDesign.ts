@@ -21,6 +21,7 @@ export type SubsystemDesign = {
   burnOrder:'primary-first'|'secondary-first';
   solarWingCount:number;
   radiatorPanelCount:number;
+  installedRadiatorAreaM2:number;
   solarCellId:string;
   batteryPackId:string;
   coatingId:string;
@@ -57,6 +58,7 @@ export const DEFAULT_SUBSYSTEM_DESIGN:SubsystemDesign={
   burnOrder:'primary-first',
   solarWingCount:2,
   radiatorPanelCount:2,
+  installedRadiatorAreaM2:.45,
   solarCellId:'azur-3g30',
   batteryPackId:'aac-optimus',
   coatingId:'gsfc-silver',
@@ -127,6 +129,9 @@ export type SystemResults={
   storedBatteryEnergyWh:number;
   thermalLoadW:number;
   radiatorAreaM2:number|null;
+  installedRadiatorAreaM2:number;
+  radiatorCapacityW:number;
+  thermalMarginW:number;
   radiatorMassKg:number|null;
   absorbedSolarFluxWm2:number;
   radiatorNetFluxWm2:number;
@@ -211,6 +216,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     design.distanceAu,design.cellAreaM2,design.propellantMassKg,
     design.secondaryPropellantMassKg,design.thrusterCount,
     design.secondaryThrusterCount,design.solarWingCount,design.radiatorPanelCount,
+    design.installedRadiatorAreaM2,
     design.busDryMassKg,design.payloadMassKg,design.busElectricalPowerW,
     design.eclipseHours,design.powerSourceCount,design.missionYears,
     design.liquidDensityKgM3,design.tankPressureBar,design.xenonStoragePressureBar,
@@ -218,7 +224,9 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     design.infraredEmissivity,design.radiatorTemperatureK,design.radiatorSunIncidence,
   ];
   if(inputNumbers.some(n=>!Number.isFinite(n)) || design.distanceAu<=0 ||
-    design.busDryMassKg<=0||design.cellAreaM2<0||design.propellantMassKg<=0||
+    design.busDryMassKg<=0||design.cellAreaM2<0||
+    design.installedRadiatorAreaM2<0||design.installedRadiatorAreaM2>250||
+    design.propellantMassKg<=0||
     design.secondaryPropellantMassKg<=0||design.payloadMassKg<0||
     design.busElectricalPowerW<0||design.eclipseHours<0||
     design.infraredEmissivity<=0||design.infraredEmissivity>1||
@@ -294,7 +302,11 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     design.infraredEmissivity*STEFAN_BOLTZMANN*(design.radiatorTemperatureK**4-3**4)
     -absorbedSolarFluxWm2;
   const radiatorAreaM2=radiatorNetFluxWm2>0?thermalLoadW/radiatorNetFluxWm2:null;
-  const radiatorMassKg=radiatorAreaM2===null?null:radiatorAreaM2*RADIATOR_AREAL_MASS_KGM2;
+  // Installed radiator area is a player-design choice. Required area is a
+  // target, not a magically fitted component that always satisfies capacity.
+  const radiatorCapacityW=Math.max(0,radiatorNetFluxWm2)*design.installedRadiatorAreaM2;
+  const thermalMarginW=radiatorCapacityW-thermalLoadW;
+  const radiatorMassKg=design.installedRadiatorAreaM2*RADIATOR_AREAL_MASS_KGM2;
 
   const arrayMassKg=design.cellAreaM2*ARRAY_AREAL_MASS_KGM2+design.solarWingCount*.5;
   const radiatorMountMassKg=design.radiatorPanelCount*.35;
@@ -355,6 +367,7 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
   if(POWER_SYSTEMS[design.powerSourceId].class==='fission')
     warnings.push('Reactor shielding, heat rejection, approval, separation distances and flight readiness are not modeled.');
   if(radiatorAreaM2===null)warnings.push('Net radiator flux is negative or zero: heat cannot be rejected under current assumptions.');
+  if(thermalMarginW<0)warnings.push('Installed radiator area is insufficient for the modeled peak heat load. Increase installed thermal area or reduce active power.');
   if(design.distanceAu>=5)warnings.push('Solar power decreases with inverse-square Sun distance; revisit array area and power source.');
   for(const t of tankReports){
     if(t.validThinWall===false)warnings.push(t.label+': adopted wall is outside the thin-wall approximation.');
@@ -382,7 +395,9 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     powerSystemWasteHeatW:power.generatorWasteHeatW,
     powerSystemHeritage:power.heritage,totalAvailablePowerW,totalPowerMarginW,sunlightMarginW,
     canPowerThruster:primaryMode.canPowerAtRatedPoint&&(!secondaryMode||secondaryMode.canPowerAtRatedPoint),
-    batteryMassKg,storedBatteryEnergyWh,thermalLoadW,radiatorAreaM2,radiatorMassKg,
+    batteryMassKg,storedBatteryEnergyWh,thermalLoadW,radiatorAreaM2,
+    installedRadiatorAreaM2:design.installedRadiatorAreaM2,radiatorCapacityW,thermalMarginW,
+    radiatorMassKg,
     absorbedSolarFluxWm2,radiatorNetFluxWm2,
     tankShellMassKg:pt.kind==='iodine'?null:pt.shellMassKg,
     tankInternalVolumeL:pt.internalVolumeL,tankRadiusM:pt.radiusM,
