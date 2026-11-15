@@ -11,6 +11,8 @@ import {dateForGameDay,BOOSTERS,EXTERNAL_MODULES,
   type SolvedCampaignTransfer} from './lib/campaignMissions';
 import {AGENCY_MILESTONES,agencyMissionDefinitions,agencyOfferPhase} from './lib/realWorldMissions';
 import {CSA_DATA_PROGRAMS} from './lib/csaScienceMissions';
+import {SCIENCE_INSTRUMENTS} from './lib/instrumentCatalog';
+import {ORBITAL_SERVICE_MODULES} from './lib/orbitalServiceModules';
 import type {Vehicle} from './lib/engineering';
 import type {SubsystemDesign} from './lib/subsystemDesign';
 
@@ -418,38 +420,97 @@ export default function CampaignMissions({
           <div className="campaign-contract-values">
             <div><small>MISSION FUNDING</small><strong>{usd(selected.payoutUsd)}</strong></div>
             <div><small>EXPECTED FLIGHT LENGTH</small><strong>{num(selected.durationDays)} days</strong></div>
-            <div><small>SCIENCE/EXTERNAL PAYLOAD TARGET</small><strong>{num(selected.requiredScienceKg)} kg</strong></div>
+            <div><small>REQUIRED SCIENCE / CARGO MASS</small><strong>{num(selected.requiredScienceKg)} kg</strong></div>
           </div>
-          <div className="eyebrow">TRANSFER ENERGY / HARDWARE MODULES</div>
-          <label className="campaign-option-select">External kick stage
+          <div className="campaign-installed-craft" aria-label="Installed spacecraft inventory from Engineering Lab">
+            <div className="eyebrow">BASE SPACECRAFT / ENGINEERING LAB</div>
+            <div className="campaign-installed-facts">
+              <span>Science instrument <strong>{spacecraft.payloadInstrumentId==='none'?
+                'None installed':SCIENCE_INSTRUMENTS[spacecraft.payloadInstrumentId].name}</strong></span>
+              <span>Generic science / cargo mass <strong>{num(spacecraft.payloadMassKg,1)} kg</strong></span>
+              {spacecraft.orbitalServiceModuleId!=='none'&&<span>Commercial service module
+                <strong>{ORBITAL_SERVICE_MODULES[spacecraft.orbitalServiceModuleId].name}</strong></span>}
+              <span>Science / cargo counted for mission <strong>{review?num(review.scienceMassKg,1)+' kg':'—'}</strong></span>
+            </div>
+            <p>This is the spacecraft you already configured in Engineering Lab—not a second
+              payload entry form. Its sensor, cargo, generator, battery pack, thermal system,
+              propulsion and orbital service module are brought into this review automatically.
+              Commercial modules and mission support hardware add spacecraft mass but do not
+              replace the contract's science payload.</p>
+            <button type="button" className="secondary-button" onClick={onGoToLab}>
+              Edit installed payload and core systems in Engineering Lab ↗
+            </button>
+          </div>
+          <div className="eyebrow">MISSION INTEGRATION / FLIGHT-SPECIFIC EQUIPMENT</div>
+          <p className="campaign-kit-guidance">These are extra physical items purchased and
+            fitted for <strong>this flight</strong>, not another way to enter the same
+            payload. They add to the installed spacecraft's wet mass, launch invoice,
+            electrical demand and heat budget. Mission-only energy reserve supplements
+            the battery pack already chosen in Engineering Lab.</p>
+          <label className="campaign-option-select">External transfer kick stage
             <select aria-label="External kick stage" value={options.booster}
               onChange={e=>change('booster',e.currentTarget.value as MissionOptions['booster'])}>
               {Object.entries(BOOSTERS).map(([id,v])=><option key={id} value={id}>
                 {v.name} · {num(v.dryKg+v.propKg)} kg wet · {usd(v.costUsd)}</option>)}
             </select>
           </label>
-          <div className="campaign-external-modules">
-            <OptionCheck label={EXTERNAL_MODULES.highGain.name} checked={options.highGain}
-              note="38 kg / 65 W / $9M" onChange={v=>change('highGain',v)}/>
-            <OptionCheck label={EXTERNAL_MODULES.radiationShield.name} checked={options.radiationShield}
-              note="95 kg / 12 W / $18M" onChange={v=>change('radiationShield',v)}/>
-            <OptionCheck label={EXTERNAL_MODULES.reserveBattery.name} checked={options.reserveBattery}
-              note="35 kg / 4 W / $4M; adds 6 kWh nameplate reserve" onChange={v=>change('reserveBattery',v)}/>
-          </div>
-          <label className="campaign-option-select">CubeSat rideshare / secondary dispenser
-             <select aria-label="CubeSat dispenser configuration" value={options.cubesatUnits??0}
-               onChange={e=>change('cubesatUnits',Number(e.currentTarget.value) as MissionOptions['cubesatUnits'])}>
-               <option value={0}>No secondary CubeSat installed</option>
-               {([1,3] as const).map(units=><option key={units} value={units}>
-                 {NASA_CUBESAT_REFERENCE[units].label} · {num(NASA_CUBESAT_REFERENCE[units].massKg,2)} kg payload + {num(NASA_CUBESAT_REFERENCE[units].dispenserDryKg)} kg game dispenser
-               </option>)}
-             </select>
-           </label>
-           {selected.requiredCubeSatUnits&&<p className="campaign-model-warning">
-             Required: {selected.requiredCubeSatUnits}U dispenser. NASA CubeSat 101 provides
-             the dimensions and 1U mass reference; 3U mass extrapolation,
-             dispenser hardware and prices are game assumptions.
-           </p>}
+          {(selected.requiresHighGain||selected.requiresShield||selected.requiredCubeSatUnits)&&
+            <div className="campaign-required-kit">
+              <div className="eyebrow">MANDATORY FOR THIS CONTRACT</div>
+              <div className="campaign-external-modules">
+                {selected.requiresHighGain&&<OptionCheck label={EXTERNAL_MODULES.highGain.name}
+                  checked={options.highGain} note="38 kg / 65 W / $9M · required"
+                  onChange={v=>change('highGain',v)}/>}
+                {selected.requiresShield&&<OptionCheck label={EXTERNAL_MODULES.radiationShield.name}
+                  checked={options.radiationShield} note="95 kg / 12 W / $18M · required"
+                  onChange={v=>change('radiationShield',v)}/>}
+              </div>
+              {selected.requiredCubeSatUnits&&<label className="campaign-option-select">
+                Required CubeSat rideshare / secondary dispenser
+                <select aria-label="CubeSat dispenser configuration" value={options.cubesatUnits??0}
+                  onChange={e=>change('cubesatUnits',Number(e.currentTarget.value) as MissionOptions['cubesatUnits'])}>
+                  <option value={0}>No secondary CubeSat installed</option>
+                  {([1,3] as const).map(units=><option key={units} value={units}>
+                    {NASA_CUBESAT_REFERENCE[units].label} · {num(NASA_CUBESAT_REFERENCE[units].massKg,2)} kg payload + {num(NASA_CUBESAT_REFERENCE[units].dispenserDryKg)} kg game dispenser
+                  </option>)}
+                </select>
+              </label>}
+              {selected.requiredCubeSatUnits&&<p className="campaign-model-warning">
+                Required: {selected.requiredCubeSatUnits}U dispenser. NASA CubeSat 101 provides
+                dimensions and the 1U mass reference; 3U mass, dispenser hardware and prices
+                are game assumptions. This is a separate secondary payload, not the same
+                mass entered for Engineering Lab cargo.
+              </p>}
+            </div>}
+          <details className="campaign-optional-kit">
+            <summary>Optional flight equipment
+              <small>Extra mission hardware · expand to configure</small>
+            </summary>
+            <div className="campaign-optional-kit-body">
+              <div className="campaign-external-modules">
+                {!selected.requiresHighGain&&<OptionCheck label={EXTERNAL_MODULES.highGain.name}
+                  checked={options.highGain} note="38 kg / 65 W / $9M · optional"
+                  onChange={v=>change('highGain',v)}/>}
+                {!selected.requiresShield&&<OptionCheck label={EXTERNAL_MODULES.radiationShield.name}
+                  checked={options.radiationShield} note="95 kg / 12 W / $18M · optional"
+                  onChange={v=>change('radiationShield',v)}/>}
+                <OptionCheck label={EXTERNAL_MODULES.reserveBattery.name}
+                  checked={options.reserveBattery}
+                  note="35 kg / 4 W / $4M · adds 6 kWh reserve, not a second lab battery pack"
+                  onChange={v=>change('reserveBattery',v)}/>
+              </div>
+              {!selected.requiredCubeSatUnits&&<label className="campaign-option-select">
+                Optional CubeSat rideshare / secondary dispenser
+                <select aria-label="CubeSat dispenser configuration" value={options.cubesatUnits??0}
+                  onChange={e=>change('cubesatUnits',Number(e.currentTarget.value) as MissionOptions['cubesatUnits'])}>
+                  <option value={0}>No secondary CubeSat installed</option>
+                  {([1,3] as const).map(units=><option key={units} value={units}>
+                    {NASA_CUBESAT_REFERENCE[units].label} · {num(NASA_CUBESAT_REFERENCE[units].massKg,2)} kg payload + {num(NASA_CUBESAT_REFERENCE[units].dispenserDryKg)} kg game dispenser
+                  </option>)}
+                </select>
+              </label>}
+            </div>
+          </details>
            {selected.target==='ellipse'&&<div className="campaign-orbital-inputs">
             <div className="eyebrow">ELLIPTICAL EARTH ORBIT / ACTUAL KEPLER ELEMENTS</div>
             <label>Perigee altitude · {num(options.perigeeKm)} km
@@ -462,7 +523,6 @@ export default function CampaignMissions({
             </label>
           </div>}
           <div className="campaign-workshop-actions">
-            <button type="button" className="secondary-button" onClick={onGoToLab}>Engineering Lab / installed equipment ↗</button>
             <button type="button" className="secondary-button" onClick={onGoToRocket}>Rocket Fleet / Launch Logistics ↗</button>
             {onGoToBlueprints&&<button type="button" className="secondary-button" onClick={onGoToBlueprints}>Load / duplicate a saved spacecraft ↗</button>}
             <button type="button" className="secondary-button"
