@@ -6,9 +6,10 @@
 export type TechnologyId =
   'precision-imaging'|'ion-electric'|'hall-power'|'advanced-ion'|'high-power-hall'|
   'radioisotope-power'|'fission-power'|'reactor-25kwe'|
-  'thermal-engineering'|'reactor-heat-pipe'|'production-line'|'deep-space-science';
+  'thermal-engineering'|'reactor-heat-pipe'|'production-line'|'deep-space-science'|
+  'canadian-light-lift'|'canadian-medium-lift'|'canadian-heavy-lift';
 export type TechnologyNode={
-  id:TechnologyId;label:string;branch:'Science'|'Propulsion'|'Power'|'Thermal'|'Economics';
+  id:TechnologyId;label:string;branch:'Science'|'Propulsion'|'Power'|'Thermal'|'Economics'|'Launch';
   researchUsd:number;
   hardwareCostUsd:number;
   operationalCostUsdPerYear:number;
@@ -20,6 +21,25 @@ export type TechnologyNode={
   sourceUrl?:string;
 };
 export const TECHNOLOGIES:readonly TechnologyNode[]=[
+  {id:'canadian-light-lift',label:'Canadian Small-Launch Qualification',branch:'Launch',
+    researchUsd:12e6,hardwareCostUsd:9e6,operationalCostUsdPerYear:470000,
+    gameMaturity:'prototype/research',riskNote:'Propulsion testing, range access and flight qualification',
+    description:'Fund domestic liquid propulsion tests, mission assurance and autonomous launch checkout.',
+    unlocks:'R&D gate for Canadian Tundra-generation lift upgrade in Rocket Fleet',prerequisites:[],
+    sourceUrl:'https://www.canada.ca/en/department-national-defence/news/2026/03/minister-mcguinty-announces-strategic-investments-in-sovereign-space-launch.html'},
+  {id:'canadian-medium-lift',label:'Canadian Medium-Lift Engines',branch:'Launch',
+    researchUsd:28e6,hardwareCostUsd:24e6,operationalCostUsdPerYear:800000,
+    gameMaturity:'prototype/research',riskNote:'New liquid engines, larger structures, testing and scalable manufacturing',
+    description:'Domestic engine scaling and separation/integration research needed for a hypothetical Borealis-generation fleet.',
+    unlocks:'R&D gate for 6-tonne Canadian lift upgrade',prerequisites:['canadian-light-lift'],
+    sourceUrl:'https://www.reactiondynamics.space/en/news/reaction-dynamics-unveils-borealis'},
+  {id:'canadian-heavy-lift',label:'Reusable Canadian Medium Lift',branch:'Launch',
+    researchUsd:48e6,hardwareCostUsd:60e6,operationalCostUsdPerYear:1500000,
+    gameMaturity:'concept',riskNote:'Recovery and reflight qualification, heavy-stage structures and engine production',
+    description:'Prototype advanced Canadian multi-tonne recovery and medium-lift operations; not a certified actual Tempest design.',
+    unlocks:'R&D gate for 10-tonne-class Canadian orbital lift',prerequisites:['canadian-medium-lift'],
+    sourceUrl:'https://www.nordspace.com/'},
+
   {id:'precision-imaging',label:'Precision Earth Imaging',branch:'Science',
     researchUsd:8e6,hardwareCostUsd:14e6,operationalCostUsdPerYear:500000,
     gameMaturity:'flight heritage',riskNote:'Detector calibration, pointing and data volume',description:'Mission imaging modes and more science options.',unlocks:'Multispectral and advanced imaging upgrades',
