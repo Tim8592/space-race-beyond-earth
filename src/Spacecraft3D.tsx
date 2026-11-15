@@ -7,14 +7,15 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { inspectGlb } from './lib/glbDiagnostics';
 import type { SubsystemDesign, SystemResults } from './lib/subsystemDesign';
 
-export type PartName = 'bus' | 'power' | 'radiator' | 'tank' | 'propulsion' | 'antenna';
+export type PartName = 'bus' | 'power' | 'radiator' | 'tank' | 'propulsion' | 'antenna' | 'payload';
 const PART_DETAILS: Record<PartName, string> = {
   bus: 'Structural spacecraft body: currently a visual envelope. Dry bus mass is entered in the engineering panel.',
   power: 'Solar wings: the number of panels follows the Power tab; individual wing area changes with the total active cell area. Generator count is also shown for radioisotope/fission options.',
   radiator: 'Radiator count and individual panel size follow your Thermal tab. Heat pipes, view factors and source cooling still need detailed modeling.',
-  tank: 'Propellant storage: schematic tank only. Liquid volume/wall sizing is used for the chemical option; xenon/iodine storage models are incomplete.',
-  propulsion: 'Each engine nozzle is shown. Firing all selected engines scales total thrust, power, burn time and hardware mass; Isp remains a per-engine efficiency figure.',
+  tank: 'Separate colored tank/reservoir shapes match selected propellant families; mass, pressure and spherical tmin estimates are in Tanks. This is schematic geometry, not flight CAD.',
+  propulsion: 'Primary and optional secondary thruster sets appear separately. They use independent propellant stores and a sequential idealized burn model; no finite-thrust trajectory is simulated.',
   antenna: 'Communications dish: visual placeholder. Link-budget and pointing constraints are future engineering features.',
+  payload: 'Selected catalog science instrument: illustrative camera/sensor envelope, whose mass and electrical power appear in the live subsystem ledger.',
 };
 
 function Pick({
@@ -138,7 +139,9 @@ export function ModularSpacecraft({
   onSelect: (part: PartName)=>void;
 }) {
   const radiatorArea = analysis?.radiatorAreaM2 ?? 0.3;
-  const tankScale = Math.max(.28,Math.min(.73, .23 + Math.cbrt(design.propellantMassKg) *.12));
+  const tankReports = analysis?.tankReports ?? [];
+  const primaryTankScale=Math.max(.18,Math.min(.53,.20+(tankReports[0]?.radiusM??.08)*1.3));
+  const secondaryTankScale=Math.max(.18,Math.min(.43,.17+(tankReports[1]?.radiusM??.06)*1.3));
   const isNuclear = design.powerSourceId!=='solar';
   const wingCount = design.cellAreaM2 > 0 ? design.solarWingCount : 0;
   return <group rotation={[.12,.1,0]}>
@@ -174,19 +177,50 @@ export function ModularSpacecraft({
       <RadiatorPanels areaM2={radiatorArea} count={design.radiatorPanelCount}/>
     </Pick>
     <Pick part="tank" selected={selected} onSelect={onSelect}>
-      <mesh position={[0,-.12,0]}>
-        <sphereGeometry args={[tankScale,22,18]}/>
-        <meshStandardMaterial color="#798a9b" metalness={.8} roughness={.25}
-          transparent opacity={selected==='tank'?1:.85}/>
-      </mesh>
-      <mesh position={[0,-.12,.03]} rotation={[Math.PI/2,0,0]}>
-        <torusGeometry args={[tankScale*.78,.028,8,24]}/><Metal color="#d9d0b1"/>
-      </mesh>
+      <group position={design.secondaryThrusterId==='none'?[0,-.12,0]:[-.39,-.10,0]}>
+        <mesh>
+          <sphereGeometry args={[primaryTankScale,24,18]}/>
+          <meshStandardMaterial color={tankReports[0]?.kind==='iodine'?'#b4896c':
+            tankReports[0]?.kind==='hydrazine'?'#86a9a2':'#809dd0'}
+            metalness={.55} roughness={.3} transparent opacity={selected==='tank'?1:.88}/>
+        </mesh>
+        <mesh rotation={[Math.PI/2,0,0]}><torusGeometry args={[primaryTankScale*.78,.022,8,24]}/>
+          <Metal color="#d9d0b1"/></mesh>
+      </group>
+      {design.secondaryThrusterId!=='none'&&<group position={[.43,-.10,0]}>
+        <mesh><sphereGeometry args={[secondaryTankScale,22,18]}/>
+          <meshStandardMaterial color={tankReports[1]?.kind==='iodine'?'#b4896c':
+            tankReports[1]?.kind==='hydrazine'?'#86a9a2':'#809dd0'}
+            metalness={.48} roughness={.32}/>
+        </mesh>
+        <mesh rotation={[Math.PI/2,0,0]}>
+          <torusGeometry args={[secondaryTankScale*.75,.022,8,22]}/><Metal color="#ddd7b0"/>
+        </mesh>
+      </group>}
     </Pick>
     <Pick part="propulsion" selected={selected} onSelect={onSelect}>
-      <ThrusterCluster count={design.thrusterCount}
-        electric={design.thrusterId!=='mono-reference'}
-        ready={analysis?.canPowerThruster??false}/>
+      <group position={design.secondaryThrusterId==='none'?[0,0,0]:[-.39,0,0]}>
+        <ThrusterCluster count={design.thrusterCount}
+          electric={design.thrusterId!=='mono-reference'}
+          ready={analysis?.primaryMode.canPowerAtRatedPoint??false}/>
+      </group>
+      {design.secondaryThrusterId!=='none'&&
+        <group position={[.55,0,.25]} scale={.75}>
+          <ThrusterCluster count={design.secondaryThrusterCount}
+            electric={design.secondaryThrusterId!=='mono-reference'}
+            ready={analysis?.secondaryMode?.canPowerAtRatedPoint??false}/>
+        </group>}
+    </Pick>
+    {design.payloadInstrumentId!=='none'&&<Pick part="payload" selected={selected} onSelect={onSelect}>
+      <group position={[0,.2,.93]}>
+        <mesh><boxGeometry args={[.58,.52,.42]}/><Metal color="#c5a66e"/></mesh>
+        <mesh position={[0,0,.27]} rotation={[Math.PI/2,0,0]}>
+          <cylinderGeometry args={[.2,.25,.22,24]}/><Metal color="#7999b7"/>
+        </mesh>
+        <mesh position={[0,0,.39]}>
+          <circleGeometry args={[.18,24]}/><meshStandardMaterial color="#1e6089" metalness={.5} roughness={.1}/>
+        </mesh>
+      </group>
     </Pick>
     <Pick part="antenna" selected={selected} onSelect={onSelect}><Dish/></Pick>
     <mesh position={[0,-1.7,0]} rotation={[-Math.PI/2,0,0]}>
@@ -354,6 +388,6 @@ export default function Spacecraft3D({
         If it reports a decoder or extension error, share this exact message so the 3D loader can be updated.
         Click <b>Retry NASA 3D model</b> to perform a fresh request.
       </p>}
-    <p className="craft-disclaimer">SCHEMATIC GEOMETRY. Import a self-contained .glb from Onshape or FreeCAD for viewing. Engineering calculations use independent mass/geometry inputs, not mesh triangles; parametric CAD coupling is future work.</p>
+    <p className="craft-disclaimer">SCHEMATIC GEOMETRY. Tank colors indicate propellant class; separate nozzle clusters indicate independent propulsion systems. Solar array mass grows with active area and wing mounts. Import a self-contained .glb from Onshape or FreeCAD for viewing. Engineering calculations use independent mass/geometry inputs, not mesh triangles; parametric CAD coupling is future work.</p>
   </div>;
 }
