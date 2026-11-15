@@ -43,16 +43,20 @@ export default function CampaignOrbitMap({
     ...agency.map((mission,i)=>({mission,index:'N'+(i+1),category:'agency' as const})),
     ...(special?[{mission:special,index:'S',category:'special' as const}]:[])
   ];
-  const markers=entries.map((entry,i)=>{
+  // Locked missions have names in the directory, but no spatial or trajectory
+  // information. Do not place their markers at their unrevealed destinations.
+  const visibleEntries=entries.filter(e=>stage>=e.mission.stage);
+  const markers=visibleEntries.map((entry,i)=>{
     const center=target(entry.mission);
-    const duplicates=entries.slice(0,i).filter(e=>e.mission.target===entry.mission.target).length;
-    const total=entries.filter(e=>e.mission.target===entry.mission.target).length;
+    const duplicates=visibleEntries.slice(0,i).filter(e=>e.mission.target===entry.mission.target).length;
+    const total=visibleEntries.filter(e=>e.mission.target===entry.mission.target).length;
     const offset=(duplicates-(total-1)/2)*33;
     return {...entry,x:center.x+offset,y:center.y-34+(duplicates%2)*8};
   });
   const focus=target(selected);
   const earthSide=selected.target==='ellipse'||selected.target==='lunar';
-  const route=earthSide?'':`M ${earth.x.toFixed(1)} ${earth.y.toFixed(1)} Q ${((earth.x+focus.x)/2+24).toFixed(1)} ${((earth.y+focus.y)/2-25).toFixed(1)} ${focus.x.toFixed(1)} ${focus.y.toFixed(1)}`;
+  const selectedUnlocked=stage>=selected.stage;
+  const route=!selectedUnlocked||earthSide?'':`M ${earth.x.toFixed(1)} ${earth.y.toFixed(1)} Q ${((earth.x+focus.x)/2+24).toFixed(1)} ${((earth.y+focus.y)/2-25).toFixed(1)} ${focus.x.toFixed(1)} ${focus.y.toFixed(1)}`;
   const percent=(x:number,max:number)=>`${100*x/max}%`;
   return <section className="panel campaign-solar-map" aria-label="Live solar system mission map">
     <div className="campaign-map-header">
@@ -83,9 +87,9 @@ export default function CampaignOrbitMap({
             strokeWidth={selected.target===body.id?1.5:1} strokeDasharray={body.id==='jupiter'?'4 5':'none'} opacity=".75"/>)}
           <circle cx={CX} cy={CY} r={1.35*scale} fill="none" stroke="#758196"
             strokeDasharray="2 5" opacity=".35"/>
-          {route&&<path d={route} fill="none" stroke="#ffc17b" strokeWidth="2.5"
+          {selectedUnlocked&&route&&<path d={route} fill="none" stroke="#ffc17b" strokeWidth="2.5"
             strokeDasharray="7 5" opacity=".9"/>}
-          {earthSide&&<ellipse cx={earth.x+13} cy={earth.y} rx={selected.target==='lunar'?46:31}
+          {selectedUnlocked&&earthSide&&<ellipse cx={earth.x+13} cy={earth.y} rx={selected.target==='lunar'?46:31}
             ry={selected.target==='lunar'?15:10} transform={`rotate(-28 ${earth.x+13} ${earth.y})`}
             fill="none" stroke="#f9c681" strokeWidth="2" strokeDasharray="5 4"/>}
           <circle cx={CX} cy={CY} r="12" fill="url(#campSun)" stroke="#ffdc8a" strokeWidth="2"/>
@@ -116,7 +120,7 @@ export default function CampaignOrbitMap({
       <div className="campaign-map-directory" aria-label="Numbered mission directory">
         <div className="campaign-map-current"><small>TRACKING</small>
           <strong>{selected.title}</strong>
-          <span>{selected.location} · Chapter {selected.stage}</span></div>
+          <span>{selectedUnlocked?selected.location+' · Chapter '+selected.stage:'Mission classified · unlock to reveal location and orbit'}</span></div>
         <div className="campaign-map-list">
           {entries.map(e=><button type="button" key={e.mission.id}
             onClick={()=>onSelect(e.mission.id)}
@@ -124,8 +128,7 @@ export default function CampaignOrbitMap({
             aria-pressed={selected.id===e.mission.id}>
             <span className="mission-index">{e.index}</span>
             <span><strong>{e.mission.title}</strong>
-              <small>{completed.includes(e.mission.id)?'✓ Complete':
-                stage<e.mission.stage?'Chapter '+e.mission.stage+' locked':
+              <small>{stage<e.mission.stage?'LOCKED · destination hidden':completed.includes(e.mission.id)?'✓ Complete':
                 e.category==='agency'?'NASA-inspired · optional':
                 e.category==='special'?'Limited-time contract':'Story mission'}</small></span>
           </button>)}
