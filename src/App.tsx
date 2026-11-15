@@ -16,7 +16,7 @@ import {advanceProgramDay,dailyEconomics,MOON_BASE_LEVELS,RESEARCH_POINTS_START,
 import {flightProgress,DEFAULT_FLIGHT_VIEWER_MS,flightEta} from './lib/flightProgress';
 import References from './References';
 import {GAME_DAY_DURATION_MS,todayGameDay} from './lib/campaignClock';
-import CampaignMissions,{type CampaignRun,type CampaignDebrief} from './CampaignMissions';
+import CampaignMissions,{type CampaignRun,type CampaignDebrief,type CampaignAssemblyProject} from './CampaignMissions';
 import {dateForGameDay,orbitalRoute,reviewCampaignMission,unlockedStage,DEFAULT_MISSION_OPTIONS,
   type CampaignDefinition,type MissionOptions,type SolvedCampaignTransfer} from './lib/campaignMissions';
 import {resolveCampaignSelection} from './lib/campaignSelection';
@@ -117,6 +117,7 @@ type Game = {
   rocketService:LauncherId;rocketProgramLevel:number;
   rocketFlightCounts:Record<LauncherId,number>;orbitalAssemblyUnlocked:boolean;
   moonCargoDeliveredLevel:number;activeMoonCargoRun:MoonCargoRun|null;
+  activeAssemblyProject:CampaignAssemblyProject|null;
   devMode: boolean;
   storyCompleted: string[];
   activeStoryRun: CampaignRun|null;
@@ -140,6 +141,7 @@ const DEFAULT_GAME: Game = {
   rocketService:'custom',rocketProgramLevel:0,
   rocketFlightCounts:{custom:0,falcon9:0,falconHeavy:0,starship:0},
   orbitalAssemblyUnlocked:false,moonCargoDeliveredLevel:0,activeMoonCargoRun:null,
+  activeAssemblyProject:null,
   devMode: false,
   storyCompleted: [],
   activeStoryRun: null,
@@ -185,6 +187,9 @@ function loadSave(): Snapshot {
       activeMoonCargoRun:parsed.game.activeMoonCargoRun?.id&&
         Number.isFinite(parsed.game.activeMoonCargoRun.costUsd)?
           parsed.game.activeMoonCargoRun:null,
+      activeAssemblyProject:parsed.game.activeAssemblyProject?.draft?.id&&
+        Array.isArray(parsed.game.activeAssemblyProject.draft.launchInvoices)?
+        parsed.game.activeAssemblyProject:null,
       devMode:parsed.game.devMode===true,
       storyCompleted:Array.isArray(parsed.game.storyCompleted)
         ?parsed.game.storyCompleted.filter(id=>typeof id==='string'):
@@ -366,7 +371,7 @@ export default function App() {
     setSnapshot(previous=>{
       const g=previous.game,stage=g.moonBaseLevel;
       if((!g.storyCompleted.includes('lunar')&&!g.devMode)||
-        g.activeMoonCargoRun||g.activeStoryRun||
+        g.activeMoonCargoRun||g.activeStoryRun||g.activeAssemblyProject||
         g.moonCargoDeliveredLevel>stage||stage>=MOON_BASE_LEVELS.length)return previous;
       const logistics=planMoonShipment({stageIndex:stage,
         service:g.rocketService,vehicle:previous.vehicle,
@@ -486,25 +491,35 @@ export default function App() {
   }
   function startCampaignMission(run:CampaignRun){
     setSnapshot(previous=>{
-      if(previous.game.activeStoryRun||previous.game.activeMoonCargoRun||previous.game.storyCompleted.includes(run.id)||
-        previous.game.cash<run.costUsd||run.launchedDay!==previous.game.day||
-        (run.launchService!==undefined&&run.launchService!==previous.game.rocketService))
-        return previous;
+      const g=previous.game;
+      if(g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject||
+         g.storyCompleted.includes(run.id)||
+         g.cash<run.costUsd||run.launchedDay!==g.day||
+         run.launchService!==g.rocketService)return previous;
       const manifest=planLaunchManifest({
-        totalWetKg:run.payloadKg,service:previous.game.rocketService,
-        vehicle:previous.vehicle,tier:previous.game.rocketProgramLevel,
-        assemblyUnlocked:previous.game.orbitalAssemblyUnlocked,
-        priorFlights:previous.game.rocketFlightCounts[previous.game.rocketService]??0,
+        totalWetKg:run.payloadKg,service:g.rocketService,
+        vehicle:previous.vehicle,tier:g.rocketProgramLevel,
+        assemblyUnlocked:g.orbitalAssemblyUnlocked,
+        priorFlights:g.rocketFlightCounts[g.rocketService]??0,
       });
-      if(!manifest.feasible||manifest.flightsRequired!==run.launchCount)return previous;
-      return {...previous,game:{...previous.game,
-        cash:previous.game.cash-run.costUsd,
-        launched:previous.game.launched+manifest.flightsRequired,
-        rocketFlightCounts:{...previous.game.rocketFlightCounts,
-          [previous.game.rocketService]:(previous.game.rocketFlightCounts[previous.game.rocketService]??0)+manifest.flightsRequired},
-        engineBuildCounts:{...previous.game.engineBuildCounts,
+      if(!manifest.feasible||manifest.flightsRequired!==run.launchCount||
+         manifest.flights.length!==run.launchInvoices.length)return previous;
+      // MULTIPLE actual rocket deliveries must be paid and tracked one-by-one.
+      // The new spacecraft is procured once at program start. A separate
+      // orbital inventory is persisted and survives navigation/reload.
+      if(run.launchCount>1){
+        return {...previous,game:{...g,
+          cash:g.cash-run.spacecraftProcurementUsd,
+          activeAssemblyProject:{draft:run,launchesCompleted:0,startedDay:g.day}}};
+      }
+      return {...previous,game:{...g,
+        cash:g.cash-run.costUsd,
+        launched:g.launched+1,
+        rocketFlightCounts:{...g.rocketFlightCounts,
+          [g.rocketService]:(g.rocketFlightCounts[g.rocketService]??0)+1},
+        engineBuildCounts:{...g.engineBuildCounts,
           [previous.vehicle.engineId]:
-            (previous.game.engineBuildCounts[previous.vehicle.engineId]??0)+1},
+            (g.engineBuildCounts[previous.vehicle.engineId]??0)+1},
         activeStoryRun:{...run,startedAtMs:Date.now(),
           viewerDurationMs:DEFAULT_FLIGHT_VIEWER_MS,
           orekitTrajectoryAu:lastSolvedTransfer?.departureDate===run.departureDate&&
@@ -513,7 +528,50 @@ export default function App() {
       }};
     });
     setFlightViewerOpen(true);setFlightNowMs(Date.now());
-    setMessage('All rocket launch slots paid. Flight in progress; transport assembly and mission reward remain time-gated.');
+    setMessage(run.launchCount>1?
+      'Spacecraft procured. Launch each independently priced batch, then perform the orbital assembly before departing.':
+      'Launch service paid. Mission underway with persistent flight timer.');
+  }
+  function launchAssemblyFlight(){
+    setSnapshot(previous=>{
+      const g=previous.game,project=g.activeAssemblyProject;
+      if(!project||g.activeStoryRun||g.activeMoonCargoRun)return previous;
+      const batch=project.draft.launchInvoices[project.launchesCompleted];
+      if(!batch||g.cash<batch.serviceCostUsd)return previous;
+      const service=project.draft.launchService;
+      return {...previous,game:{...g,
+        cash:g.cash-batch.serviceCostUsd,
+        launched:g.launched+1,
+        rocketFlightCounts:{...g.rocketFlightCounts,
+          [service]:(g.rocketFlightCounts[service]??0)+1},
+        activeAssemblyProject:{...project,launchesCompleted:project.launchesCompleted+1}}};
+    });
+    setMessage('Rocket shipment delivered into parking orbit and added to the spacecraft assembly inventory.');
+  }
+  function finalizeOrbitalAssembly(){
+    setSnapshot(previous=>{
+      const g=previous.game,project=g.activeAssemblyProject;
+      if(!project||project.launchesCompleted!==project.draft.launchCount||
+        g.cash<project.draft.orbitalAssemblyCostsUsd||g.activeStoryRun)return previous;
+      const run=project.draft;
+      return {...previous,game:{...g,
+        cash:g.cash-run.orbitalAssemblyCostsUsd,
+        engineBuildCounts:{...g.engineBuildCounts,
+          [previous.vehicle.engineId]:
+            (g.engineBuildCounts[previous.vehicle.engineId]??0)+1},
+        activeAssemblyProject:null,
+        activeStoryRun:{...run,startedAtMs:Date.now(),
+          viewerDurationMs:DEFAULT_FLIGHT_VIEWER_MS,
+          orekitTrajectoryAu:lastSolvedTransfer?.departureDate===run.departureDate&&
+            lastSolvedTransfer.target===run.target&&lastSolvedTransfer.trajectoryAu?.length>=8?
+              lastSolvedTransfer.trajectoryAu:undefined},lastStoryDebrief:null}};
+    });
+    setFlightViewerOpen(true);setFlightNowMs(Date.now());
+    setMessage('All hardware launched and assembled. Orbital transfer mission started.');
+  }
+  function cancelOrbitalAssembly(){
+    setSnapshot(previous=>({...previous,game:{...previous.game,activeAssemblyProject:null}}));
+    setMessage('Assembly project cancelled. Hardware and previous rocket launch invoices are sunk costs.');
   }
   function finishCampaignMission(){
     setSnapshot(previous=>{
@@ -726,7 +784,11 @@ export default function App() {
             lockedTechnologies={lockedLabParts}
             onComplete={completeEarthObservation}/>}
         {activeView==='missions'&&campaignMode==='progression'&&
-          <CampaignMissions launchService={game.rocketService}
+          <CampaignMissions assembly={game.activeAssemblyProject}
+            onLaunchAssemblyFlight={launchAssemblyFlight}
+            onFinalizeAssembly={finalizeOrbitalAssembly}
+            onCancelAssembly={cancelOrbitalAssembly}
+            launchService={game.rocketService}
             rocketProgramLevel={game.rocketProgramLevel}
             orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
             priorServiceFlights={game.rocketFlightCounts[game.rocketService]??0}
