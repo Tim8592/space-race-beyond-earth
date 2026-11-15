@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import type {CampaignRun} from './CampaignMissions';
-import {flightEta,flightProgress} from './lib/flightProgress';
+import {DEFAULT_FLIGHT_VIEWER_MS,flightEta,flightProgress} from './lib/flightProgress';
 import {EARTH} from './lib/nasaData';
 import {earthOrbitAtTime,planetAtDate} from './lib/orbitalMechanics';
 import {earthKeplerTrack,hohmannTrack,lunarKeplerTrack,
@@ -17,7 +17,7 @@ import {tryOrekitFlightPath,tryOrekitEarthOrbitPath,type EarthOrekitOrbit} from 
 type FlightPlayable={
   title:string;target:CampaignRun['target'];
   durationDays:number;departureDate:string;
-  startedAtMs:number;viewerDurationMs:number;
+  startedAtMs?:number;viewerDurationMs?:number;
   route:{flightDays:number};
   orekitTrajectoryAu?:number[][];
   options?:{perigeeKm?:number;eccentricity?:number};
