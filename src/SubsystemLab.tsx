@@ -190,7 +190,7 @@ export default function SubsystemLab({design,onDesignChange}:{
         </div>}
         <p className="sys-subnote">
           {selectedElectric
-            ? `NASA-surveyed per-thruster operating point: ${fmt(selectedElectric.nominalThrustN * 1000, 'mN', 2)} thrust · ${fmt(selectedElectric.nominalSpecificImpulseSeconds, 's', 0)} Isp · ${fmt(selectedElectric.nominalThrusterPowerW, 'W', 0)} rated thruster input. This is not full propulsion-system power or mass.`
+            ? `NASA-surveyed per-thruster operating point: ${fmt(selectedElectric.nominalThrustN * 1000, 'mN', 2)} thrust · ${fmt(selectedElectric.nominalSpecificImpulseSeconds, 's', 0)} Isp · ${fmt(selectedElectric.nominalThrusterPowerW, 'W', 0)} rated electrical reference (thruster or PPU-input scope depends on source). This is not necessarily a complete propulsion-system or spacecraft mass.`
             : 'Chemical baseline 1 N, 230 s, 8 W for valves (assumptions within NASA-surveyed monopropellant performance ranges).'}
           {' '}<a href="https://www.nasa.gov/smallsat-institute/sst-soa/in-space_propulsion/" target="_blank" rel="noreferrer">NASA propulsion survey ↗</a>
         </p>

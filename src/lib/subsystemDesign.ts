@@ -189,7 +189,7 @@ function thruster(id:ThrusterId){
     name:'Illustrative 1 N hydrazine-class monopropellant',
     kind:'hydrazine' as PropellantKind,
     isp:230,thrust:1,watts:0,massKg:CHEMICAL_COMPONENT_MASS_KG,
-    isElectric:false,
+    isElectric:false,powerAlreadyIncludesPPU:false,
     source:'https://www.nasa.gov/smallsat-institute/sst-soa/in-space_propulsion/',
     reportedMass:false,
   };
@@ -200,7 +200,8 @@ function thruster(id:ThrusterId){
     isp:data.nominalSpecificImpulseSeconds,thrust:data.nominalThrustN,
     watts:data.nominalThrusterPowerW,
     massKg:data.massScope==='thruster-only'?data.reportedMassKg??0:0,
-    isElectric:true,source:data.source.url,reportedMass:data.massScope==='thruster-only',
+    isElectric:true,powerAlreadyIncludesPPU:data.powerScope==='ppu-input',
+    source:data.source.url,reportedMass:data.massScope==='thruster-only',
   };
 }
 
@@ -266,12 +267,13 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
   const housekeepingPowerW=electricalBase+harnessLoadW;
   // Two installed engines need not (and often cannot) operate at once.
   // In engineering analysis we assume one propulsion family fires at a time.
-  function enginePower(watts:number,isElectric:boolean,count:number){
-    return isElectric?watts*count/PPU_EFFICIENCY:
-      CHEMICAL_VALVE_POWER_W*count;
+  function enginePower(watts:number,isElectric:boolean,count:number,busInputReported:boolean){
+    if(!isElectric)return CHEMICAL_VALVE_POWER_W*count;
+    // NEXT-C publishes PPU input directly; do NOT apply PPU losses twice.
+    return busInputReported?watts*count:watts*count/PPU_EFFICIENCY;
   }
-  const pp=enginePower(p.watts,p.isElectric,design.thrusterCount);
-  const sp=s?enginePower(s.watts,s.isElectric,design.secondaryThrusterCount):0;
+  const pp=enginePower(p.watts,p.isElectric,design.thrusterCount,p.powerAlreadyIncludesPPU);
+  const sp=s?enginePower(s.watts,s.isElectric,design.secondaryThrusterCount,s.powerAlreadyIncludesPPU):0;
   const propulsionPeakPowerW=Math.max(pp,sp)*(1/HARNESS_EFFICIENCY);
   const totalElectricalDemandW=housekeepingPowerW+propulsionPeakPowerW;
   const harnessLossW=harnessLoadW+propulsionPeakPowerW*Math.max(0,1-HARNESS_EFFICIENCY);
@@ -291,10 +293,13 @@ export function sizeSubsystemDesign(design:SubsystemDesign):SystemResults {
     maxDepthOfDischarge:DOD,dischargeEfficiency:DISCHARGE_EFFICIENCY,
   });
   const storedBatteryEnergyWh=batteryMassKg*battery.specificEnergyWhKg;
-  const propulsionHeatW=Math.max(
-    p.isElectric?pp-p.watts*design.thrusterCount+0.1*p.watts*design.thrusterCount:pp,
-    s?(s.isElectric?sp-s.watts*design.secondaryThrusterCount+0.1*s.watts*design.secondaryThrusterCount:sp):0,
-  );
+  const propulsionHeat=(engine:ReturnType<typeof thruster>,powerW:number,count:number)=>{
+    if(!engine.isElectric)return powerW;
+    const dischargeW=engine.watts*count*(engine.powerAlreadyIncludesPPU?PPU_EFFICIENCY:1);
+    return powerW-dischargeW+.1*dischargeW;
+  };
+  const propulsionHeatW=Math.max(propulsionHeat(p,pp,design.thrusterCount),
+    s?propulsionHeat(s,sp,design.secondaryThrusterCount):0);
   const thermalLoadW=housekeepingPowerW+propulsionHeatW;
   const solarFluxWm2=SOLAR_IRRADIANCE/design.distanceAu**2;
   const absorbedSolarFluxWm2=solarFluxWm2*coating.solarAbsorptivityBOL*design.radiatorSunIncidence;

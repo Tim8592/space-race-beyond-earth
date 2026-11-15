@@ -63,6 +63,8 @@ export type PropulsionTechnology = {
   nominalThrustN: number;
   nominalSpecificImpulseSeconds: number;
   nominalThrusterPowerW: number;
+  /** Some published points are already measured at the PPU bus input. */
+  powerScope?: 'thruster'|'ppu-input';
   reportedMassKg?: number;
   massScope?: 'thruster-only' | 'integrated-wet';
   source: SourceReference;
@@ -132,6 +134,7 @@ export const IN_SPACE_THRUSTERS: readonly PropulsionTechnology[] = [
     nominalThrustN: 0.235,
     nominalSpecificImpulseSeconds: 4155,
     nominalThrusterPowerW: 7330,
+    powerScope: 'ppu-input',
     reportedMassKg: 14,
     massScope: 'thruster-only',
     source: {
