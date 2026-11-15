@@ -65,6 +65,21 @@ describe('Earth Observation One integrated physical and gameplay constraints',()
     expect(weak.batteryUsableWh).toBeLessThan(strong.batteryUsableWh);
     expect(weak.powerCapacityW).toBeCloseTo(strong.powerCapacityW);
   });
+  it('charges the guided observation satellite for the selected real rocket service and enforces its reserved slot',()=>{
+    const custom=observationPreview(mission());
+    const falcon=observationPreview(mission({launchService:'falcon9'}));
+    expect(custom.launchManifest.service).toBe('custom');
+    expect(falcon.launchManifest.service).toBe('falcon9');
+    expect(falcon.launchManifest.flightsRequired).toBe(1);
+    expect(falcon.launchManifest.launchCostUsd).toBe(74e6);
+    expect(falcon.missionCostUsd).not.toBe(custom.missionCostUsd);
+    expect(falcon.massKg).toBeCloseTo(custom.massKg);
+    expect(falcon.launchCapacityKg).toBe(DEFAULT_OBSERVATION.launchSlotKg);
+    expect(falcon.launchReady).toBe(true);
+    expect(observationPreview(mission({
+      launchService:'falcon9',choices:{...DEFAULT_OBSERVATION,launchSlotKg:140},
+    })).launchReady).toBe(false);
+  });
   it('seven-day downlink balances generated, lost and stored data',()=>{
     const r=simulateObservation(mission({
       choices:{...DEFAULT_OBSERVATION,instrument:'hyperspectral',radio:'uhf',storage:'4gb',dutyFraction:1,radiatorExtraAreaM2:2.5},
