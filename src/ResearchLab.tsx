@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {researchPointsCost} from './lib/programEconomy';
 import {TECHNOLOGIES,canResearch,formatMillions,hasTechnology,
   type TechnologyId,type TechnologyNode} from './lib/technologyTree';
 
@@ -20,13 +21,13 @@ export const FUTURE_MISSIONS=[
     tech:'RTG or research fission electric, long-duration thrust, thermal management',className:'future'},
 ] as const;
 
-function TechCard({item,unlocked,devMode,cash,onResearch}:{
+function TechCard({item,unlocked,devMode,cash,researchPoints,onResearch}:{
   item:TechnologyNode;unlocked:readonly TechnologyId[];devMode:boolean;
-  cash:number;onResearch:(id:TechnologyId)=>void;
+  cash:number;researchPoints:number;onResearch:(id:TechnologyId)=>void;
 }){
   const permanentlyUnlocked=unlocked.includes(item.id);
   const available=hasTechnology(item.id,unlocked,devMode);
-  const researchable=canResearch(item.id,unlocked,cash)&&!devMode;
+  const researchable=canResearch(item.id,unlocked,cash,researchPoints)&&!devMode;
   const missing=item.prerequisites.filter(id=>!unlocked.includes(id));
   const maturity=item.gameMaturity;
   return <article className={'research-node '+(available?'researched':'locked')}>
@@ -36,6 +37,7 @@ function TechCard({item,unlocked,devMode,cash,onResearch}:{
     <p>{item.description}</p>
     <div className="research-economics">
       <div><span>R&D INVESTMENT</span><b>{formatMillions(item.researchUsd)}</b></div>
+      <div><span>RESEARCH POINTS</span><b>{researchPointsCost(item.researchUsd)} RP</b></div>
       <div><span>REFERENCE HARDWARE</span><b>{formatMillions(item.hardwareCostUsd)}</b></div>
       <div><span>ASSUMED ANNUAL OPEX</span><b>{formatMillions(item.operationalCostUsdPerYear)}</b></div>
     </div>
@@ -47,13 +49,13 @@ function TechCard({item,unlocked,devMode,cash,onResearch}:{
     <button className="secondary-button" type="button" disabled={!researchable||permanentlyUnlocked}
       onClick={()=>onResearch(item.id)}>
       {permanentlyUnlocked?'Already researched':devMode?'Available for demo':
-      !researchable?'Prerequisite / funds required':'Invest '+formatMillions(item.researchUsd)+' →'}
+      !researchable?'Prerequisite / cash / RP required':'Invest '+formatMillions(item.researchUsd)+' + '+researchPointsCost(item.researchUsd)+' RP →'}
     </button>
   </article>;
 }
 
-export default function ResearchLab({cash,unlocked,devMode,onToggleDevMode,onResearch}:{
-  cash:number;unlocked:readonly TechnologyId[];devMode:boolean;
+export default function ResearchLab({cash,researchPoints,unlocked,devMode,onToggleDevMode,onResearch}:{
+  cash:number;researchPoints:number;unlocked:readonly TechnologyId[];devMode:boolean;
   onToggleDevMode:()=>void;onResearch:(id:TechnologyId)=>void;
 }){
   const [branch,setBranch]=useState<'All'|TechnologyNode['branch']>('All');
@@ -64,10 +66,11 @@ export default function ResearchLab({cash,unlocked,devMode,onToggleDevMode,onRes
       <div><div className="eyebrow">TECHNOLOGY DIRECTORATE / ECONOMIC STRATEGY</div>
         <h2>Research the next frontier.</h2>
         <p>Invest contract proceeds into new spacecraft architectures. Compare development cost,
-          conceptual hardware procurement, operating burden and engineering maturity before choosing a path.</p>
+          conceptual hardware procurement, operating burden and engineering maturity before choosing a path. Each technology requires BOTH cash and research points; RP comes from missions and the ongoing laboratory program.</p>
       </div>
       <div className="research-intro-side">
         <span>AGENCY CAPITAL</span><strong>{formatMillions(cash)}</strong>
+        <span>RESEARCH POINTS</span><strong>{researchPoints} RP</strong>
         <span>TECHNOLOGIES AVAILABLE</span><strong>{displayedUnlocked} / {TECHNOLOGIES.length}</strong>
       </div>
     </div>
