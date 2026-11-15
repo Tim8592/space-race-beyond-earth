@@ -168,7 +168,12 @@ function loadSave(): Snapshot {
         ?parsed.game.storyCompleted.filter(id=>typeof id==='string'):
         parsed.game.history.some(h=>h.contract==='Earth Observation One'&&h.success)?['observation']:[],
       activeStoryRun:parsed.game.activeStoryRun?.id&&
-        Number.isFinite(parsed.game.activeStoryRun.costUsd)?parsed.game.activeStoryRun:null,
+        Number.isFinite(parsed.game.activeStoryRun.costUsd)?
+          {...parsed.game.activeStoryRun,
+            startedAtMs:Number.isFinite(parsed.game.activeStoryRun.startedAtMs)?
+              parsed.game.activeStoryRun.startedAtMs:Date.now(),
+            viewerDurationMs:Number.isFinite(parsed.game.activeStoryRun.viewerDurationMs)?
+              parsed.game.activeStoryRun.viewerDurationMs:DEFAULT_FLIGHT_VIEWER_MS}:null,
       lastStoryDebrief:parsed.game.lastStoryDebrief?.id?parsed.game.lastStoryDebrief:null,
     }};
   } catch {
