@@ -550,6 +550,38 @@ test('NASA datasets, source linkage and future mission calendar remain navigable
   });
 });
 
+test('CSA verified source data inspires actual optical, radar and auroral science contracts with instrument gating',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.route('**/nasa-api/**',r=>r.fulfill({status:503,body:'offline reference'}));
+    await page.goto('/');
+    await page.evaluate(()=>{
+      const key='space-race-v01-save',saved=JSON.parse(localStorage.getItem(key)!);
+      saved.game.storyCompleted=['observation'];saved.game.devMode=true;
+      saved.game.cash=900e6;localStorage.setItem(key,JSON.stringify(saved));
+    });
+    await page.reload();
+    await page.getByRole('tab',{name:'NASA Intel'}).click();
+    await expect(page.locator('.csa-data-card')).toHaveCount(3);
+    await expect(page.locator('.csa-data-grid')).toContainText('RADARSAT');
+    await expect(page.locator('.csa-data-grid')).toContainText('CASSIOPE');
+    await expect(page.locator('.csa-data-grid')).toContainText('NEOSSAT');
+    await page.locator('.csa-data-card').first().getByRole('button',
+      {name:/Plan this Canadian data-inspired mission/}).click();
+    await expect(page.locator('.campaign-workshop-controls')).toContainText('Canadian Optical Asteroid Survey');
+    await expect(page.locator('.campaign-system-checks')).toContainText('Required science instrument');
+    await page.getByRole('button',{name:/Engineering Lab \/ installed equipment/}).click();
+    await page.getByRole('tab',{name:'Science payload'}).click();
+    await page.locator('label.sys-field').filter({hasText:'Installed science sensor'})
+      .locator('select').selectOption('neoTelescope');
+    await page.locator('.sys-mission-brief').getByRole('button',{name:/Return to selected mission/}).click();
+    await expect(page.locator('.campaign-system-checks').getByText('Required science instrument'))
+      .toBeVisible();
+    await expect(page.locator('.campaign-system-checks')).toContainText('NEOSSAT-inspired optical telescope');
+    await page.reload();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.locator('.campaign-workshop-controls')).toContainText('Canadian Optical Asteroid Survey');
+  });
+});
 test('Mission map zoom, selection and engineering lab bottlenecks stay synchronized',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
@@ -633,6 +665,12 @@ test('A configured lunar milestone launches, survives reload and pays exactly on
     const go=page.getByRole('button',{name:/Accept contract and launch/});
     await expect(go).toBeEnabled();
     await go.click();
+    await expect(page.locator('.mission-flight-viewer')).toContainText('Kepler');
+    await expect(page.locator('.flight-physics-head')).toContainText('MISSION TIME');
+    const physicalTrack=await page.locator('.mission-flight-scene svg path[stroke="#6b91a9"]')
+      .getAttribute('d');
+    expect((physicalTrack?.match(/L /g)??[]).length).toBeGreaterThan(100);
+    expect(physicalTrack).not.toContain(' C ');
     await expect(page.getByRole('heading',{name:'Lunar Relay Pathfinder'}).first()).toBeVisible();
     await expect(page.getByText('FLIGHT OPERATIONS / CONTRACT IN PROGRESS')).toBeVisible();
     await page.reload();
