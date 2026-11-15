@@ -121,6 +121,7 @@ export default function CampaignMissions({
   selected,onSelectedIdChange,options,onOptionsChange,agencyOffers,scheduled,
   nowMs,viewerOpen,onViewerOpenChange,
   launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,logisticsInProgress,
+  canadianSuccesses,
   assembly,onLaunchAssemblyFlight,onFinalizeAssembly,onCancelAssembly,
 }:{
   day:number;cash:number;completed:readonly string[];devMode:boolean;
@@ -141,6 +142,7 @@ export default function CampaignMissions({
   onCancelAssembly:()=>void;
   launchService:LauncherId;rocketProgramLevel:number;
   orbitalAssemblyUnlocked:boolean;priorServiceFlights:number;logisticsInProgress:boolean;
+  canadianSuccesses:number;
 }){
   const stage=unlockedStage(completed,devMode);
   const originalAgency=useMemo(()=>agencyMissionDefinitions(),[]);
@@ -153,11 +155,12 @@ export default function CampaignMissions({
       definition:selected,day,options,spacecraft,launcher,capitalUsd:cash,
       productionDiscount,completedWithLauncherEngine,solvedTransfer,
       launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,
+      canadianSuccesses,
     }),error:''};}
     catch(e){return {review:null,error:e instanceof Error?e.message:String(e)}}
   },[selected,day,options,spacecraft,launcher,cash,productionDiscount,
     completedWithLauncherEngine,solvedTransfer,launchService,rocketProgramLevel,
-    orbitalAssemblyUnlocked,priorServiceFlights]);
+    orbitalAssemblyUnlocked,priorServiceFlights,canadianSuccesses]);
   const review=draft.review;
   const canStart=stage>=selected.stage&&!completedMission&&
     review?.feasible===true&&!run&&!assembly&&!logisticsInProgress&&lockedTechnologies.length===0&&
