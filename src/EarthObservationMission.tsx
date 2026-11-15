@@ -70,6 +70,7 @@ function PercentBars({days}:{days:ReturnType<typeof simulateObservation>['days']
 export default function EarthObservationMission({
   spacecraft,launcher,cash,completedWithEngine,technologyDiscount=0,lockedTechnologies=[],
   launchService='custom',rocketProgramLevel=0,orbitalAssemblyUnlocked=false,priorServiceFlights=0,
+  otherMissionActive=false,
   onEditSpacecraft,onEditLauncher,onStart,onComplete,
 }:{
   spacecraft:SubsystemDesign;
@@ -81,7 +82,7 @@ export default function EarthObservationMission({
   technologyDiscount?:number;
   lockedTechnologies?:readonly string[];
   launchService?:LauncherId;rocketProgramLevel?:number;
-  orbitalAssemblyUnlocked?:boolean;priorServiceFlights?:number;
+  orbitalAssemblyUnlocked?:boolean;priorServiceFlights?:number;otherMissionActive?:boolean;
   onStart:(costUsd:number)=>void;
   onComplete:(result:{success:boolean;missionCostUsd:number;payoutUsd:number;
     wetMassKg:number;returnedScience:number})=>void;
@@ -107,7 +108,7 @@ export default function EarthObservationMission({
   const preview=forecast?.preview;
   const activeInstrument=INSTRUMENTS[choices.instrument];
   const budgetOK=!!preview&&preview.missionCostUsd<=OBSERVATION_BUDGET_USD&&preview.missionCostUsd<=cash;
-  const canStart=!!preview&&preview.launchReady&&budgetOK&&lockedTechnologies.length===0;
+  const canStart=!!preview&&preview.launchReady&&budgetOK&&lockedTechnologies.length===0&&!otherMissionActive;
   function choicesChange<K extends keyof ObservationChoices>(key:K,val:ObservationChoices[K]){
     setState(p=>({...p,choices:{...p.choices,[key]:val}}));
   }
