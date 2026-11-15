@@ -16,7 +16,7 @@ export default function MissionLibrary({ onOpenMap }: { onOpenMap:()=>void }) {
   return <section className="mission-library" aria-label="NASA mission heritage library">
     <div className="panel library-hero">
       <div className="eyebrow">NASA MISSION HERITAGE / REFERENCE LIBRARY</div>
-      <h2>Build on what has flown.</h2>
+      <h2>Learn from flown missions and unfinished ambitions.</h2>
       <p>Inspect NASA spacecraft engineering, view downloadable 3D assets and retrieve historical spacecraft paths from JPL Horizons when data is available. These are design precedents, <strong>not compulsory propulsion choices</strong>.</p>
     </div>
     <div className="heritage-grid">
@@ -42,8 +42,10 @@ export default function MissionLibrary({ onOpenMap }: { onOpenMap:()=>void }) {
             <figure className="heritage-image"><img src={active.imageUrl} alt={'NASA photograph or illustration of '+active.name+' spacecraft'} loading="lazy"/><figcaption>{active.credit}</figcaption></figure>
           ) : (
             <div className="heritage-no-image">
-              <div>NASA 3D resource available</div>
-              <p>A model exists in NASA's library, but a browser-ready GLB URL has not yet been verified. Open the official 3D model page below.</p>
+              <div>{active.missionMode==='concept'?'CONCEPT STUDY · NO FLIGHT SPACECRAFT':'NASA 3D reference not verified'}</div>
+              <p>{active.missionMode==='concept'
+                ? 'Project Prometheus was cancelled before flight. There is no authentic flown spacecraft 3D model or historical spacecraft trajectory. This card is a research reference, not a completed vehicle.'
+                : 'NASA references may include images or other downloadable models; a browser-ready GLB has not yet been verified.'}</p>
             </div>
           )}
           <div className="heritage-links">
@@ -53,7 +55,10 @@ export default function MissionLibrary({ onOpenMap }: { onOpenMap:()=>void }) {
           </div>
         </div>
         <div className="panel">
-          <HeritageTrajectoryView key={active.id} mission={active}/>
+          {active.trajectory?<HeritageTrajectoryView key={active.id} mission={active}/>:
+            <div className="heritage-concept-note"><div className="eyebrow">RESEARCH, NOT FLIGHT HERITAGE</div>
+              <h3>No flight trajectory exists</h3><p>No Project Prometheus/JIMO spacecraft launched. NASA's original reactor-electric propulsion studies are useful for design trades, but they cannot be plotted as historical ephemerides.</p>
+            </div>}
         </div>
       </div>
       <aside className="panel heritage-info">
@@ -76,7 +81,9 @@ export default function MissionLibrary({ onOpenMap }: { onOpenMap:()=>void }) {
         <p className="heritage-attr"><strong>Source:</strong> {active.credit}. Published statistics may include different mass accounting boundaries; they must not be compared as identical performance metrics without checking source definitions.</p>
         <a href={active.missionUrl} target="_blank" rel="noreferrer" className="heritage-source">Read NASA mission history ↗</a>
         <button type="button" className="secondary-button" onClick={onOpenMap}>Explore orbital map →</button>
-        <p className="heritage-limits">A Dawn-like mission favors extended efficient electric thrust for a multi-object rendezvous, but does not impose an artificial ban on chemical propulsion. A New Horizons-like high-energy flyby used a chemical launch and an RTG. Whether YOUR spacecraft can complete such missions requires a trajectory, power and mass analysis.</p>
+        <p className="heritage-limits">{active.missionMode==='concept'
+          ? 'Prometheus is an unfunded historical nuclear-electric architecture study. Reactor shielding, power conversion, multi-MW thermal rejection, launch safety, electrical distribution and mass were not qualified as a flight vehicle. Do not confuse concept parameters with NASA hardware specifications.'
+          : 'Historical missions illustrate engineering trade-offs, not exclusive propulsion requirements. Whether your spacecraft can complete a similar mission depends on trajectories, power, mass, margins, communications and instrument requirements.'}</p>
       </aside>
     </div>
   </section>;
