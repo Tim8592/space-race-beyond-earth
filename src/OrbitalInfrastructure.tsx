@@ -127,8 +127,8 @@ export default function OrbitalInfrastructure(p:Props){
               onClick={()=>setViewerOpen(true)}>Reopen propagated orbit ↗</button>
           </div>}
          <p>Already paid {money(p.activeRun.costUsd)} for {p.activeRun.satelliteCount}
-           spacecraft, {p.activeRun.launchCount} rocket launch(es), ground equipment
-           and any orbital assembly. Business revenue has not started.</p>
+           spacecraft, {p.activeRun.launchCount} rocket launch(es) and ground equipment.
+           Independent network nodes do not require orbital assembly. Business revenue has not started.</p>
          <button className="launch-button" type="button" disabled={!progress?.ready}
            onClick={p.onComplete}>{progress?.ready?'Commission network and start income ↗':
            'Constellation deploying · ETA '+flightEta(progress?.remainingMs??0)}</button>
@@ -151,7 +151,7 @@ export default function OrbitalInfrastructure(p:Props){
            <div><small>Radiator capacity / modeled heat</small><strong>{Math.round(review.thermalCapacityW)} / {Math.round(review.heatProducedW)} W</strong></div>
            <div><small>Rocket service · launches</small><strong>{review.manifest.vehicleLabel} · {review.manifest.flightsRequired}</strong></div>
            <div><small>Spacecraft hardware invoice</small><strong>{money(review.hardwareUsd)}</strong></div>
-           <div><small>Launch & docking invoices</small><strong>{money(review.manifest.launchCostUsd+review.manifest.assemblyCostUsd)}</strong></div>
+           <div><small>Separate intact satellite launch invoices</small><strong>{money(review.manifest.launchCostUsd+review.manifest.assemblyCostUsd)}</strong></div>
            <div><small>Ground service equipment</small><strong>{money(review.groundInfrastructureUsd)}</strong></div>
            <div><small>ALL-IN deployment cost</small><strong>{money(review.totalCostUsd)}</strong></div>
            <div><small>New gross / game day</small><strong>+{money(stage.grossDailyUsd)}</strong></div>
