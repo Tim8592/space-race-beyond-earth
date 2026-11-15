@@ -1092,20 +1092,20 @@ export default function App() {
 
         {activeView==='systems' && <div className="single-tab-page">
           <div className="lab-back"><span>ENGINEERING LAB · linked to {
-            campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
+            campaignMode==='observation'?
               'Earth Observation One':campaignSelection.selected.title}</span>
             <button className="secondary-button" onClick={()=>{
               setActiveView('missions');
-            }}>{campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
+            }}>{campaignMode==='observation'?
               'Return to mission design →':'Return to selected mission →'}</button>
           </div>
           <SubsystemLab key={labEntryTab} initialTab={labEntryTab} design={spacecraftDesign} onDesignChange={setSpacecraftDesign}
-            mission={campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
+            mission={campaignMode==='observation'?
               undefined:{definition:campaignSelection.selected,review:selectedCampaignReview,
               stageUnlocked:unlockedCampaignStage,completed:game.storyCompleted.includes(campaignSelection.selected.id),
               lockedTechnologyCount:lockedLabParts.length,
               activeFlight:!!game.activeStoryRun,gameDay:game.day}}
-            observation={campaignMode==='observation'&&!game.storyCompleted.includes('observation')?
+            observation={campaignMode==='observation'?
               {forecast:observationLabForecast,requiredScience:SCIENCE_GOAL,cash:game.cash,
                lockedTechnologyCount:lockedLabParts.length,
                instrumentId:labObservationChoices.instrument}:undefined}
