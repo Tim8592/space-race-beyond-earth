@@ -249,10 +249,13 @@ test('Research investment spends agency capital and permanently unlocks technolo
     await page.getByRole('tab',{name:'Research & Roadmap'}).click();
     await expect(page.getByRole('heading',{name:'Research the next frontier.'})).toBeVisible();
     const invest=page.getByRole('button',{name:/Invest \$20M/});
+    await expect(page.locator('.research-intro-side')).toContainText('10 RP');
     await invest.click();
+    await expect(page.locator('.research-intro-side')).toContainText('5 RP');
     await expect(page.getByText('Already researched')).toBeVisible();
     await page.reload();
     await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await expect(page.locator('.research-intro-side')).toContainText('5 RP');
     await expect(page.getByText('Already researched')).toBeVisible();
   });
 });
