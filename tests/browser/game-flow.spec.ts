@@ -414,6 +414,8 @@ test('Rocket Fleet prices payload by launched mass and requires orbital assembly
     await expect(page.locator('.rocket-fleet-option.locked')).toHaveCount(2);
     await page.getByRole('button',{name:/Commission orbital assembly facility/}).click();
     await expect(page.getByRole('button',{name:/Orbital assembly operational/})).toBeDisabled();
+    await page.locator('.rocket-custom-builder label').filter({hasText:'Payload bay design limit'})
+      .locator('input').fill('900');
     await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:'Research & Roadmap'}).click();
     await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
