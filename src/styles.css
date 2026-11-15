@@ -595,3 +595,65 @@
 .references-card p{font-size:12px;line-height:1.75;color:#bbd3df}
 .references-card a{font-size:12px;font-weight:700}
 @media(max-width:760px){.campaign-agency-grid,.references-grid{grid-template-columns:1fr}.campaign-live-clock span{margin-left:0}}
+
+
+/* v1.2 — mission-aware systems lab */
+.sys-mission-brief{border:1px solid #658ca3;border-radius:12px;background:linear-gradient(135deg,#163747,#102439);padding:18px 20px;margin:14px 0 18px}
+.sys-mission-top{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.sys-mission-top h3{font:700 20px 'Space Grotesk',sans-serif;color:#f4f7fb;margin:8px 0 6px}
+.sys-mission-top p{color:#a9c5d6;font-size:11px;line-height:1.65;margin:0}
+.sys-mission-top .secondary-button{flex-shrink:0}
+.sys-mission-readiness{display:flex;align-items:center;flex-wrap:wrap;gap:8px 19px;border-top:1px solid #365367;margin:15px 0 8px;padding-top:13px}
+.sys-mission-readiness strong{color:#e8d1a3;font:700 13px 'Space Grotesk',sans-serif}
+.sys-mission-readiness span{color:#a6c6d8;font-size:11px}
+.sys-mission-bottlenecks{display:flex;flex-direction:column;gap:6px;margin-top:9px}
+.sys-mission-issue{display:flex;align-items:center;gap:12px;border:1px solid #654d4f;border-radius:8px;padding:11px;background:#2b2937}
+.sys-mission-issue-icon{font-size:14px;color:#ffd09d;font-weight:900}
+.sys-mission-issue>div{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
+.sys-mission-issue strong{color:#f5e0dc;font-size:12px}
+.sys-mission-issue small{color:#b5bbc9;font-size:11px;line-height:1.4}
+.sys-mission-issue button{background:#293f54;border:1px solid #5a8198;color:#cce9fa;padding:8px 10px;border-radius:6px;font-size:10px;font-weight:800;white-space:nowrap}
+.sys-mission-issue button:hover{border-color:#e1b680;background:#35536b}
+.sys-campaign-only{font-size:10px;color:#b7a794!important}
+.sys-mission-ready-text{font-size:11px;line-height:1.6;color:#b3d3db;padding:8px 0 0;margin:0}
+.sys-impact-summary{background:linear-gradient(120deg,#193746,#152b3e);border:1px solid #3e7181;border-radius:10px;padding:18px;margin:16px 0 18px}
+.sys-impact-heading h3{font:700 18px 'Space Grotesk',sans-serif;color:#edf6fd;margin:5px 0 7px}
+.sys-impact-heading p{margin:0;color:#a8c4d3;font-size:11px;line-height:1.65}
+.sys-impact-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px}
+.sys-impact-metrics>div{background:#0f2637;border:1px solid #365366;border-radius:7px;display:flex;flex-direction:column;gap:7px;padding:11px;min-width:0}
+.sys-impact-metrics small{font-size:10px;color:#a9c3d5;line-height:1.4}
+.sys-impact-metrics strong{font:700 clamp(13px,1.5vw,20px) 'Space Grotesk',sans-serif;color:#eef5fa;overflow-wrap:anywhere}
+.sys-impact-delta{display:flex;align-items:center;flex-wrap:wrap;gap:7px 14px;margin-top:12px;padding:9px 0 0;border-top:1px solid #315267;color:#d6e3ed;font-size:11px}
+.sys-impact-delta span{color:#e8c890}
+/* Scalable, synchronized heliocentric mission map */
+.campaign-solar-map{background:linear-gradient(135deg,#14283f,#0e1c31);border-color:#3b6380}
+.campaign-map-header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:13px}
+.campaign-map-header h3{font:700 clamp(18px,2.2vw,24px) 'Space Grotesk',sans-serif;color:#eaf4fa;margin:6px 0 5px}
+.campaign-map-header p{font-size:11px;color:#96b4c8;margin:0;line-height:1.5}
+.campaign-map-zoom{display:flex;gap:4px;flex-shrink:0}
+.campaign-map-zoom button{color:#d8eaf7;background:#18354a;border:1px solid #5c7990;border-radius:6px;padding:7px 11px;min-width:36px;font-size:13px;font-weight:800}
+.campaign-map-zoom button:hover:not(:disabled){background:#2a516a}
+.campaign-map-zoom button:disabled{opacity:.4}
+.campaign-map-content{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(220px,.8fr);gap:14px}
+.campaign-map-scene{position:relative;overflow:hidden;background:#091322;border:1px solid #30495e;border-radius:10px;min-width:0;aspect-ratio:720/448}
+.campaign-map-scene svg{display:block;width:100%;height:100%}
+.campaign-map-marker{position:absolute;transform:translate(-50%,-50%);min-height:23px;min-width:26px;border:1px solid #97adbd;border-radius:7px;background:#243e55;color:#eaf7ff;font:800 10px 'Space Grotesk',sans-serif;display:grid;place-items:center;z-index:1;padding:4px}
+.campaign-map-marker.agency{border-color:#b18d5a;color:#ffdfa8;background:#4a3d37}
+.campaign-map-marker.special{background:#4d3654;border-color:#bf91ce;color:#f4d5ff}
+.campaign-map-marker.selected{background:#edbc70;border-color:#fff1c8;color:#16283a;box-shadow:0 0 0 4px #edbc7050;z-index:2}
+.campaign-map-marker:hover{filter:brightness(1.25)}
+.campaign-map-directory{display:flex;flex-direction:column;min-height:0;border:1px solid #344f66;border-radius:10px;padding:13px;background:#0b1f31}
+.campaign-map-current{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;padding-bottom:11px;border-bottom:1px solid #335166}
+.campaign-map-current small{font-weight:800;font-size:9px;letter-spacing:1px;color:#e9bb7a}
+.campaign-map-current strong{font:700 15px 'Space Grotesk',sans-serif;color:#f1f6fb}
+.campaign-map-current span{font-size:10px;color:#9bb7c8}
+.campaign-map-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:340px}
+.campaign-map-list button{display:flex;align-items:center;gap:9px;text-align:left;color:#d3e2ed;background:transparent;border:1px solid transparent;border-radius:7px;padding:8px;min-width:0}
+.campaign-map-list button:hover{background:#1a3a4e;border-color:#38617c}
+.campaign-map-list button.selected{background:#2b3e4c;border-color:#d4ac72}
+.campaign-map-list button>span:last-child{min-width:0;display:flex;flex-direction:column;gap:4px}
+.campaign-map-list strong{font-size:11px;line-height:1.35}
+.campaign-map-list small{font-size:9px;color:#9dafbb;line-height:1.25}
+.mission-index{display:grid;place-items:center;flex:0 0 29px;width:29px;height:27px;background:#243a50;border:1px solid #506f86;border-radius:6px;font:800 10px 'Space Grotesk',sans-serif;color:#ecc890}
+@media(max-width:1020px){.campaign-map-content{grid-template-columns:1fr}.campaign-map-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:none;overflow:visible}}
+@media(max-width:650px){.campaign-map-header{align-items:flex-start;flex-direction:column}.campaign-map-scene{aspect-ratio:720/448}.campaign-map-list{grid-template-columns:1fr}.sys-impact-metrics{grid-template-columns:1fr}.sys-mission-issue{flex-wrap:wrap}.sys-mission-issue button{margin-left:25px}}
