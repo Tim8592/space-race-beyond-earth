@@ -5,15 +5,15 @@ export {researchPointsCost} from './technologyTree';
  * revenue forecasts. Centralized so ticking and mission time skips agree.
  */
 export const RESEARCH_POINTS_START=10;
-export const DAILY_BASE_OPERATIONS_USD=280_000;
+export const DAILY_BASE_OPERATIONS_USD=950_000;
 export const RESEARCH_POINT_EVERY_DAYS=8;
 export const MOON_BASE_LEVELS=[
-  {level:1,name:'Lunar Survey Outpost',investmentUsd:75e6,dailyRevenueUsd:540_000,
-    dailyOperationsUsd:170_000,description:'Commercial lunar relay and survey-data subscriptions'},
-  {level:2,name:'Lunar Logistics Hub',investmentUsd:145e6,dailyRevenueUsd:1_050_000,
-    dailyOperationsUsd:320_000,description:'Contracted logistics and precision mapping services'},
-  {level:3,name:'Lunar Industrial Campus',investmentUsd:265e6,dailyRevenueUsd:2_100_000,
-    dailyOperationsUsd:550_000,description:'Fictional construction, comms and materials licensing'},
+  {level:1,name:'Lunar Survey Outpost',investmentUsd:75e6,dailyRevenueUsd:1_450_000,
+    dailyOperationsUsd:260_000,description:'Commercial lunar relay and survey-data subscriptions'},
+  {level:2,name:'Lunar Logistics Hub',investmentUsd:145e6,dailyRevenueUsd:1_650_000,
+    dailyOperationsUsd:510_000,description:'Contracted logistics and precision mapping services'},
+  {level:3,name:'Lunar Industrial Campus',investmentUsd:265e6,dailyRevenueUsd:2_600_000,
+    dailyOperationsUsd:830_000,description:'Fictional construction, comms and materials licensing'},
 ] as const;
 export function lunarEconomics(level:number){
   if(!Number.isInteger(level)||level<0||level>MOON_BASE_LEVELS.length)
