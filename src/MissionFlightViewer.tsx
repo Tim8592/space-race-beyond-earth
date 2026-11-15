@@ -99,8 +99,8 @@ export default function MissionFlightViewer({run,nowMs}:Props){
    isPlanet&&planetSolve?.key===planetKey&&validPoints(planetSolve.points)?planetSolve.points:null;
  const orekitEarth=isEarth&&earthSolve?.key===earthKey?earthSolve.solution:null;
  const points:PhysicalPoint[]=orekitPlanet?
-   orekitPlanet.map(p=>[p[0],p[1],p[2]]):
-   orekitEarth?orekitEarth.trajectoryKm.map(p=>[p[0],p[1],p[2]]):
+   orekitPlanet.map(p=>[p[0],p[1],p[2]] as PhysicalPoint):
+   orekitEarth?orekitEarth.trajectoryKm.map(p=>[p[0],p[1],p[2]] as PhysicalPoint):
    browserModel.points;
  const source=orekitPlanet?'Orekit Lambert / Sun two-body':
    orekitEarth?'Orekit KeplerianPropagator / Earth two-body':
@@ -133,7 +133,6 @@ export default function MissionFlightViewer({run,nowMs}:Props){
      [1.35*Math.cos(2*Math.PI*elapsedGameDays/(365.25*1.35**1.5)+.8),
       1.35*Math.sin(2*Math.PI*elapsedGameDays/(365.25*1.35**1.5)+.8),0]:null;
  const targetMarker=simulatedTarget?project(simulatedTarget,scale,zoom):null;
- const earthPosition:isEarth extends true?never:PhysicalPoint=undefined as never;
  const sunEarth=isSun?(()=>{
    try{const p=planetAtDate('earth',utc);return project([p.xAu,p.yAu,p.zAu],scale,zoom)}
    catch{return null}
