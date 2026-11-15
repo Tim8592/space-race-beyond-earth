@@ -367,9 +367,10 @@ export default function App() {
     setSnapshot((previous) => ({
       ...previous,
       game: {
-        ...previous.game,
-        cash: previous.game.cash - buildCost + event.payout,
-        day: previous.game.day + contract.durationDays,
+        ...advanceProgramDay(previous.game,contract.durationDays),
+        cash:advanceProgramDay(previous.game,contract.durationDays).cash-buildCost+event.payout,
+        researchPoints:advanceProgramDay(previous.game,contract.durationDays).researchPoints+(success?2:0),
+        day:previous.game.day+contract.durationDays,
         completed: previous.game.completed + Number(success),
         launched: previous.game.launched + 1,
         deliveredKg: previous.game.deliveredKg + event.deliveredKg,
@@ -395,24 +396,33 @@ export default function App() {
         engineBuildCounts:{...previous.game.engineBuildCounts,
           [previous.vehicle.engineId]:
             (previous.game.engineBuildCounts[previous.vehicle.engineId]??0)+1},
-        activeStoryRun:run,lastStoryDebrief:null,
+        activeStoryRun:{...run,startedAtMs:Date.now(),
+          viewerDurationMs:DEFAULT_FLIGHT_VIEWER_MS,
+          orekitTrajectoryAu:lastSolvedTransfer?.departureDate===run.departureDate&&
+            lastSolvedTransfer.target===run.target&&lastSolvedTransfer.trajectoryAu?.length>=8?
+              lastSolvedTransfer.trajectoryAu:undefined},lastStoryDebrief:null,
       }};
     });
-    setMessage('Spacecraft launched on '+dateForGameDay(run.launchedDay)+'. Flight operations underway.');
+    setFlightViewerOpen(true);setFlightNowMs(Date.now());
+    setMessage('Flight launched. You can leave the viewer and monitor its progress elsewhere.');
   }
   function finishCampaignMission(){
     setSnapshot(previous=>{
       const run=previous.game.activeStoryRun;
-      if(!run)return previous;
+      if(!run||!flightProgress(run.startedAtMs??0,Date.now(),
+        run.viewerDurationMs??DEFAULT_FLIGHT_VIEWER_MS).ready)return previous;
       const event:HistoryItem={
         id:Date.now(),day:run.launchedDay,contract:run.title,
         craft:previous.vehicle.name+' / exploration probe',
         success:true,cost:run.costUsd,payout:run.payoutUsd,
         deliveredKg:run.payloadKg,
       };
-      return {...previous,game:{...previous.game,
-        cash:previous.game.cash+run.payoutUsd,
-        day:previous.game.day+run.durationDays,
+      const advanced=advanceProgramDay(previous.game,run.durationDays);
+      return {...previous,game:{...advanced,
+        cash:advanced.cash+run.payoutUsd,
+        researchPoints:advanced.researchPoints+5+
+          (run.target==='jupiter'?12:run.target==='mars'?9:run.target==='asteroid'?7:4),
+        day:advanced.day,
         completed:previous.game.completed+1,
         deliveredKg:previous.game.deliveredKg+run.payloadKg,
         revenue:previous.game.revenue+run.payoutUsd,
@@ -420,7 +430,7 @@ export default function App() {
         storyCompleted:[...new Set([...previous.game.storyCompleted,run.id])],
         activeStoryRun:null,
         lastStoryDebrief:{id:run.id,title:run.title,
-          day:previous.game.day+run.durationDays,success:true,special:run.special,
+          day:advanced.day,success:true,special:run.special,
           costUsd:run.costUsd,payoutUsd:run.payoutUsd,durationDays:run.durationDays,
           deltaVms:run.deltaVms,neededDeltaVms:run.requiredDeltaVms,
           scienceKg:run.scienceKg,
@@ -490,7 +500,9 @@ export default function App() {
       };
       return {...previous,game:{
         ...previous.game,
-        cash:previous.game.cash+payoutUsd,
+        ...advanceProgramDay(previous.game,7),
+        cash:advanceProgramDay(previous.game,7).cash+payoutUsd,
+        researchPoints:advanceProgramDay(previous.game,7).researchPoints+(success?7:2),
         day:previous.game.day+7,
         completed:previous.game.completed+Number(success),
         deliveredKg:previous.game.deliveredKg+wetMassKg,
@@ -529,17 +541,41 @@ export default function App() {
           <div className="brand"><span className="brand-symbol"><span className="brand-orbit" /></span><div><strong>SPACE RACE</strong><small>BEYOND EARTH</small></div></div>
           <nav aria-label="Primary" className="game-tabs" role="tablist">
               {([
-                ['missions','Play Campaign'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],
+                ['missions','Play Campaign'],['moon','Moon Base'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>{
                   if(id==='systems')setLabObservationChoices(readObservationChoices());
                   setActiveView(id);
                 }}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.3</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.4</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
       </header>
 
       <main className="main-content">
+        <section className="agency-finance-bar" aria-label="Recurring agency finances and research points">
+          <div><small>AVAILABLE CASH</small><strong>{usd(game.cash)}</strong></div>
+          <div><small>RESEARCH POINTS</small><strong>{game.researchPoints} RP</strong></div>
+          <div><small>DAILY OPERATING COST</small><strong>−{usd(dailyBudget.expensesUsd)}/d</strong></div>
+          <div><small>MOON REVENUE</small><strong>+{usd(dailyBudget.revenueUsd)}/d</strong></div>
+          <div className={dailyBudget.netUsd>=0?'positive':'negative'}>
+            <small>NET / GAME DAY</small><strong>{dailyBudget.netUsd>=0?'+':''}{usd(dailyBudget.netUsd)}/d</strong>
+          </div>
+          {game.cash<0&&<div className="finance-distress">CASH DEFICIT · new investments blocked</div>}
+        </section>
+        {game.activeStoryRun&&activeFlightProgress&&<button type="button"
+          className="flight-progress-pill" onClick={openFlightViewer}
+          aria-label="Open active flight progress">
+          <svg viewBox="0 0 52 52" aria-hidden="true">
+            <circle cx="26" cy="26" r="20" fill="none" stroke="#344963" strokeWidth="5"/>
+            <circle cx="26" cy="26" r="20" fill="none" stroke="#f3bd7b" strokeWidth="5"
+              transform="rotate(-90 26 26)"
+              strokeDasharray={String(125.66*activeFlightProgress.fraction)+' 125.66'}/>
+            <text x="26" y="30" fill="#f6e7d0" textAnchor="middle" fontSize="11" fontWeight="800">{Math.round(activeFlightProgress.fraction*100)}%</text>
+          </svg>
+          <span><strong>{game.activeStoryRun.title}</strong>
+            <small>{activeFlightProgress.ready?'READY FOR DEBRIEF':
+              'ETA '+flightEta(activeFlightProgress.remainingMs)+' · open viewer'}</small></span>
+        </button>
         <section className={'intro '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')}>
           <div><div className="eyebrow"><span className="small-diamond" /> YOUR SPACE PROGRAM STARTS HERE</div><h1>Build the future.<br /><em>Beyond Earth.</em></h1><p>Design capable spacecraft, accept orbital contracts, and turn engineering decisions into a thriving space economy.</p></div>
           <div className="intro-right"><span>CAMPAIGN / EARTH ERA</span><div className="day-marker">DAY <strong>{game.day.toString().padStart(3, '0')}</strong></div><span className="game-clock-caption">{dateForGameDay(game.day)} · next day {secondsToNextDay}s · auto</span></div>
@@ -577,7 +613,9 @@ export default function App() {
             lockedTechnologies={lockedLabParts}
             onComplete={completeEarthObservation}/>}
         {activeView==='missions'&&campaignMode==='progression'&&
-          <CampaignMissions selected={campaignSelection.selected}
+          <CampaignMissions nowMs={flightNowMs} viewerOpen={flightViewerOpen}
+            onViewerOpenChange={setFlightViewerOpen}
+            selected={campaignSelection.selected}
             agencyOffers={campaignSelection.agency} scheduled={campaignSelection.special}
             onSelectedIdChange={setSelectedCampaignId}
             options={campaignOptions} onOptionsChange={setCampaignOptions}
@@ -681,12 +719,18 @@ export default function App() {
             initialEccentricity={orbitalSelection?.eccentricity??.25}
             onTransferSolved={setLastSolvedTransfer}/>
         </div>}
+        {activeView==='moon'&&<MoonBase cash={game.cash} level={game.moonBaseLevel}
+          unlocked={game.storyCompleted.includes('lunar')} devMode={game.devMode}
+          onInvest={investMoonBase}
+          onExploreCampaign={()=>{
+            setSelectedCampaignId('lunar');setCampaignMode('progression');setActiveView('missions');
+          }}/>}
         {activeView==='sources' && <div className="single-tab-page"><References/></div>}
         {activeView==='library' && <div className="single-tab-page"><MissionLibrary onOpenMap={()=>setActiveView('orbits')}/></div>}
         {activeView==='learning' && <div className="single-tab-page">
           <LearningLab onOpenBuilder={()=>setActiveView('systems')} onOpenOrbital={()=>setActiveView('orbits')}/>
         </div>}
-        {activeView==='research'&&<ResearchLab cash={game.cash}
+        {activeView==='research'&&<ResearchLab cash={game.cash} researchPoints={game.researchPoints}
           unlocked={game.researchUnlocked} devMode={game.devMode}
           onToggleDevMode={toggleDevMode} onResearch={investResearch}/>}
         <section className={'bottom-grid '+(activeView==='research'?'':'view-hidden')} id="roadmap"><div className="panel roadmap">
