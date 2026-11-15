@@ -36,16 +36,25 @@ function OrbitScene({definition,review,progress=0}:{
   const points=useMemo(()=>{
     if(!ellipse)return '';
     const perigee=definition.target==='ellipse'?
-      review.route.apogeeKm!==null?
-        (review.route.apogeeKm>0?400:400):400:400; // schematic Earth-focus view
-    const state=earthOrbitAtTime(perigee,review.route.eccentricity,0);
-    const rmax=Math.max(1,state.apogeeAltitudeKm+6378);
+      (review.route.perigeeKm??400):400;
+    const eccentricity=review.route.eccentricity;
+    const rp=6378.137+perigee;
+    const a=rp/(1-eccentricity);
+    const rmax=a*(1+eccentricity);
     const scale=134/rmax;
+    const lunarShape=eccentricity>=.95;
+    const period=lunarShape?0:earthOrbitAtTime(perigee,eccentricity,0).periodMinutes;
     return Array.from({length:160},(_,i)=>{
-      const x=earthOrbitAtTime(perigee,review.route.eccentricity,state.periodMinutes*i/159);
-      return (i===0?'M':'L')+' '+(186+x.xKm*scale).toFixed(2)+' '+(174-x.yKm*scale).toFixed(2);
+      const angle=2*Math.PI*i/159;
+      // Lunar transfer extends beyond the UI solver's intentionally restricted
+      // e<.95 interactive range; conic geometry still follows r=a(1-e cos E).
+      const x=lunarShape?a*(Math.cos(angle)-eccentricity):
+        earthOrbitAtTime(perigee,eccentricity,period*i/159).xKm;
+      const y=lunarShape?a*Math.sqrt(1-eccentricity**2)*Math.sin(angle):
+        earthOrbitAtTime(perigee,eccentricity,period*i/159).yKm;
+      return (i===0?'M':'L')+' '+(186+x*scale).toFixed(2)+' '+(174-y*scale).toFixed(2);
     }).join(' ')+' Z';
-  },[definition.target,review.route.eccentricity,review.route.apogeeKm,ellipse]);
+  },[definition.target,review.route.eccentricity,review.route.perigeeKm,ellipse]);
   const path=ellipse?points:'M 85 205 C 153 65, 256 85, 375 145';
   return <div className="campaign-orbit-visual">
     <div className="eyebrow">SHARED ORBITAL MODEL · {review.route.source.toUpperCase()}</div>

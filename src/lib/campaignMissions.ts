@@ -105,6 +105,7 @@ export type OrbitalRoute={
   phaseErrorDeg:number|null;
   flightDays:number;
   eccentricity:number;
+  perigeeKm:number|null;
   apogeeKm:number|null;
   source:'two-body elliptical Earth'|'Hohmann approximation'|'lunar Earth ellipse'|'Orekit Lambert';
   warning:string;
@@ -133,7 +134,8 @@ export function orbitalRoute(target:OrbitTarget,day:number,options:MissionOption
     const vpark=Math.sqrt(EARTH.gravitationalParameterKm3PerS2/rp);
     const dv=Math.max(0,(state.speedKmS-vpark)*1000);
     return {departureDeltaVms:dv,arrivalDeltaVms:0,totalDeltaVms:dv,phaseErrorDeg:null,
-      flightDays:4,eccentricity:options.eccentricity,apogeeKm:state.apogeeAltitudeKm,
+      flightDays:4,eccentricity:options.eccentricity,perigeeKm:options.perigeeKm,
+      apogeeKm:state.apogeeAltitudeKm,
       source:'two-body elliptical Earth',
       warning:'Exact two-body vis-viva injection from circular parking orbit at the selected perigee; plane changes, finite burn, J2 and target ground coverage omitted.'};
   }
@@ -144,7 +146,7 @@ export function orbitalRoute(target:OrbitTarget,day:number,options:MissionOption
     const vinj=(vperi-Math.sqrt(mu/rp))*1000;
     return {departureDeltaVms:vinj,arrivalDeltaVms:850,totalDeltaVms:vinj+850,
       phaseErrorDeg:null,flightDays:5,eccentricity:(ra-rp)/(ra+rp),
-      apogeeKm:ra-EARTH.equatorialRadiusKm,source:'lunar Earth ellipse',
+      perigeeKm:400,apogeeKm:ra-EARTH.equatorialRadiusKm,source:'lunar Earth ellipse',
       warning:'Elliptical Earth-to-Moon-distance estimate; 850 m/s lunar insertion/correction is a GAME allowance, not patched-conic lunar capture or actual Moon ephemeris.'};
   }
   const r1=AU_KM;
@@ -167,7 +169,7 @@ export function orbitalRoute(target:OrbitTarget,day:number,options:MissionOption
       planetCapture(solved.arrivalVInfinityKmS,MU_MARS,R_MARS+300):0;
     return {departureDeltaVms:departure,arrivalDeltaVms:arrival,totalDeltaVms:departure+arrival,
       phaseErrorDeg:null,flightDays:solved.flightDays,eccentricity:solved.eccentricity,
-      apogeeKm:null,source:'Orekit Lambert',
+      perigeeKm:null,apogeeKm:null,source:'Orekit Lambert',
       warning:'Orekit two-body impulsive transfer departure/arrival v∞ (from Orbital Map) at THIS game departure date. Arrival capture uses simplified 300 km Mars circular orbit; Jupiter scenario is flyby only. Finite electric thrust and gravity assists NOT simulated.'};
   }
   let phaseErrorDeg:null|number=null;
@@ -190,7 +192,7 @@ export function orbitalRoute(target:OrbitTarget,day:number,options:MissionOption
   const dv=departure+arrival+alignmentSurcharge;
   return {departureDeltaVms:departure+alignmentSurcharge,arrivalDeltaVms:arrival,
     totalDeltaVms:dv,phaseErrorDeg,flightDays:Math.round(hohmannDays),
-    eccentricity:Math.abs(r2-r1)/(r2+r1),apogeeKm:null,source:'Hohmann approximation',
+    eccentricity:Math.abs(r2-r1)/(r2+r1),perigeeKm:null,apogeeKm:null,source:'Hohmann approximation',
     warning:'Approximate coplanar circular-orbit Hohmann transfer. Elliptical JPL planet positions only inform a rough phase-angle penalty; it is NOT a Lambert solution, a real launch-window prediction, or a low-thrust trajectory. Run Orbital Map → Orekit optimizer for actual date/duration geometry.'};
 }
 export const BOOSTERS={
