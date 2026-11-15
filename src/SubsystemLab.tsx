@@ -95,6 +95,7 @@ export type MissionLabContext={
 export type ObservationLabContext={
   forecast:{preview:ObservationPreview;scienceReturned:number;successful:boolean}|null;
   requiredScience:number;cash:number;lockedTechnologyCount:number;
+  instrumentId:InstrumentSelection;
 };
 type SystemTab='propulsion'|'payload'|'power'|'thermal'|'tank'|'analysis';
 function checkPanel(label:string):SystemTab|null{
@@ -124,6 +125,11 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
     }
   }, [design]);
   const result = analysis.result;
+  // First guided flight substitutes a camera and no generic Lab cargo;
+  // display the same effective bus in the 3D scene and the summary.
+  const effectiveDesign:SubsystemDesign=observation?
+    {...design,payloadMassKg:0,payloadInstrumentId:observation.instrumentId,distanceAu:1}:design;
+  const effectiveResult=observation?.forecast?.preview.missionResult??result;
   const unlocked=(id:TechnologyId|undefined)=>hasTechnology(id,unlockedTechnologies,devMode);
   const installedLocked=[
     THRUSTER_RESEARCH[design.thrusterId],THRUSTER_RESEARCH[design.secondaryThrusterId],
@@ -158,11 +164,11 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
       name:t.name+' · '+t.nominalSpecificImpulseSeconds+' s · '+(t.nominalThrusterPowerW/1000).toFixed(2)+' kW'})),
   ];
 
-  const summary=result?({
+  const summary=effectiveResult?({
     propulsion:{title:'Propulsion effect',description:'Ideal Δv rises if you remove heavy engines without changing fuel. Usable Δv also depends on burn time, mass flow and how many engines can be powered. Fuel mass is subtracted as it burns.',stats:[
-      ['Ideal all-fuel Δv',fmt(result.idealDeltaVms,'m/s',0)],
-      ['Usable Δv in '+design.plannedBurnDays+' days',fmt(result.burnPreview.deliveredDeltaVms,'m/s',0)],
-      ['Fuel burned / loaded',fmt(result.burnPreview.burnedPropellantKg,'kg',2)+' / '+fmt(result.totalPropellantKg,'kg',2)]]},
+      ['Ideal all-fuel Δv',fmt(effectiveResult.idealDeltaVms,'m/s',0)],
+      ['Usable Δv in '+design.plannedBurnDays+' days',fmt(effectiveResult.burnPreview.deliveredDeltaVms,'m/s',0)],
+      ['Fuel burned / loaded',fmt(effectiveResult.burnPreview.burnedPropellantKg,'kg',2)+' / '+fmt(effectiveResult.totalPropellantKg,'kg',2)]]},
     payload:{title:observation?'Guided flight sensor':'Science payload effect',
       description:observation?
         'Earth Observation One uses the guided camera selected in Play Campaign instead of the Lab sensor and cargo slot. Other spacecraft components remain shared.':
@@ -170,31 +176,31 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
       stats:[
         ['Science sensor + generic cargo',fmt(observation?
           (observation.forecast?.preview.missionResult.instrumentMassKg??0):
-          result.instrumentMassKg+design.payloadMassKg,'kg',1)],
+          effectiveResult.instrumentMassKg+design.payloadMassKg,'kg',1)],
         ['Active instrument load',fmt(observation?
           (observation.forecast?.preview.missionResult.instrumentPowerW??0):
-          result.instrumentPowerW,'W',0)],
+          effectiveResult.instrumentPowerW,'W',0)],
         ['Selected sensor',observation?
           (observation.forecast?.preview.missionResult.instrumentName??'Guided mission review unavailable'):
-          result.instrumentName]]},
+          effectiveResult.instrumentName]]},
     power:{title:'Power generation effect',description:'Solar area, number of wings, batteries and generators set delivered electrical power, margins and installed equipment mass.',stats:[
-      ['Generation at selected distance',fmt(result.totalAvailablePowerW,'W',0)],
-      ['Power margin vs peak loads',fmt(result.totalPowerMarginW,'W',0)],
-      ['Array + battery + source mass',fmt(result.powerSystemMassKg===null?null:
-        result.arrayMassKg+result.batteryMassKg+result.powerSystemMassKg,'kg',2)]]},
+      ['Generation at selected distance',fmt(effectiveResult.totalAvailablePowerW,'W',0)],
+      ['Power margin vs peak loads',fmt(effectiveResult.totalPowerMarginW,'W',0)],
+      ['Array + battery + source mass',fmt(effectiveResult.powerSystemMassKg===null?null:
+        effectiveResult.arrayMassKg+effectiveResult.batteryMassKg+effectiveResult.powerSystemMassKg,'kg',2)]]},
     thermal:{title:'Thermal hardware effect',description:'Radiator installation directly adds modeled dry mass and raises heat rejection. Reactor cooling is an independent high-temperature branch.',stats:[
-      ['Bus radiator rejection',fmt(result.radiatorCapacityW,'W',0)],
-      ['Bus heat rejection margin',fmt(result.thermalMarginW,'W',0)],
-      ['Installed bus + reactor cooling mass',fmt(result.radiatorMassKg===null?null:
-        result.radiatorMassKg+result.radiatorMountMassKg+result.reactorCoolingMassKg,'kg',2)]]},
+      ['Bus radiator rejection',fmt(effectiveResult.radiatorCapacityW,'W',0)],
+      ['Bus heat rejection margin',fmt(effectiveResult.thermalMarginW,'W',0)],
+      ['Installed bus + reactor cooling mass',fmt(effectiveResult.radiatorMassKg===null?null:
+        effectiveResult.radiatorMassKg+effectiveResult.radiatorMountMassKg+effectiveResult.reactorCoolingMassKg,'kg',2)]]},
     tank:{title:'Propellant storage effect',description:'Pressure, material stress, fuel family and propellant quantity drive conceptual tank wall, fittings and dry hardware weight.',stats:[
-      ['Tanks and feeds',fmt(result.totalTankHardwareMassKg,'kg',2)],
+      ['Tanks and feeds',fmt(effectiveResult.totalTankHardwareMassKg,'kg',2)],
       ['Stored propellant',fmt(design.propellantMassKg+(design.secondaryThrusterId!=='none'?design.secondaryPropellantMassKg:0),'kg',2)],
-      ['Independent reservoirs',String(result.tankReports.length)]]},
+      ['Independent reservoirs',String(effectiveResult.tankReports.length)]]},
     analysis:{title:'Whole-spacecraft engineering effect',description:'This roll-up couples every installed subsystem, including dry hardware, stored propellant, electrical loads and waste heat.',stats:[
-      ['Modeled wet mass',fmt(result.modeledWetMassKg,'kg',1)],
-      ['Electrical margin',fmt(result.totalPowerMarginW,'W',0)],
-      ['Bus thermal margin',fmt(result.thermalMarginW,'W',0)]]}
+      ['Modeled wet mass',fmt(effectiveResult.modeledWetMassKg,'kg',1)],
+      ['Electrical margin',fmt(effectiveResult.totalPowerMarginW,'W',0)],
+      ['Bus thermal margin',fmt(effectiveResult.thermalMarginW,'W',0)]]}
   } satisfies Record<SystemTab,{title:string;description:string;stats:[string,string][]}>)[activeSystemTab]:null;
 
   return (
@@ -223,11 +229,11 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
         This design uses {installedLocked.length} technology research unlock(s) you have not permanently acquired. You can inspect the saved design, but guided missions cannot launch it until the technologies are researched or Dev Mode is enabled.
       </div>}
 
-      {result&&<div className="sys-live-strip" aria-label="Live spacecraft engineering summary">
-        <div><small>MODELED WET MASS</small><strong>{fmt(result.modeledWetMassKg,'kg',1)}</strong></div>
-        <div><small>SOLAR ARRAY + MOUNTS</small><strong>{fmt(result.arrayMassKg,'kg',1)}</strong></div>
-        <div><small>PEAK ELECTRICAL DRAW</small><strong>{fmt(result.totalElectricalDemandW,'W',0)}</strong></div>
-        <div><small>TANKS AND FEEDS</small><strong>{fmt(result.totalTankHardwareMassKg,'kg',1)}</strong></div>
+      {effectiveResult&&<div className="sys-live-strip" aria-label="Live spacecraft engineering summary">
+        <div><small>{observation?'GUIDED BUS WET MASS':'MODELED WET MASS'}</small><strong>{fmt(effectiveResult.modeledWetMassKg,'kg',1)}</strong></div>
+        <div><small>SOLAR ARRAY + MOUNTS</small><strong>{fmt(effectiveResult.arrayMassKg,'kg',1)}</strong></div>
+        <div><small>PEAK ELECTRICAL DRAW</small><strong>{fmt(effectiveResult.totalElectricalDemandW,'W',0)}</strong></div>
+        <div><small>TANKS AND FEEDS</small><strong>{fmt(effectiveResult.totalTankHardwareMassKg,'kg',1)}</strong></div>
       </div>}
       {observation&&<div className="sys-mission-brief" aria-label="Earth Observation One current bottlenecks">
         <div className="sys-mission-top">
@@ -319,7 +325,7 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
               </p>}
           </div></>:<p className="sys-mission-ready-text">Engineering analysis unavailable. Check invalid inputs in the Engineering Analysis tab.</p>}
       </div>}
-      <Spacecraft3D design={design} analysis={result} onPartSelect={(part:PartName)=>{
+      <Spacecraft3D design={effectiveDesign} analysis={effectiveResult} onPartSelect={(part:PartName)=>{
         const where:Record<PartName,'propulsion'|'payload'|'power'|'thermal'|'tank'|'analysis'>={
           bus:'analysis',power:'power',radiator:'thermal',tank:'tank',
           propulsion:'propulsion',antenna:'payload',payload:'payload',
