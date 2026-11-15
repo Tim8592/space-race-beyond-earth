@@ -388,7 +388,9 @@ export default function App() {
           day:previous.game.day+run.durationDays,success:true,special:run.special,
           costUsd:run.costUsd,payoutUsd:run.payoutUsd,durationDays:run.durationDays,
           deltaVms:run.deltaVms,neededDeltaVms:run.requiredDeltaVms,
-          scienceKg:run.scienceKg},
+          scienceKg:run.scienceKg,
+          busPropellantBurnedKg:run.busPropellantBurnedKg,
+          busPropellantRemainingKg:run.busPropellantRemainingKg},
       }};
     });
     setMessage('Mission completed; agency contract revenue received and new campaign milestones may be available.');
