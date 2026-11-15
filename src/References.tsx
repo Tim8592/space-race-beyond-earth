@@ -9,6 +9,12 @@ const nasaData=[
     use:'Section 1.1 supplies 1U dimensions (10 × 10 × 11 cm), an approximate 1U mass range (1–1.33 kg) and 3U dimensions (10 × 10 × 34 cm). The CubeSat dispenser selector uses those values directly in contract feasibility and mission wet-mass calculation. The model extrapolates 3U payload mass from the 1U upper reference; simulated dispenser hardware and prices are NOT NASA specifications.'
   },
   {
+    name:'NASA/JPL Near Earth Object Web Service (NeoWs) · close-approach feed',
+    tag:'NASA/JPL OBSERVATION-DERIVED DATA / ACTIVE MISSION GENERATION',
+    url:'https://api.nasa.gov/',
+    use:'The NASA Mission Intelligence tab requests the next seven UTC days of predicted Earth close approaches through /neo/rest/v1/feed. JPL-derived asteroid designations, approach dates, miss distances, Earth-relative speeds and estimated diameter ranges become selectable Asteroid Watch targets. These are predictions calculated from astronomical observations—not live satellite imagery or evidence that a spacecraft can image the target.'
+  },
+  {
     name:'NASA/JPL Approximate Positions of the Planets (1800–2050)',
     tag:'NASA/JPL NUMERICAL ORBITAL DATA / ACTIVE CALCULATION',
     url:'https://ssd.jpl.nasa.gov/planets/approx_pos.html',
@@ -74,6 +80,60 @@ export default function References(){
           <a href={source.url} target="_blank" rel="noreferrer">View source ↗</a>
         </article>
       )}</div>
+    </div>
+    <div className="references-section">
+      <h3>From NASA asteroid observations to spacecraft feasibility</h3>
+      <p>The <strong>Real asteroid approaches</strong> panel in NASA Mission Intelligence connects
+        a NASA/JPL close-approach catalogue to the same spacecraft engineering review used
+        elsewhere in the campaign. It is a preliminary <em>mission-design feasibility
+        screen</em>, not a verified prediction that a satellite can detect an asteroid.</p>
+      <div className="references-grid">
+        <article className="panel references-card">
+          <div className="eyebrow">01 / NASA DATA → MISSION TARGET</div>
+          <h4>Identify a real observation opportunity</h4>
+          <p>The game loads NeoWs close-approach candidates for the next seven real UTC
+            days, sorts them by approach date and distance, and shows the asteroid name,
+            predicted date, nominal Earth miss distance, relative speed and estimated size.
+            These predictions are derived from Earth-based measurements and fitted
+            orbits; they are not a live telescope feed.</p>
+          <p>Selecting an asteroid creates a fictional <strong>Asteroid Watch</strong>
+            Earth-orbit observation contract linked to that named object.</p>
+        </article>
+        <article className="panel references-card">
+          <div className="eyebrow">02 / NASA FIELDS → GAME DESIGN REQUIREMENTS</div>
+          <h4>Translate observations into design trade-offs</h4>
+          <p>The code uses estimated asteroid diameter to scale the fictional minimum
+            science payload mass, reported approach speed to scale minimum electrical
+            power, and reported miss distance plus size to adjust the contract payout.
+            The contract also requires high-gain communications and gives the player
+            an eight-game-day launch window starting when it is selected.</p>
+          <p>Those engineering thresholds, launch deadline and reward are <strong>game
+            assumptions</strong>, not NASA-computed requirements or a real observing
+            schedule tied to the predicted approach date.</p>
+        </article>
+        <article className="panel references-card">
+          <div className="eyebrow">03 / SPACECRAFT BUILDER → FEASIBILITY REVIEW</div>
+          <h4>Can the proposed satellite mission launch?</h4>
+          <p>The existing mission review compares the designed spacecraft against
+            the generated contract: launcher capacity and assembly, available versus
+            required Δv for a modeled Earth orbit, installed science mass, power
+            generation, battery reserve, thermal rejection, high-gain link, budget,
+            flight-time envelope and open launch deadline. Failed checks identify
+            changes the player needs to make before dispatch.</p>
+          <p><strong>Important limit:</strong> Passing these checks does not establish
+            optical observability. The game does not yet solve the asteroid's
+            ephemeris relative to the satellite or evaluate telescope sensitivity,
+            sky brightness, line of sight, illumination or pointing. No actual
+            asteroid intercept, rendezvous or confirmed detection is simulated.</p>
+        </article>
+      </div>
+      <p>Traceability: <code>src/lib/nasaMissionClient.ts</code> fetches the feed;
+        <code>src/lib/nasaMissionIntelligence.ts</code> parses it and creates a
+        scenario; <code>src/App.tsx</code> passes the selected contract into the
+        campaign; <code>src/lib/campaignMissions.ts</code> performs the engineering
+        readiness checks. Read more from <a href="https://cneos.jpl.nasa.gov/about/cneos.html"
+          target="_blank" rel="noreferrer">JPL CNEOS ↗</a> and
+        <a href="https://api.nasa.gov/" target="_blank" rel="noreferrer">NASA Open APIs ↗</a>.</p>
     </div>
     <div className="references-section">
       <h3>Canadian Space Agency open GitHub data & source-inspired hardware</h3>
