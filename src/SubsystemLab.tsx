@@ -8,6 +8,8 @@ import {
 import { POWER_SYSTEMS, type PowerSourceId } from './lib/powerSources';
 import { SCIENCE_INSTRUMENTS, type InstrumentSelection } from './lib/instrumentCatalog';
 import type { ThrusterId } from './lib/subsystemDesign';
+import {hasTechnology,THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,
+  type TechnologyId} from './lib/technologyTree';
 import {
   DEFAULT_SUBSYSTEM_DESIGN, DESTINATIONS, sizeSubsystemDesign,
   type SubsystemDesign, type SystemResults,
@@ -82,8 +84,10 @@ function Result({ label, value, note, tone }: {
   );
 }
 
-export default function SubsystemLab({design,onDesignChange}:{
+export default function SubsystemLab({design,onDesignChange,unlockedTechnologies=[],devMode=false}:{
   design:SubsystemDesign;onDesignChange:(next:SubsystemDesign)=>void;
+  unlockedTechnologies?:readonly TechnologyId[];
+  devMode?:boolean;
 }) {
   const [activeSystemTab,setActiveSystemTab] = useState<'propulsion'|'payload'|'power'|'thermal'|'tank'|'analysis'>('propulsion');
   const analysis = useMemo(() => {
@@ -93,6 +97,12 @@ export default function SubsystemLab({design,onDesignChange}:{
     }
   }, [design]);
   const result = analysis.result;
+  const unlocked=(id:TechnologyId|undefined)=>hasTechnology(id,unlockedTechnologies,devMode);
+  const installedLocked=[
+    THRUSTER_RESEARCH[design.thrusterId],THRUSTER_RESEARCH[design.secondaryThrusterId],
+    POWER_RESEARCH[design.powerSourceId],INSTRUMENT_RESEARCH[design.payloadInstrumentId],
+  ].filter(id=>id&&!unlocked(id));
+  const isFission=POWER_SYSTEMS[design.powerSourceId].class==='fission';
 
   function change<K extends keyof SubsystemDesign>(key: K, value: SubsystemDesign[K]) {
     onDesignChange({...design,[key]:value});
@@ -122,7 +132,11 @@ export default function SubsystemLab({design,onDesignChange}:{
       <p className="sys-intro">
         This is separate from the launch vehicle in Mission Control. Real published component examples are used where available;
         everything labeled <b>assumption</b> is an illustrative sizing input, not a NASA-certified design.
+        Technologies marked locked are developed in Research &amp; Roadmap. Dev Mode enables all catalog parts for presentations.
       </p>
+      {installedLocked.length>0&&<div className="sys-feedback sys-error" role="status">
+        This design uses {installedLocked.length} technology research unlock(s) you have not permanently acquired. You can inspect the saved design, but guided missions cannot launch it until the technologies are researched or Dev Mode is enabled.
+      </div>
 
       {result&&<div className="sys-live-strip" aria-label="Live spacecraft engineering summary">
         <div><small>MODELED WET MASS</small><strong>{fmt(result.modeledWetMassKg,'kg',1)}</strong></div>
@@ -155,7 +169,8 @@ export default function SubsystemLab({design,onDesignChange}:{
           <label className="sys-field sys-wide">
             <span>Primary propulsion system<small>SELECT COMPONENT</small><FieldHelp term="In-space engine / technology"/></span>
             <select value={design.thrusterId} onChange={e => change('thrusterId', e.target.value as ThrusterId)}>
-              {thrusterChoices.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+              {thrusterChoices.map(t=><option key={t.id} value={t.id}
+                disabled={!unlocked(THRUSTER_RESEARCH[t.id])}>{t.name}{!unlocked(THRUSTER_RESEARCH[t.id])?' · RESEARCH LOCKED':''}</option>)}
             </select>
           </label>
           <NumberField label="Number of thrusters" unit="identical engines · concurrent operation" value={design.thrusterCount} min={1} max={8} step={1} onChange={n=>change("thrusterCount",n)}/>
@@ -164,7 +179,8 @@ export default function SubsystemLab({design,onDesignChange}:{
             <span>Optional second propulsion system<small>SEPARATE ENGINE + PROPELLANT</small><FieldHelp term="Optional second propulsion system"/></span>
             <select value={design.secondaryThrusterId} onChange={e=>change('secondaryThrusterId',e.target.value as SubsystemDesign['secondaryThrusterId'])}>
               <option value="none">None · one propulsion system</option>
-              {thrusterChoices.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+              {thrusterChoices.map(t=><option key={t.id} value={t.id}
+                disabled={!unlocked(THRUSTER_RESEARCH[t.id])}>{t.name}{!unlocked(THRUSTER_RESEARCH[t.id])?' · RESEARCH LOCKED':''}</option>)}
             </select>
           </label>
           {design.secondaryThrusterId!=='none'&&<>
@@ -203,8 +219,9 @@ export default function SubsystemLab({design,onDesignChange}:{
             <span>Installed science sensor<small>GAME ENGINEERING EXAMPLES</small><FieldHelp term="Installed science sensor"/></span>
             <select value={design.payloadInstrumentId} onChange={e=>change('payloadInstrumentId',e.target.value as InstrumentSelection)}>
               <option value="none">No catalog sensor · generic payload only</option>
-              {Object.values(SCIENCE_INSTRUMENTS).map(inst=><option key={inst.id} value={inst.id}>
-                {inst.name} · {inst.massKg} kg · {inst.powerW} W · {inst.category}</option>)}
+              {Object.values(SCIENCE_INSTRUMENTS).map(inst=><option key={inst.id} value={inst.id}
+                disabled={!unlocked(INSTRUMENT_RESEARCH[inst.id])}>
+                {inst.name} · {inst.massKg} kg · {inst.powerW} W · {inst.category}{!unlocked(INSTRUMENT_RESEARCH[inst.id])?' · RESEARCH LOCKED':''}</option>)}
             </select>
           </label>
           <NumberField label="Additional instruments / cargo mass" unit="kg · excludes selected sensor" value={design.payloadMassKg}
@@ -228,7 +245,8 @@ export default function SubsystemLab({design,onDesignChange}:{
           <label className="sys-field sys-wide">
             <span>Primary power generation<small>NASA HERITAGE / RESEARCH</small><FieldHelp term="Primary power generation"/></span>
             <select value={design.powerSourceId} onChange={e=>change('powerSourceId',e.target.value as PowerSourceId)}>
-              {Object.values(POWER_SYSTEMS).map(system=><option key={system.id} value={system.id}>{system.name} · {system.heritage}</option>)}
+              {Object.values(POWER_SYSTEMS).map(system=><option key={system.id} value={system.id}
+                disabled={!unlocked(POWER_RESEARCH[system.id])}>{system.name} · {system.heritage}{!unlocked(POWER_RESEARCH[system.id])?' · RESEARCH LOCKED':''}</option>)}
             </select>
           </label>
           {design.powerSourceId !== 'solar' && <>
@@ -293,6 +311,29 @@ export default function SubsystemLab({design,onDesignChange}:{
           <NumberField label="Radiator operating temperature" unit="K · assumption" value={design.radiatorTemperatureK} min={180} max={420} step={5} onChange={n=>change('radiatorTemperatureK',n)}/>
           <NumberField label="Radiator sun incidence factor" unit="assumption · 0–1" value={design.radiatorSunIncidence} min={0} max={1} step={0.05} onChange={n=>change('radiatorSunIncidence',n)}/>
         </div>
+        {isFission&&<div className="sys-reactor-thermal">
+          <div className="eyebrow">FISSION THERMAL ENGINEERING · SEPARATE HEAT LOOP</div>
+          <h4>Deployable remote reactor radiator</h4>
+          <p>A fission reactor produces far more thermal energy than electricity. Place radiator panels on a separation truss to reject waste heat without assuming it passes through the low-temperature spacecraft-bus radiator.</p>
+          <div className="sys-input-grid">
+            <NumberField label="Reactor branch radiator area" unit="m² · remote two-sided-equivalent modeled area"
+              value={design.reactorRadiatorAreaM2} min={0} max={250} step={.5}
+              onChange={n=>change('reactorRadiatorAreaM2',n)}/>
+            <NumberField label="Reactor radiator temperature" unit="K · illustrative high-temperature surface"
+              value={design.reactorRadiatorTemperatureK} min={250} max={1200} step={25}
+              onChange={n=>change('reactorRadiatorTemperatureK',n)}/>
+          </div>
+          {result&&<div className="sys-reactor-ledger">
+            <div><span>Generator thermal waste</span><strong>{fmt(result.reactorHeatLoadW,'W',0)}</strong></div>
+            <div><span>Remote rejection capacity</span><strong>{fmt(result.reactorRadiatorCapacityW,'W',0)}</strong></div>
+            <div><span>Required hot radiator area</span><strong>{fmt(result.reactorRadiatorRequiredAreaM2,'m²',2)}</strong></div>
+            <div><span>Truss, panels and heat loop mass</span><strong>{fmt(result.reactorCoolingMassKg,'kg',1)}</strong></div>
+            <div className={result.reactorThermalMarginW===null?'unknown':result.reactorThermalMarginW<0?'over':'ok'}>
+              <span>Reactor heat rejection margin</span><strong>{fmt(result.reactorThermalMarginW,'W',0)}</strong>
+            </div>
+          </div>}
+          <p className="sys-subnote">Hot-surface radiative capacity uses Stefan–Boltzmann emission with simple solar absorption. Assumed emissivity, truss mass, heat-pipe transport, surface temperature and coolant loop are NOT validated reactor engineering. Unknown heat load remains unknown (KRUSTY), not zero.</p>
+        </div>}
         <p className="sys-subnote">
           Required and installed radiator area are separate: the <b>installed</b> panels set the spacecraft mass and thermal capacity. Required area comes from Stefan–Boltzmann emission minus direct solar absorption,
           and assumes a 3 K sink, clear view, and no planetary albedo/IR heating.
@@ -355,7 +396,7 @@ export default function SubsystemLab({design,onDesignChange}:{
             <Result label="Radioisotope / reactor output" value={fmt(result.generatorElectricPowerW,'W',1)} note={result.powerSystemHeritage}/>
             <Result label="Combined generation" value={fmt(result.totalAvailablePowerW,'W',1)} note="Solar + generator"/>
             <Result label="Power source installed mass" value={fmt(result.powerSystemMassKg,'kg',1)} note="Reference generator mass, incomplete for reactors"/>
-            <Result label="Separate generator waste heat" value={fmt(result.powerSystemWasteHeatW,'W',0)} note="Not added to bus radiator; dedicated rejection unresolved"/>
+            <Result label="Separate generator waste heat" value={fmt(result.powerSystemWasteHeatW,'W',0)} note="Fission uses dedicated remote cooling; RTG cooling remains separate"/>
             <Result label="Power requirement (bus + propulsion)" value={fmt(result.totalElectricalDemandW,'W',1)} note={result.canPowerThruster?'Rated operating point supplied':'POWER DEFICIT'} tone={result.canPowerThruster?'good':'bad'}/>
             <Result label="Combined power margin" value={fmt(result.totalPowerMarginW,'W',1)} note="Power generation less bus and thruster loads" tone={result.totalPowerMarginW>=0?'good':'bad'}/>
             <Result label="Battery mass" value={fmt(result.batteryMassKg,'kg',2)} note="Bus eclipse load net of continuous generator output"/>
