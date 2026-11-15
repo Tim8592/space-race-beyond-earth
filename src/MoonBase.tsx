@@ -9,6 +9,7 @@ type Props={
   cargoDeliveredLevel:number;cargoRun:MoonCargoRun|null;nowMs:number;
   rocketService:LauncherId;rocketTier:number;orbitalAssemblyUnlocked:boolean;
   rocketFlights:Record<LauncherId,number>;vehicle:Vehicle;otherFlightActive:boolean;
+  canadianSuccesses:number;
   onInvest:()=>void;onExploreCampaign:()=>void;
   onDispatchCargo:()=>void;onCompleteCargo:()=>void;onOpenRocketFleet:()=>void;
 };
@@ -20,13 +21,13 @@ const sites=[
 ] as const;
 export default function MoonBase({cash,level,unlocked,devMode,onInvest,onExploreCampaign,
   cargoDeliveredLevel,cargoRun,nowMs,rocketService,rocketTier,orbitalAssemblyUnlocked,
-  rocketFlights,vehicle,otherFlightActive,onDispatchCargo,onCompleteCargo,onOpenRocketFleet}:Props){
+  rocketFlights,vehicle,otherFlightActive,canadianSuccesses,onDispatchCargo,onCompleteCargo,onOpenRocketFleet}:Props){
   const [zoom,setZoom]=useState(1.5);
   const income=lunarEconomics(level);
   const next=MOON_BASE_LEVELS[level];
   const shipment=next?planMoonShipment({stageIndex:level,service:rocketService,
     vehicle,tier:rocketTier,assemblyUnlocked:orbitalAssemblyUnlocked,
-    priorFlights:rocketFlights[rocketService]??0}):null;
+    priorFlights:rocketFlights[rocketService]??0,canadianSuccesses}):null;
   const delivered=cargoDeliveredLevel>level;
   const canBuild=unlocked&&!!next&&delivered&&cash>=next.investmentUsd;
   const cargoProgress=cargoRun?flightProgress(cargoRun.startedAtMs,nowMs,
