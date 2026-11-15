@@ -157,9 +157,19 @@ export default function EarthObservationMission({
       <div className="ob-mission-grid">
         <div className="panel ob-options">
           <div className="eyebrow">01 / SCIENCE AND OPERATIONS</div>
-          <h3>Choose your payload and support systems</h3>
-          <p className="ob-subtitle">Each selection changes mass, electric load, heat, cost, data volume or downlink ability.</p>
-          <SelectOption label="Science instrument" value={choices.instrument}
+          <h3>Guided mission payload & operations</h3>
+          <p className="ob-subtitle">This first tutorial is a special case: choose its
+            <strong> science camera here</strong>. For this flight only, it replaces any
+            Engineering Lab sensor and generic cargo instead of counting them twice.
+            Your Lab propulsion, electrical generation, primary batteries and radiators
+            still power the same spacecraft. For later campaign missions, the science
+            payload is selected directly in Engineering Lab.</p>
+          <div className="ob-guided-source" aria-label="Guided mission payload source">
+            <strong>GUIDED CAMERA · THIS FLIGHT ONLY</strong>
+            <span>Instrument and imaging schedule: Play Campaign</span>
+            <span>Reusable spacecraft bus and core power/thermal: Engineering Lab</span>
+          </div>
+          <SelectOption label="Guided science instrument" value={choices.instrument}
             onChange={v=>choicesChange('instrument',v)}
             options={Object.entries(INSTRUMENTS).map(([id,v])=>({value:id as ObservationChoices['instrument'],
               label:v.name+' · '+v.massKg+' kg · '+v.powerW+' W'}))}/>
@@ -183,24 +193,40 @@ export default function EarthObservationMission({
             options={[{value:'140',label:'140 kg · compact'},
               {value:'220',label:'220 kg · standard'},
               {value:'500',label:'500 kg · expanded'}]}/>
-          <label className="ob-control">Additional radiator area
-            <span><input type="range" min={0} max={3} step={.1}
-              value={choices.radiatorExtraAreaM2}
-              onChange={e=>choicesChange('radiatorExtraAreaM2',Number(e.target.value))}/>
-              <strong>{choices.radiatorExtraAreaM2.toFixed(1)} m²</strong></span>
-          </label>
-          <label className="ob-control">Additional battery pack capacity
-            <span><input type="range" min={0} max={1500} step={50}
-              value={choices.batteryExtraWh}
-              onChange={e=>choicesChange('batteryExtraWh',Number(e.target.value))}/>
-              <strong>{num(choices.batteryExtraWh,0)} Wh</strong></span>
-          </label>
+          <details className="ob-mission-upgrades">
+            <summary>Optional flight-only hardware upgrades
+              <small>On top of Lab hardware: +{choices.radiatorExtraAreaM2.toFixed(1)} m² radiator,
+                +{num(choices.batteryExtraWh,0)} Wh battery</small>
+            </summary>
+            <div className="ob-mission-upgrade-body">
+              <p>These are <strong>additional</strong> deployed panels and battery energy
+                for Earth Observation One, not replacements for the main radiator or
+                battery pack already configured in Engineering Lab. Their hardware
+                mass and procurement cost are included once in the flight review.</p>
+              <label className="ob-control">Additional radiator area
+                <span><input type="range" min={0} max={3} step={.1}
+                  value={choices.radiatorExtraAreaM2}
+                  onChange={e=>choicesChange('radiatorExtraAreaM2',Number(e.target.value))}/>
+                  <strong>{choices.radiatorExtraAreaM2.toFixed(1)} m²</strong></span>
+              </label>
+              <label className="ob-control">Additional battery pack capacity
+                <span><input type="range" min={0} max={1500} step={50}
+                  value={choices.batteryExtraWh}
+                  onChange={e=>choicesChange('batteryExtraWh',Number(e.target.value))}/>
+                  <strong>{num(choices.batteryExtraWh,0)} Wh</strong></span>
+              </label>
+            </div>
+          </details>
           <p className="ob-assumption">Illustrative instrument, ground contact, radio, storage, cost and game-science values. Earth orbit calculations use NASA/JPL Earth parameters. Changing the mission does not fake an electric engine's launch capability: in-space thrusters are inactive during normal imaging.</p>
         </div>
         <div className="panel ob-model">
           <div className="eyebrow">02 / SHARED SPACECRAFT DESIGN</div>
           <h3>What you'll actually launch</h3>
-          <p className="ob-subtitle">This is the same spacecraft you edit in Engineering Lab. The mission substitutes the selected instrument for its generic payload mass slot.</p>
+          <p className="ob-subtitle">Your Engineering Lab bus, generators, core batteries,
+            propulsion and radiators are reused automatically. Only this guided mission
+            replaces the Lab's science instrument and generic cargo with the camera chosen
+            above; its radio, recorder and optional upgrades are additional hardware.
+            No second instrument or generic cargo is billed to this flight.</p>
           {preview&&<Spacecraft3D design={{...spacecraft,payloadMassKg:0,payloadInstrumentId:choices.instrument,distanceAu:1}}
             analysis={preview.missionResult}/>}
           <div className="ob-link-actions">
