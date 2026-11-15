@@ -62,7 +62,27 @@ function dayForDate(date:string):number{
   const [year,month,day]=date.split('-').map(Number);
   return Math.floor((Date.UTC(year,month-1,day,12)-GAME_EPOCH_MS)/86_400_000)+1;
 }
-export function agencyMissionDefinitions():CampaignDefinition[]{
-  return AGENCY_MILESTONES.map(item=>({...item.contract,
+/**
+ * NASA milestones are historical calendar context, never mandatory campaign
+ * prerequisites. After a fictional proposal window closes, a lower-paying
+ * follow-on training/customer reissue remains playable. Its reward may be
+ * claimed only once under the stable contract id.
+ */
+export type AgencyOfferPhase='upcoming'|'open'|'reissued';
+export function agencyOfferPhase(offer:CampaignDefinition,day:number):AgencyOfferPhase{
+  if(offer.windowStartDay!==undefined&&day<offer.windowStartDay)return 'upcoming';
+  if(offer.windowEndDay!==undefined&&day>offer.windowEndDay)return 'reissued';
+  return 'open';
+}
+export function reissueAgencyOffer(offer:CampaignDefinition,day:number):CampaignDefinition{
+  if(agencyOfferPhase(offer,day)!=='reissued')return offer;
+  return {...offer,title:offer.title+' · Follow-on',
+    summary:offer.summary+' Original game proposal window missed. A separate fictional follow-on contract remains available at reduced funding; the real NASA milestone is NOT repeated.',
+    payoutUsd:Math.round(offer.payoutUsd*.75/1e6)*1e6,
+    windowStartDay:undefined,windowEndDay:undefined};
+}
+export function agencyMissionDefinitions(day?:number):CampaignDefinition[]{
+  const base=AGENCY_MILESTONES.map(item=>({...item.contract,
     windowStartDay:dayForDate(item.windowStart),windowEndDay:dayForDate(item.windowEnd)}));
+  return day===undefined?base:base.map(offer=>reissueAgencyOffer(offer,day));
 }
