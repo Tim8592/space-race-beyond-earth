@@ -999,3 +999,124 @@
 .csa-research-contracts .campaign-agency-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:1120px){.csa-data-grid,.csa-research-contracts .campaign-agency-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.flight-physics-head{grid-template-columns:1fr 1fr}.flight-physics-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.csa-data-grid,.csa-research-contracts .campaign-agency-grid{grid-template-columns:1fr}}
+
+
+/* v1.9 · grouped game branches, deployable orbital businesses, copied spacecraft workbooks and launch-window energy */
+.topbar-inner{flex-wrap:wrap;gap:7px 18px;padding-block:11px;justify-content:space-between}
+.topbar nav.grouped-game-tabs{order:3;flex:0 0 100%;max-width:100%;display:flex;gap:8px;
+  overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#527393 #0f2234;padding:3px 0 8px;
+  align-items:stretch}
+.game-nav-group{display:flex;flex-direction:column;flex:1 0 auto;gap:5px;padding:8px 10px 7px;
+  border:1px solid #2c445b;background:#0e1c2e;border-radius:8px;min-width:155px}
+.game-nav-group.selected{border-color:#af8962;background:#182c3b}
+.game-nav-heading{display:flex;flex-direction:column;gap:3px}
+.game-nav-heading strong{font:850 10px 'Space Grotesk',sans-serif;color:#f1ca9c;letter-spacing:1.15px}
+.game-nav-heading small{font-size:9px;color:#92b0c5;font-weight:500}
+.game-nav-links{display:flex;flex-wrap:wrap;gap:4px}
+.topbar nav.grouped-game-tabs .game-nav-links button{padding:6px 7px;font-size:10px;line-height:1.45;
+  border-radius:5px;border:1px solid transparent;white-space:nowrap;color:#b2c9dd;background:#122b40;
+  font-weight:700}
+.topbar nav.grouped-game-tabs .game-nav-links button.current{color:#fff1db;background:#35506a;border:1px solid #dba878}
+.topbar nav.grouped-game-tabs .game-nav-links button:hover{border-color:#6687a5;background:#203f57}
+.sys-orbital-service{border:1px solid #577890;background:linear-gradient(130deg,#122f44,#162538);border-radius:9px;
+  padding:16px;margin:16px 0}
+.sys-orbital-service h4{font:800 18px 'Space Grotesk',sans-serif;color:#f2d8b4;margin:8px 0}
+.sys-orbital-service>p,.sys-orbital-service .sys-auto-ledger p{font-size:11px;line-height:1.7;color:#b1cfdf}
+.sys-orbital-service .sys-auto-ledger a{color:#8ed7f4;text-decoration:underline}
+.orbital-infrastructure-page,.spacecraft-library-page{display:flex;flex-direction:column;gap:15px;margin:4px 0 25px}
+.orbital-business-hero{background:linear-gradient(115deg,#183e4d,#132338)}
+.orbital-business-hero h2,.spacecraft-library-hero h2{font:800 28px 'Space Grotesk',sans-serif;color:#f9deb4;margin:10px 0}
+.orbital-business-hero p,.spacecraft-library-hero p{max-width:1000px;color:#c1d8e5;font-size:12px;line-height:1.8}
+.orbital-business-hero a{color:#9acfe7;text-decoration:underline}
+.orbital-lock-note{border:1px solid #6a584a;padding:12px 16px;border-radius:7px;background:#342b34}
+.orbital-business-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.orbital-business-stats>.panel{padding:16px;background:#183248;display:flex;flex-direction:column;gap:7px}
+.orbital-business-stats small,.orbital-business-stats span{font-size:10px;color:#a5c4d9}
+.orbital-business-stats strong{font:800 24px 'Space Grotesk',sans-serif;color:#f5c99c}
+.orbital-business-selector{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.orbital-business-selector button{padding:16px;border:1px solid #405a72;border-radius:9px;background:#13283c;
+  color:#cedfeb;text-align:left;display:flex;flex-direction:column;gap:7px}
+.orbital-business-selector button.selected{border-color:#e3b37e;box-shadow:inset 3px 0 #e9b880;background:#1e3b4e}
+.orbital-business-selector strong{font:800 18px 'Space Grotesk',sans-serif}
+.orbital-business-selector small{font-size:11px;color:#adcbdf}
+.orbital-business-columns{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
+  gap:15px;align-items:start}
+.orbital-business-columns h3{font:800 22px 'Space Grotesk',sans-serif;color:#f7dcaf;margin:8px 0}
+.orbital-business-columns p{font-size:11px;color:#b3cbdf;line-height:1.75}
+.orbital-network-map svg{display:block;width:100%;border-radius:8px;border:1px solid #385875}
+.orbital-business-stage-list{display:flex;flex-direction:column;gap:9px;margin-top:15px}
+.orbital-business-stage-list>div{display:flex;align-items:center;gap:11px;border:1px solid #354d62;
+  border-radius:7px;padding:11px;background:#10253a}
+.orbital-business-stage-list>div.done{border-color:#468673}
+.orbital-business-stage-list>div.next{border-color:#c79a67}
+.orbital-business-stage-list>div>b{color:#efd0a5;font-size:17px}
+.orbital-business-stage-list>div>span{display:flex;flex-direction:column;gap:5px}
+.orbital-business-stage-list strong{font-size:12px;color:#e1e8ef}
+.orbital-business-stage-list small{font-size:10px;color:#9fb9cd}
+.orbital-module-info{display:flex;flex-direction:column;gap:8px;padding:13px;background:#173c4b;border:1px solid #457a84;border-radius:6px;margin:15px 0}
+.orbital-module-info strong{font-size:12px;color:#f8dab0}
+.orbital-module-info span{font-size:11px;color:#b9d5e4;line-height:1.75}
+.orbital-business-invest .moon-base-numbers{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:13px 0}
+.orbital-business-invest .moon-base-numbers>div{display:flex;flex-direction:column;gap:6px;justify-content:start;
+  padding:10px 12px;background:#0d2437;border:1px solid #34526b;border-radius:7px}
+.orbital-business-invest .moon-base-numbers small{font-size:9px;color:#9db8cf}
+.orbital-business-invest .moon-base-numbers strong{font-size:13px;color:#f2cfa2}
+.orbital-checks{display:grid;gap:8px;margin:14px 0}
+.orbital-checks>div{display:flex;flex-direction:column;gap:5px;background:#142b40;border:1px solid #335970;border-radius:6px;padding:11px}
+.orbital-checks>div.blocked{border-color:#aa7259;background:#332c36}
+.orbital-checks b{font-size:11px;color:#b5e5d1}
+.orbital-checks .blocked b{color:#f4b898}
+.orbital-checks span{font-size:10px;line-height:1.6;color:#b8cde0}
+.orbital-business-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}
+.orbital-business-actions .launch-button{flex:1 0 100%;justify-content:center}
+.spacecraft-library-hero{background:linear-gradient(135deg,#213747,#10263c)}
+.spacecraft-library-columns{display:grid;grid-template-columns:1fr 1.2fr;gap:15px;align-items:start}
+.spacecraft-library-columns h3,.spacecraft-library-detail h3{font:800 21px 'Space Grotesk',sans-serif;color:#f1dbba;margin:9px 0}
+.spacecraft-library-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:15px 0}
+.spacecraft-library-metrics>div{padding:12px;background:#102a3e;border:1px solid #3e5971;border-radius:7px;min-width:0}
+.spacecraft-library-metrics small{font-size:9px;color:#a2c0d3;display:block;margin-bottom:8px}
+.spacecraft-library-metrics strong{font-size:13px;color:#f8d4a4;overflow-wrap:anywhere}
+.spacecraft-library-workbench>.sys-field{display:flex;flex-direction:column;gap:8px;margin:12px 0;color:#c9deed;font-size:11px}
+.spacecraft-library-workbench input,.spacecraft-library-workbench textarea,.spacecraft-library-maintenance input{width:100%;
+ background:#0b2136;color:#d4ecff;padding:11px 12px;border:1px solid #45637c;border-radius:6px;min-width:0}
+.spacecraft-library-workbench textarea{resize:vertical}
+.spacecraft-library-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0}
+.spacecraft-library-actions .launch-button{width:auto;flex:1;min-width:185px;margin-top:0;font-size:12px}
+.spacecraft-library-cards{display:grid;gap:8px;max-height:565px;overflow-y:auto;padding-right:3px;margin-top:10px}
+.spacecraft-library-card{width:100%;text-align:left;padding:14px;border:1px solid #3a5872;
+ border-radius:7px;background:#0d2537;color:#c7dae7;display:flex;flex-direction:column;gap:6px}
+.spacecraft-library-card.selected{border-color:#f0c28a;background:#1c3d51}
+.spacecraft-library-card>strong{font:800 15px 'Space Grotesk',sans-serif;color:#f4dab2}
+.spacecraft-library-card small{font-size:10px;color:#9ebace;line-height:1.5}
+.spacecraft-library-empty{padding:18px;border:1px dashed #547189;border-radius:8px}
+.spacecraft-library-maintenance{display:flex;flex-wrap:wrap;gap:9px;align-items:end;padding:10px 0}
+.spacecraft-library-maintenance label{display:flex;flex-direction:column;gap:6px;min-width:210px;
+ flex:1;color:#b8d1e1;font-size:11px}
+.flight-window-forecast{margin:18px 0;border-color:#4f7486;background:linear-gradient(135deg,#163347,#111d33)}
+.flight-window-forecast h3{font:800 23px 'Space Grotesk',sans-serif;color:#f7d9af;margin:10px 0}
+.flight-window-head{display:flex;justify-content:space-between;gap:14px;align-items:start}
+.flight-window-head p{font-size:11px;line-height:1.75;color:#bed4e3}
+.flight-window-source{max-width:250px;flex-shrink:0;text-align:center;padding:10px;border-radius:6px;
+ border:1px solid #598476;background:#143d3e;color:#b8f1d4;font-size:10px;font-weight:800;line-height:1.5}
+.flight-window-source.approx{background:#322d3c;border-color:#927559;color:#f0cda4}
+.flight-window-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:13px 0}
+.flight-window-summary>div,.flight-window-selected>div{display:flex;flex-direction:column;gap:6px;
+ background:#102b42;border:1px solid #45607a;border-radius:6px;padding:11px;min-width:0}
+.flight-window-summary small,.flight-window-selected small{font-size:9px;color:#acc7d8}
+.flight-window-summary strong,.flight-window-selected strong{font:800 16px 'Space Grotesk',sans-serif;color:#f2d9b0;overflow-wrap:anywhere}
+.flight-window-summary span,.flight-window-selected span{font-size:10px;color:#a7c6d7;line-height:1.5}
+.flight-window-graph svg{width:100%;height:auto;border-radius:7px}
+.flight-window-months{display:flex;gap:4px;overflow-x:auto;margin:10px 0;padding-bottom:7px}
+.flight-window-months button{flex:0 0 66px;display:flex;flex-direction:column;align-items:center;gap:5px;
+ border:1px solid #39607a;background:#123148;border-radius:5px;padding:7px 3px;color:#c9e1f0}
+.flight-window-months button.selected{border-color:#efb879;background:#30495b}
+.flight-window-months button small{font-size:9px;color:#a3c3d9}
+.flight-window-months button strong{font-size:11px;color:#f0d09d}
+.flight-window-selected{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:11px 0}
+@media(max-width:1050px){.orbital-business-columns,.spacecraft-library-columns{grid-template-columns:1fr}}
+@media(max-width:780px){.orbital-business-stats,.flight-window-summary,.flight-window-selected{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .flight-window-head{flex-direction:column}.flight-window-source{max-width:100%}
+ .game-nav-group{min-width:165px;flex:0 0 auto}}
+@media(max-width:520px){.orbital-business-stats,.orbital-business-selector{grid-template-columns:1fr}
+ .orbital-business-invest .moon-base-numbers,.spacecraft-library-metrics{grid-template-columns:1fr}
+ .flight-window-summary,.flight-window-selected{grid-template-columns:1fr 1fr}}
