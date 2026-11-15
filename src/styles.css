@@ -744,3 +744,67 @@
 .moon-base-complete{font-size:12px;color:#a9dfc0;line-height:1.8}
 @media(max-width:980px){.agency-finance-bar{grid-template-columns:repeat(3,minmax(0,1fr))}.moon-base-body{grid-template-columns:1fr}}
 @media(max-width:600px){.agency-finance-bar{grid-template-columns:repeat(2,minmax(0,1fr))}.moon-base-numbers{grid-template-columns:1fr}.flight-progress-pill{right:8px;bottom:8px}.agency-finance-bar strong{font-size:14px}}
+
+
+/* v1.5 — rocket fleet, launch contracts, orbital assembly and lunar delivery */
+.rocket-fleet-page{display:flex;flex-direction:column;gap:16px;margin-bottom:30px}
+.rocket-fleet-intro{background:linear-gradient(120deg,#16324b,#172335);border-color:#557e9b}
+.rocket-fleet-intro h2{font:800 clamp(25px,3.5vw,35px) 'Space Grotesk',sans-serif;color:#f9e8cb;margin:8px 0}
+.rocket-fleet-intro p{max-width:850px;line-height:1.75;font-size:12px;color:#bbd5e7}
+.rocket-fleet-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.rocket-fleet-stats>div{display:flex;flex-direction:column;gap:9px;background:#142e46;padding:13px;border:1px solid #375a78;border-radius:8px;min-width:0}
+.rocket-fleet-stats small{font-size:9px;color:#9dc0d9;font-weight:800;letter-spacing:.5px}
+.rocket-fleet-stats strong{font:800 clamp(14px,1.8vw,21px) 'Space Grotesk',sans-serif;color:#f8d49e}
+.rocket-fleet-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.rocket-fleet-option{display:flex;flex-direction:column;gap:8px;text-align:left;padding:17px 13px;min-height:225px;border:1px solid #42617b;border-radius:9px;background:#152a40;color:#b7d0e0}
+.rocket-fleet-option.selected{border:2px solid #f0bd7e;background:#203a4e}
+.rocket-fleet-option.locked{opacity:.6;cursor:not-allowed}
+.rocket-fleet-option strong{font:800 16px 'Space Grotesk',sans-serif;color:#f0f5fc}
+.rocket-fleet-option span:not(.eyebrow){font-size:11px}
+.rocket-fleet-option b{font:800 21px 'Space Grotesk',sans-serif;color:#ffdfa6}
+.rocket-fleet-option small{font-size:10px;line-height:1.7;color:#aec0cf}
+.rocket-fleet-option em{color:#ffcf98;font-size:10px;font-style:normal;font-weight:800}
+.rocket-fleet-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:start}
+.rocket-fleet-panels h3{font:800 23px 'Space Grotesk',sans-serif;margin:12px 0;color:#e8f2fd}
+.rocket-fleet-panels p{font-size:11px;line-height:1.75;color:#b0cadb}
+.rocket-custom-builder>label{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:800;color:#c2dae9;margin:13px 0}
+.rocket-custom-builder input,.rocket-custom-builder select{padding:11px 9px;border:1px solid #436079;background:#0d1c2d;color:#edf6fa;border-radius:7px;width:100%}
+.rocket-fleet-metrics{display:grid;gap:8px;margin-top:15px}
+.rocket-fleet-metrics>div,.rocket-upgrade>div{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#10263a;padding:10px;border:1px solid #3a5770;border-radius:6px;font-size:11px}
+.rocket-fleet-metrics b{color:#f3d7a6}
+.rocket-upgrade{display:flex;flex-direction:column;gap:10px;padding:13px;background:#0c2437;border:1px solid #47667e;border-radius:9px;margin:14px 0}
+.rocket-upgrade h4{font:800 17px 'Space Grotesk',sans-serif;margin:2px 0;color:#f5dbb7}
+.rocket-upgrade strong{color:#ffdfac;font-size:12px}
+.rocket-upgrade button{font-size:11px}
+.rocket-fleet-disclaimer{font-size:10px!important;color:#a6b8ca!important;line-height:1.7}
+.campaign-logistics-breakdown{padding:15px;margin:16px 0;background:#0d263a;border:1px solid #486987;border-radius:8px}
+.campaign-logistics-breakdown h3{font:800 17px 'Space Grotesk',sans-serif;color:#f5dfa5;margin:9px 0}
+.campaign-logistics-breakdown p{color:#c4d7e6;font-size:11px;line-height:1.7}
+.campaign-logistics-costs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:13px 0}
+.campaign-logistics-costs>div{padding:10px;background:#162e45;display:flex;flex-direction:column;gap:5px;font-size:11px}
+.campaign-logistics-costs>div span{color:#a3bacb}
+.campaign-logistics-costs strong{font:800 16px 'Space Grotesk',sans-serif;color:#fbd4a2}
+.campaign-flight-manifest-row,.rocket-assembly-items>div{display:flex;justify-content:space-between;gap:12px;padding:10px 5px;border-bottom:1px solid #385269;font-size:12px;color:#c1d5e5}
+.campaign-flight-manifest-row strong,.rocket-assembly-items strong{color:#f6d8ae}
+.campaign-assembly-progress{border-color:#d09f63;background:linear-gradient(140deg,#24364a,#122236);margin:13px 0}
+.campaign-assembly-progress h2{font:800 22px 'Space Grotesk',sans-serif;color:#ffdfb2}
+.campaign-assembly-progress p{color:#bcdae9;line-height:1.75;font-size:12px}
+.campaign-assembly-progress button{margin:9px 8px 7px 0}
+.campaign-assembly-meter{height:12px;border-radius:9px;border:1px solid #586b7c;background:#1e344b;overflow:hidden;margin:14px 0}
+.campaign-assembly-meter>div{height:100%;background:linear-gradient(90deg,#edae6d,#ffe4a1);transition:width .3s}
+.rocket-assembly-items>div.launched{color:#a0efc0;background:#173e41}
+.moon-cargo-steps{display:grid;gap:8px;margin:12px 0}
+.moon-cargo-steps>div{padding:9px 12px;border:1px solid #4f5968;border-radius:7px;background:#1b2938;color:#bbc9d7;font-size:11px}
+.moon-cargo-steps b{color:#f2d6a4;margin-right:9px}
+.moon-cargo-steps>div.done{background:#183b3a;border-color:#52785e;color:#baf4d2}
+.moon-cargo-manifest{padding:13px;margin:17px 0;border:1px solid #6b7a88;border-radius:8px;background:#112738}
+.moon-cargo-manifest h4{font:800 16px 'Space Grotesk',sans-serif;color:#e8dfbd}
+.moon-cargo-manifest>div:not(.eyebrow){display:flex;justify-content:space-between;gap:11px;padding:8px 1px;border-bottom:1px solid #344d5f;color:#bdd4e3;font-size:11px}
+.moon-cargo-manifest>div strong{color:#f2d7a7;text-align:right}
+.moon-cargo-manifest>div.total{font-weight:800;border-top:2px solid #64778b;margin-top:9px;padding-top:13px}
+.moon-cargo-manifest button{margin:9px 0;font-size:11px;width:100%;white-space:normal}
+.moon-cargo-flight{border:1px solid #9c744d;border-radius:8px;padding:14px;background:#192c40}
+.moon-cargo-flight>p{font-size:11px;line-height:1.75;color:#c5dbea}
+.moon-cargo-flight .launch-button{width:100%;font-size:11px}
+@media(max-width:1000px){.rocket-fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rocket-fleet-panels{grid-template-columns:1fr}}
+@media(max-width:600px){.rocket-fleet-grid,.rocket-fleet-stats,.campaign-logistics-costs{grid-template-columns:1fr}}
