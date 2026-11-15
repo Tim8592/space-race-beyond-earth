@@ -150,6 +150,27 @@ describe('Next chapter campaign and orbit integrations',()=>{
     expect(wider.hardwareWetKg).toBeGreaterThan(cramped.hardwareWetKg);
     expect(wider.costUsd).toBeGreaterThan(cramped.costUsd);
   });
+  it('large spacecraft actually require multiple paid rockets and an assembly facility',()=>{
+    const heavy={...referenceArgs,capitalUsd:1e9,
+      spacecraft:{...DEFAULT_SUBSYSTEM_DESIGN,payloadMassKg:1000},
+      launchService:'custom' as const,priorServiceFlights:0};
+    const blocked=reviewCampaignMission({...heavy,orbitalAssemblyUnlocked:false});
+    expect(blocked.launchManifest.flightsRequired).toBeGreaterThan(1);
+    expect(blocked.launchManifest.feasible).toBe(false);
+    expect(blocked.checks.some(c=>c.label==='Rocket launch manifest / orbital assembly'&&!c.passed)).toBe(true);
+    const integrated=reviewCampaignMission({...heavy,orbitalAssemblyUnlocked:true});
+    expect(integrated.launchManifest.feasible).toBe(true);
+    expect(integrated.launchManifest.assemblyCostUsd).toBeGreaterThan(0);
+    expect(integrated.launchManifest.assemblyHardwareKg).toBeGreaterThan(0);
+    expect(integrated.costUsd).toBeCloseTo(integrated.spacecraftProcurementUsd+
+      integrated.launchServicesUsd);
+    expect(integrated.launchManifest.flights.every(f=>f.massKg<=f.capacityKg)).toBe(true);
+    const contracted=reviewCampaignMission({...heavy,
+      launchService:'falcon9',orbitalAssemblyUnlocked:false});
+    expect(contracted.launchManifest.flightsRequired).toBe(1);
+    expect(contracted.launchManifest.feasible).toBe(true);
+    expect(contracted.launchManifest.capacityKg).toBeGreaterThan(integrated.launchCapacityKg);
+  });
   it('booster ideal delta-V accounts for attached spacecraft and jettisoned dry stage',()=>{
     const booster=BOOSTERS.storable;
     const review=reviewCampaignMission(referenceArgs);
