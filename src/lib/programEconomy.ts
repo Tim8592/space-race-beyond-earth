@@ -44,7 +44,7 @@ export function advanceProgramDay<T extends {
     throw new RangeError('Invalid elapsed game days');
   if(!days)return game;
   const costs=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,
-    !!(game.activeStoryRun||game.activeMoonCargoRun));
+    !!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject));
   const earnedRP=Math.floor((game.day-1+days)/RESEARCH_POINT_EVERY_DAYS)-
     Math.floor((game.day-1)/RESEARCH_POINT_EVERY_DAYS);
   return {...game,day:game.day+days,
