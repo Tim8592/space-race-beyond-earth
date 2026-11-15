@@ -1,4 +1,4 @@
-# Space Race v1.3 — live-clock mission demonstration
+# Space Race v1.4 — live-clock mission demonstration
 
 ## First launch and research progression
 
@@ -13,10 +13,18 @@
 9. Click **Analyze this orbit in Orbital Map**. The app initializes the Earth ellipse or planetary date/target and offers **Return to mission review**.
 10. For Mars/Jupiter, launch the optional `Start Orekit.command`, solve a date-specific transfer in the Orbital Map, and return to campaign to display the Orekit result. Without the backend, the campaign runs on approximate Hohmann/phase geometry. Do not claim the heuristic detects an actual planetary launch opportunity.
 11. Open **Research & Roadmap → Developer / Demo Mode** to see all implemented missions without completing prerequisites. Hardware research, launch mass, power and cooling feasibility are still checked.
-12. After a feasible mission launch, click **Complete flight and mission debrief**. The game advances its calendar and pays the reward once; the next story mission unlocks.
+12. After a feasible mission launch, the **105-second flight viewer** starts. You cannot claim the reward yet. Watch the mission-specific animation and ETA, use **Exit flight viewer**, navigate to another tab, then reopen via the persistent circular progress indicator. When the indicator reaches **100%**, click **Complete flight and mission debrief**. The game advances its modeled flight days (including ordinary program operating expenses) and pays the reward and RP once. Mars/Jupiter can use a live Orekit Lambert arc when the service is available; Moon/Earth ellipses show a labelled simple animation.
 13. **Reset campaign** is destructive and clears normal research, currency and progress. Avoid resetting until after showing your saved mission history.
 
-## New propulsion and structural sizing demonstration (v1.3)
+## Research, business cash flow and Moon Base demonstration (v1.4)
+
+1. Show the **persistent finance strip**: available cash, RP, daily operating burn (including $0.95M base overhead), Moon revenue and net/day. Wait one visible in-game day (2 real minutes) or complete a campaign flight to advance many game days. Operating expenses settle automatically.
+2. In **Research & Roadmap**, buy the $20M Manufacturing Learning Curve node for **5 RP** in addition to dollars. Starting RP is 10; mission successes and periodic lab research accrue additional RP. Larger nodes require more RP, and a node with insufficient RP stays locked even if the cash is available.
+3. Open the **Moon Base** tab. Before Lunar Relay Pathfinder, investment is locked (unless Dev Mode is enabled), but the lunar surface zoom scene can be viewed. After unlocking, purchase the **Lunar Survey Outpost** and watch the Moon income and upkeep appear on the persistent finance strip. Lunar Logistics Hub and Industrial Campus are later upgrades, and income continues even off the Moon tab.
+4. In **Explore Further → Orbital campaign map**, select a locked Mars/Jupiter story; only the mission name/classified state is shown until the proper chapter is unlocked. Dev Mode deliberately reveals completed prototype-level chapters.
+5. During a launched mission, compare the **Orekit Lambert** (if a local backend is running and produces a trajectory) with the visible simplified fallback label, then minimize the viewer and use the status ring.
+
+## New propulsion and structural sizing demonstration (v1.4)
 
 1. Open **Engineering Lab → Propulsion**. Set **Number of thrusters** to 8 and enable a second propulsion type with 8 more thrusters.
 2. Observe **Engine mounting structure too small**, then click **Auto-fit installed thrusters**. The bus visually widens and all 16 nozzles receive distinct non-overlapping mounting positions. Structural wet/dry mass and estimated procurement cost increase.
