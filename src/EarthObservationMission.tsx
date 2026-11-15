@@ -70,7 +70,7 @@ function PercentBars({days}:{days:ReturnType<typeof simulateObservation>['days']
 export default function EarthObservationMission({
   spacecraft,launcher,cash,completedWithEngine,technologyDiscount=0,lockedTechnologies=[],
   launchService='custom',rocketProgramLevel=0,orbitalAssemblyUnlocked=false,priorServiceFlights=0,
-  canadianSuccesses=0,
+  canadianSuccesses=0,weatherReserveHours=0,
   otherMissionActive=false,
   onEditSpacecraft,onEditLauncher,onStart,onComplete,
 }:{
@@ -84,6 +84,7 @@ export default function EarthObservationMission({
   lockedTechnologies?:readonly string[];
   launchService?:LauncherId;rocketProgramLevel?:number;
   orbitalAssemblyUnlocked?:boolean;priorServiceFlights?:number;canadianSuccesses?:number;otherMissionActive?:boolean;
+  weatherReserveHours?:number;
   onStart:(costUsd:number)=>void;
   onComplete:(result:{success:boolean;missionCostUsd:number;payoutUsd:number;
     wetMassKg:number;returnedScience:number})=>void;
@@ -95,8 +96,10 @@ export default function EarthObservationMission({
   const config:ObservationConfig=useMemo(()=>({
     choices,spacecraft,launcher,completedWithEngine,technologyDiscount,
     launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,canadianSuccesses,
+    weatherReserveHours,
   }),[choices,spacecraft,launcher,completedWithEngine,technologyDiscount,
-    launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,canadianSuccesses]);
+    launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,canadianSuccesses,
+    weatherReserveHours]);
   const current=useMemo(()=>{
     try{return {simulation:simulateObservation(config),error:''}}
     catch(error){return {simulation:null,error:error instanceof Error?error.message:'Invalid design'}}
