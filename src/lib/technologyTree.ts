@@ -7,9 +7,10 @@ export type TechnologyId =
   'precision-imaging'|'ion-electric'|'hall-power'|'advanced-ion'|'high-power-hall'|
   'radioisotope-power'|'fission-power'|'reactor-25kwe'|
   'thermal-engineering'|'reactor-heat-pipe'|'production-line'|'deep-space-science'|
-  'canadian-light-lift'|'canadian-medium-lift'|'canadian-heavy-lift';
+  'canadian-light-lift'|'canadian-medium-lift'|'canadian-heavy-lift'|
+  'orbital-edge-compute'|'canadian-optical-relay';
 export type TechnologyNode={
-  id:TechnologyId;label:string;branch:'Science'|'Propulsion'|'Power'|'Thermal'|'Economics'|'Launch';
+  id:TechnologyId;label:string;branch:'Science'|'Propulsion'|'Power'|'Thermal'|'Economics'|'Launch'|'Infrastructure';
   researchUsd:number;
   hardwareCostUsd:number;
   operationalCostUsdPerYear:number;
@@ -21,6 +22,19 @@ export type TechnologyNode={
   sourceUrl?:string;
 };
 export const TECHNOLOGIES:readonly TechnologyNode[]=[
+  {id:'orbital-edge-compute',label:'Orbital Edge Compute & Hosted Services',branch:'Infrastructure',
+    researchUsd:24e6,hardwareCostUsd:28e6,operationalCostUsdPerYear:1200000,
+    gameMaturity:'prototype/research',riskNote:'On-orbit radiation, thermal throttling, high-rate data uplink and software security',
+    description:'Develop an open compute tenancy service inspired by Galaxia Onyx Edge Core + Blades and VSaS, scaled from a single module to a distributed orbital service fleet.',
+    unlocks:'Onboard compute payload and paid recurring orbital cloud infrastructure',prerequisites:['precision-imaging'],
+    sourceUrl:'https://gx.space/news-press-releases/galaxia-introduces-onyx-edge'},
+  {id:'canadian-optical-relay',label:'Canadian Hybrid Communications Relay',branch:'Infrastructure',
+    researchUsd:20e6,hardwareCostUsd:24e6,operationalCostUsdPerYear:950000,
+    gameMaturity:'prototype/research',riskNote:'Inter-satellite acquisition, ground gateway backhaul, spectrum rights and coverage',
+    description:'Fund a Canadian hybrid optical/RF orbital networking business inspired by Galaxia OSPREY and Kepler optical relay ambitions. Real satellite service coverage is not yet computed.',
+    unlocks:'Canadian orbital relay payload and paid satellite subscription network',prerequisites:['canadian-light-lift'],
+    sourceUrl:'https://gx.space/news-press-releases/galaxia-unveils-osprey-advancing-canadian-built-space-technology-for-defence-applications'},
+
   {id:'canadian-light-lift',label:'Canadian Small-Launch Qualification',branch:'Launch',
     researchUsd:12e6,hardwareCostUsd:9e6,operationalCostUsdPerYear:470000,
     gameMaturity:'prototype/research',riskNote:'Propulsion testing, range access and flight qualification',
@@ -94,6 +108,9 @@ export const TECHNOLOGIES:readonly TechnologyNode[]=[
 export const STARTER_TECHNOLOGIES=new Set(['mono-reference','busek-bht100','busek-bht200','busek-bit3']);
 export const THRUSTER_RESEARCH:Readonly<Record<string,TechnologyId|undefined>>={
   nstar:'ion-electric',t6:'ion-electric','next-c':'advanced-ion','spt-140':'high-power-hall',
+};
+export const SERVICE_MODULE_RESEARCH:Readonly<Record<string,TechnologyId|undefined>>={
+  compute:'orbital-edge-compute',relay:'canadian-optical-relay',
 };
 export const POWER_RESEARCH:Readonly<Record<string,TechnologyId|undefined>>={
   mmrtg:'radioisotope-power','mhw-rtg':'radioisotope-power','gphs-rtg':'radioisotope-power',
