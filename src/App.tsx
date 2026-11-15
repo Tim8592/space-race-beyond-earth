@@ -7,6 +7,10 @@ import OrbitalLab from './OrbitalLab';
 import MissionLibrary from './MissionLibrary';
 import LearningLab from './LearningLab';
 import ResearchLab from './ResearchLab';
+import MoonBase from './MoonBase';
+import {advanceProgramDay,dailyEconomics,MOON_BASE_LEVELS,RESEARCH_POINTS_START,
+  researchPointsCost} from './lib/programEconomy';
+import {flightProgress,DEFAULT_FLIGHT_VIEWER_MS,flightEta} from './lib/flightProgress';
 import References from './References';
 import {GAME_DAY_DURATION_MS,todayGameDay} from './lib/campaignClock';
 import CampaignMissions,{type CampaignRun,type CampaignDebrief} from './CampaignMissions';
@@ -105,6 +109,8 @@ type Game = {
   blueprints: Vehicle[];
   researchUnlocked: TechnologyId[];
   researchSpentUsd: number;
+  researchPoints:number;moonBaseLevel:number;
+  operatingSpentUsd:number;passiveRevenueUsd:number;
   devMode: boolean;
   storyCompleted: string[];
   activeStoryRun: CampaignRun|null;
@@ -123,6 +129,8 @@ const DEFAULT_GAME: Game = {
   blueprints: [],
   researchUnlocked: [],
   researchSpentUsd: 0,
+  researchPoints: RESEARCH_POINTS_START,moonBaseLevel:0,
+  operatingSpentUsd:0,passiveRevenueUsd:0,
   devMode: false,
   storyCompleted: [],
   activeStoryRun: null,
@@ -149,6 +157,12 @@ function loadSave(): Snapshot {
       researchUnlocked:Array.isArray(parsed.game.researchUnlocked)
         ?parsed.game.researchUnlocked.filter(id=>TECHNOLOGIES.some(t=>t.id===id)):[],
       researchSpentUsd:Number.isFinite(parsed.game.researchSpentUsd)?parsed.game.researchSpentUsd:0,
+      researchPoints:Number.isFinite(parsed.game.researchPoints)?
+        Math.max(0,parsed.game.researchPoints):RESEARCH_POINTS_START,
+      moonBaseLevel:Number.isInteger(parsed.game.moonBaseLevel)?
+        Math.min(3,Math.max(0,parsed.game.moonBaseLevel)):0,
+      operatingSpentUsd:Number.isFinite(parsed.game.operatingSpentUsd)?parsed.game.operatingSpentUsd:0,
+      passiveRevenueUsd:Number.isFinite(parsed.game.passiveRevenueUsd)?parsed.game.passiveRevenueUsd:0,
       devMode:parsed.game.devMode===true,
       storyCompleted:Array.isArray(parsed.game.storyCompleted)
         ?parsed.game.storyCompleted.filter(id=>typeof id==='string'):
@@ -206,7 +220,7 @@ export default function App() {
   const missionTechnologyDiscount=researchDiscount(effectiveUnlocks,game.devMode);
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'>('missions');
+  const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'|'sources'|'moon'>('missions');
   const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'|'progression'>('observation');
   const [orbitalSelection,setOrbitalSelection]=useState<{
     mode:'earth'|'heliocentric';day:number;target:'mars'|'jupiter';
@@ -214,6 +228,8 @@ export default function App() {
   const [lastSolvedTransfer,setLastSolvedTransfer]=useState<LambertSolution|null>(null);
   const [observationResetKey,setObservationResetKey]=useState(0);
   const [secondsToNextDay,setSecondsToNextDay]=useState(Math.ceil(GAME_DAY_DURATION_MS/1000));
+  const [flightNowMs,setFlightNowMs]=useState(Date.now());
+  const [flightViewerOpen,setFlightViewerOpen]=useState(true);
   const [spacecraftDesign,setSpacecraftDesign]=useState<SubsystemDesign>(readSubsystemDesign);
   const [labObservationChoices,setLabObservationChoices]=useState<ObservationChoices>(readObservationChoices);
   const [selectedCampaignId,setSelectedCampaignId]=useState(()=>{
@@ -241,11 +257,20 @@ export default function App() {
   const ready = payloadOK && deltaVOK && thrustOK;
   const successfulLaunches = game.completed;
   const latest = game.history[0];
+  const dailyBudget=dailyEconomics(game.researchUnlocked,game.moonBaseLevel,!!game.activeStoryRun);
+  const activeFlightProgress=game.activeStoryRun?
+    flightProgress(game.activeStoryRun.startedAtMs??flightNowMs,flightNowMs,
+      game.activeStoryRun.viewerDurationMs??DEFAULT_FLIGHT_VIEWER_MS):null;
+  function openFlightViewer(){
+    setFlightViewerOpen(true);
+    setCampaignMode('progression');
+    setActiveView('missions');
+  }
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch { /* private browser mode */ }
   }, [snapshot]);
-  // Seven in-game days per real minute while this tab is visible. No offline catch-up.
+  // A day ticks every two real minutes while visible; daily cash flows settle each tick.
   useEffect(()=>{
     let previous=Date.now(), accumulated=0;
     const handle=window.setInterval(()=>{
@@ -257,9 +282,10 @@ export default function App() {
       const days=Math.floor((accumulated+1e-7)/GAME_DAY_DURATION_MS);
       if(days>0){
         accumulated-=days*GAME_DAY_DURATION_MS;
-        setSnapshot(old=>({...old,game:{...old.game,day:old.game.day+days}}));
+        setSnapshot(old=>({...old,game:advanceProgramDay(old.game,days)}));
       }
       setSecondsToNextDay(Math.max(1,Math.ceil((GAME_DAY_DURATION_MS-accumulated)/1000)));
+      setFlightNowMs(now);
     },500);
     return ()=>window.clearInterval(handle);
   },[]);
@@ -276,16 +302,25 @@ export default function App() {
 
   function investResearch(id:TechnologyId){
     const tech=TECHNOLOGIES.find(t=>t.id===id);
-    if(!tech||game.devMode||!canResearch(id,game.researchUnlocked,game.cash))return;
+    if(!tech||game.devMode||!canResearch(id,game.researchUnlocked,game.cash,game.researchPoints))return;
     setSnapshot(previous=>{
-      if(!canResearch(id,previous.game.researchUnlocked,previous.game.cash))return previous;
+      if(!canResearch(id,previous.game.researchUnlocked,previous.game.cash,previous.game.researchPoints))return previous;
       return {...previous,game:{...previous.game,
         cash:previous.game.cash-tech.researchUsd,
+        researchPoints:previous.game.researchPoints-researchPointsCost(tech.researchUsd),
         researchSpentUsd:previous.game.researchSpentUsd+tech.researchUsd,
         researchUnlocked:[...previous.game.researchUnlocked,id],
       }};
     });
-    setMessage(tech.label+' researched. New hardware is now selectable in Engineering Lab.');
+    setMessage(tech.label+' researched using cash and '+researchPointsCost(tech.researchUsd)+' RP.');
+  }
+  function investMoonBase(){
+    setSnapshot(previous=>{
+      const g=previous.game,next=MOON_BASE_LEVELS[g.moonBaseLevel];
+      if(!next||!g.storyCompleted.includes('lunar')||g.cash<next.investmentUsd)return previous;
+      return {...previous,game:{...g,cash:g.cash-next.investmentUsd,moonBaseLevel:g.moonBaseLevel+1}};
+    });
+    setMessage('Lunar base investment funded. Gross income and upkeep now settle each game day.');
   }
   function toggleDevMode(){
     setSnapshot(previous=>({...previous,game:{...previous.game,devMode:!previous.game.devMode}}));
