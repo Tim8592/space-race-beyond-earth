@@ -26,10 +26,11 @@ export type MissionOptions={
   reserveBattery:boolean;
   perigeeKm:number;
   eccentricity:number;
+  cubesatUnits:0|1|3;
 };
 export const DEFAULT_MISSION_OPTIONS:MissionOptions={
   booster:'storable',highGain:true,radiationShield:false,
-  reserveBattery:false,perigeeKm:400,eccentricity:.58,
+  reserveBattery:false,perigeeKm:400,eccentricity:.58,cubesatUnits:0,
 };
 export type CampaignDefinition={
   id:string;title:string;summary:string;
@@ -40,6 +41,7 @@ export type CampaignDefinition={
   windowStartDay?:number;windowEndDay?:number;
   ellipticalApogeeKm?:number;
   special?:boolean;
+  requiredCubeSatUnits?:1|3;
 };
 export const STORY_MISSIONS:readonly CampaignDefinition[]=[
   {id:'lunar',title:'Lunar Relay Pathfinder',summary:'Deliver a communications spacecraft beyond Earth orbit and operate a reliable relay. Check Earth-departure energy, electrical reserves and a real manifest mass.',
@@ -58,30 +60,43 @@ export const STORY_MISSIONS:readonly CampaignDefinition[]=[
     requiredScienceKg:100,minElectricW:260,requiresHighGain:true,requiresShield:true,
     acceptedInstruments:['magnetometer','gammaNeutron','irMapper']},
 ];
-const SPECIAL_VARIANTS=[
-  {name:'High-Apogee Communications Test',summary:'A customer urgently needs a high-gain relay in a highly elliptical Earth orbit before the contract expires.',
-    apogeeKm:21000,scienceKg:40,powerW:150,highGain:true,shield:false},
+type SpecialVariant={
+  name:string;summary:string;apogeeKm:number;scienceKg:number;
+  powerW:number;highGain:boolean;shield:boolean;minStage:number;
+  requiredCubeSatUnits?:1|3;
+};
+const SPECIAL_VARIANTS:readonly SpecialVariant[]=[
+  {name:'High-Apogee Communications Test',summary:'A customer needs a high-gain relay in a highly elliptical Earth orbit before the contract expires.',
+    apogeeKm:21000,scienceKg:40,powerW:150,highGain:true,shield:false,minStage:1},
   {name:'Radiation-Belt Survey',summary:'A short-lived research opportunity needs radiation protection and an energetic elliptical orbit.',
-    apogeeKm:29500,scienceKg:65,powerW:170,highGain:false,shield:true},
+    apogeeKm:29500,scienceKg:65,powerW:170,highGain:false,shield:true,minStage:1},
   {name:'Fast Elliptical Relay Deployment',summary:'Deploy extra relay hardware into a high-apogee orbit during a limited bidding period.',
-    apogeeKm:14500,scienceKg:75,powerW:210,highGain:true,shield:false},
-] as const;
-
+    apogeeKm:14500,scienceKg:75,powerW:210,highGain:true,shield:false,minStage:1},
+  {name:'NASA CubeSat 101 · 3U Rideshare',summary:'Manifest a 3U nanosatellite with a compatible dispenser. NASA CubeSat 101 gives the 3U exterior as 10 × 10 × 34 cm. Game avionics, procurement and mission cost remain estimates.',
+    apogeeKm:26000,scienceKg:85,powerW:230,highGain:true,shield:false,minStage:2,requiredCubeSatUnits:3},
+  {name:'Heavy-Payload High-Energy Injection',summary:'A demanding payload requires high-apogee insertion, substantial electric power and a larger launch-capable spacecraft.',
+    apogeeKm:42500,scienceKg:120,powerW:290,highGain:true,shield:true,minStage:3}
+];
 export function nextSpecialOffer(day:number,stageUnlocked:number):CampaignDefinition|null {
   if(!Number.isInteger(day)||day<1||stageUnlocked<1)return null;
   const cycle=Math.max(0,Math.floor((day-8)/32));
-  const index=(Math.imul(cycle+7,1103515245)+12345>>>0)%SPECIAL_VARIANTS.length;
-  const template=SPECIAL_VARIANTS[index];
+  const hash=(Math.imul(cycle+7,1103515245)+12345)>>>0;
+  const available=SPECIAL_VARIANTS.filter(v=>v.minStage<=stageUnlocked);
+  const index=hash%available.length;
+  const template=available[index];
   const start=8+32*cycle;
   const deadline=start+21;
+  const difficulty=Math.max(0,stageUnlocked-1);
   return {id:'special-'+cycle+'-'+index,title:template.name,
     summary:template.summary,location:'Earth · elliptical orbit',target:'ellipse',
     stage:1,special:true,durationDays:4,
     payoutUsd:Math.round((112e6+Math.min(4,stageUnlocked)*18e6+cycle*3e6)/1e6)*1e6,
-    requiredScienceKg:template.scienceKg,minElectricW:template.powerW,
+    requiredScienceKg:template.scienceKg+12*difficulty,
+    minElectricW:template.powerW+25*difficulty,
     requiresHighGain:template.highGain,requiresShield:template.shield,
-    acceptedInstruments:[],ellipticalApogeeKm:template.apogeeKm,
-    windowStartDay:start,windowEndDay:deadline};
+    acceptedInstruments:[],ellipticalApogeeKm:template.apogeeKm+1500*difficulty,
+    windowStartDay:start,windowEndDay:deadline,
+    requiredCubeSatUnits:template.requiredCubeSatUnits};
 }
 export function specialOfferStatus(offer:CampaignDefinition,day:number):'upcoming'|'open'|'expired'{
   if(day<(offer.windowStartDay??0))return 'upcoming';
@@ -200,6 +215,18 @@ export const BOOSTERS={
   storable:{name:'Storable high-energy kick stage',dryKg:42,propKg:530,ispS:345,costUsd:31e6},
   cryogenic:{name:'Large cryogenic injection stage',dryKg:110,propKg:1100,ispS:440,costUsd:78e6},
 } as const;
+/**
+ * Actual historical dimensions and 1U reference mass from NASA CubeSat 101
+ * (2017), §1.1. A 3U mass of 3 × 1.33 kg is a gameplay approximation
+ * extrapolated from NASA's 1U reference, NOT a current dispenser standard.
+ * https://www3.nasa.gov/sites/default/files/atoms/files/nasa_csli_cubesat_101_508.pdf
+ */
+export const NASA_CUBESAT_REFERENCE={
+  1:{label:'1U · 10 × 10 × 11 cm',referenceMaxMassKg:1.33,
+    massKg:1.33,dispenserDryKg:3,dispenserCostUsd:2e6,dispenserPowerW:2},
+  3:{label:'3U · 10 × 10 × 34 cm',referenceMaxMassKg:3*1.33,
+    massKg:3*1.33,dispenserDryKg:8,dispenserCostUsd:6e6,dispenserPowerW:4},
+} as const;
 export const EXTERNAL_MODULES={
   highGain:{name:'Deployable high-gain communication unit',massKg:38,powerW:65,costUsd:9e6},
   radiationShield:{name:'Radiation shielding / dosimeter bus',massKg:95,powerW:12,costUsd:18e6},
@@ -265,8 +292,11 @@ export function reviewCampaignMission(args:{
     ...(o.radiationShield?[EXTERNAL_MODULES.radiationShield]:[]),
     ...(o.reserveBattery?[EXTERNAL_MODULES.reserveBattery]:[]),
   ];
-  const modulesKg=extraModules.reduce((s,m)=>s+m.massKg,0);
-  const modulePower=extraModules.reduce((s,m)=>s+m.powerW,0);
+  const cubesat=o.cubesatUnits?NASA_CUBESAT_REFERENCE[o.cubesatUnits]:null;
+  const cubesatInstalledKg=cubesat?cubesat.massKg+cubesat.dispenserDryKg:0;
+  const cubesatCostUsd=cubesat?.dispenserCostUsd??0;
+  const modulesKg=extraModules.reduce((s,m)=>s+m.massKg,0)+cubesatInstalledKg;
+  const modulePower=extraModules.reduce((s,m)=>s+m.powerW,0)+(cubesat?.dispenserPowerW??0);
   const busWet=system.modeledWetMassKg+modulesKg;
   const hardwareWetKg=busWet+booster.dryKg+booster.propKg;
   const boosterDeltaVms=booster.propKg>0?
@@ -299,7 +329,7 @@ export function reviewCampaignMission(args:{
   const launchCapacityKg=Math.max(0,Math.min(launcher.payloadMassKg,idealPayload,maxTwrPayload));
   const hardware=spacecraftHardwareEconomics(design,args.productionDiscount);
   const costUsd=hardware.afterDiscountUsd+booster.costUsd+
-    extraModules.reduce((s,m)=>s+m.costUsd,0)+
+    extraModules.reduce((s,m)=>s+m.costUsd,0)+cubesatCostUsd+
     (instrument?.costUsd??0)+
     estimateBuildCostUsd(launcher,args.completedWithLauncherEngine??0);
   const needsInstrument=d.acceptedInstruments.length>0;
@@ -337,6 +367,13 @@ export function reviewCampaignMission(args:{
       passed:flightPositive,detail:'An impulsive transfer is not a finite-thrust propagation; conservative game cruise-time gate'},
   ];
   if(d.special){
+    if(d.requiredCubeSatUnits)checks.push({
+      label:'NASA CubeSat 101 · dispenser interface',
+      actual:cubesat?.label??'No CubeSat dispenser selected',
+      needed:NASA_CUBESAT_REFERENCE[d.requiredCubeSatUnits].label,
+      passed:o.cubesatUnits===d.requiredCubeSatUnits,
+      detail:'NASA CubeSat 101 (2017), §1.1: 1U = 10×10×11 cm and ≈1–1.33 kg, 3U = 10×10×34 cm. 3U mass is a game extrapolation; dispenser mass/cost are invented.'
+    });
     checks.push({label:'Special contract deadline',actual:'Day '+day,
       needed:'Days '+d.windowStartDay+'–'+d.windowEndDay,
       passed:specialOfferStatus(d,day)==='open',
