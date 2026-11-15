@@ -545,7 +545,8 @@ test('NASA datasets, source linkage and future mission calendar remain navigable
     await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await expect(page.getByRole('heading',{name:'Future mission opportunities'})).toBeVisible();
-    await expect(page.locator('.campaign-agency-offer')).toHaveCount(4);
+    await expect(page.locator('.campaign-agency-calendar .campaign-agency-offer')).toHaveCount(4);
+    await expect(page.locator('.csa-research-contracts .campaign-agency-offer')).toHaveCount(3);
   });
 });
 
