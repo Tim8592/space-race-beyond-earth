@@ -9,7 +9,8 @@ const qualified={...DEFAULT_SUBSYSTEM_DESIGN,orbitalServiceModuleId:'compute' as
   cellAreaM2:17,installedRadiatorAreaM2:5,solarWingCount:4,eclipseHours:.7};
 const base={kind:'compute' as const,levels:EMPTY_ORBITAL_NETWORKS,
  design:qualified,launcher:INITIAL_VEHICLE,service:'falcon9' as const,
- tier:0,assemblyUnlocked:false,priorServiceFlights:0,canadianSuccesses:0};
+ tier:0,assemblyUnlocked:false,priorServiceFlights:0,canadianSuccesses:0,
+ researched:['orbital-edge-compute','canadian-optical-relay'] as const};
 describe('Real orbit hardware is a prerequisite for new recurring revenues',()=>{
  it('compute board changes dry/wet launch mass and power/heat, not just UI text',()=>{
   const without=sizeSubsystemDesign({...qualified,orbitalServiceModuleId:'none'});
@@ -21,6 +22,13 @@ describe('Real orbit hardware is a prerequisite for new recurring revenues',()=>
   expect(withModule.housekeepingPowerW).toBeGreaterThan(without.housekeepingPowerW);
   expect(withModule.thermalLoadW).toBeGreaterThan(without.thermalLoadW);
   expect(ORBITAL_SERVICE_MODULES.compute.costUsd).toBeGreaterThan(0);
+ });
+ it('orbital service is locked without permanent cash + research-point R&D investment',()=>{
+   const blocked=planNetworkDeployment({...base,researched:[]})!;
+   expect(blocked.feasible).toBe(false);
+   expect(blocked.checks.find(x=>x.name.includes('Infrastructure R&D'))?.passed).toBe(false);
+   expect(planNetworkDeployment({...base,researched:[],devMode:true})!
+     .checks.find(x=>x.name.includes('Infrastructure R&D'))?.passed).toBe(true);
  });
  it('no matching hardware and insufficient radiator or solar generation block deployments',()=>{
   const missing=planNetworkDeployment({...base,design:{...qualified,orbitalServiceModuleId:'none'}})!;
