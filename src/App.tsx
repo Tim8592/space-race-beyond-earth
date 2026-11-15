@@ -661,6 +661,8 @@ export default function App() {
       if(run.launchCount>1){
         return {...previous,game:{...g,
           cash:g.cash-run.spacecraftProcurementUsd,
+          spacecraftBlueprints:markSpacecraftDeployed(g.spacecraftBlueprints,
+            run.title+' · flown build',spacecraftDesign,run.title,g.day),
           activeAssemblyProject:{draft:run,launchesCompleted:0,startedDay:g.day}}};
       }
       return {...previous,game:{...g,
@@ -671,6 +673,8 @@ export default function App() {
         engineBuildCounts:{...g.engineBuildCounts,
           [previous.vehicle.engineId]:
             (g.engineBuildCounts[previous.vehicle.engineId]??0)+1},
+        spacecraftBlueprints:markSpacecraftDeployed(g.spacecraftBlueprints,
+          run.title+' · flown build',spacecraftDesign,run.title,g.day),
         activeStoryRun:{...run,startedAtMs:Date.now(),
           viewerDurationMs:DEFAULT_FLIGHT_VIEWER_MS,
           orekitTrajectoryAu:lastSolvedTransfer?.departureDate===run.departureDate&&
@@ -815,6 +819,8 @@ export default function App() {
       cash:g.cash-costUsd,
       launched:g.launched+1,
       observationLaunchService:g.rocketService,
+      spacecraftBlueprints:markSpacecraftDeployed(g.spacecraftBlueprints,
+        'Earth Observation One · flown',spacecraftDesign,'Earth Observation One',g.day),
       rocketFlightCounts:{...g.rocketFlightCounts,
         [g.rocketService]:(g.rocketFlightCounts[g.rocketService]??0)+1},
       engineBuildCounts:{...previous.game.engineBuildCounts,
