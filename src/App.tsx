@@ -223,8 +223,8 @@ function CheckIcon({ good }: { good: boolean }) {
 }
 function readObservationChoices():ObservationChoices{
   try{
-    const saved=JSON.parse(localStorage.getItem('space-race-observation-one-v1')??'null')
-      as {choices?:Partial<ObservationChoices>}|null;
+    const saved=JSON.parse(localStorage.getItem('space-race-observation-one-v1')??'null') as
+      ({choices?:Partial<ObservationChoices>}|null);
     return {...DEFAULT_OBSERVATION,...saved?.choices};
   }catch{return {...DEFAULT_OBSERVATION};}
 }
