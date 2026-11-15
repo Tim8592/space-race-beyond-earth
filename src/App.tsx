@@ -882,16 +882,35 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <div className="brand"><span className="brand-symbol"><span className="brand-orbit" /></span><div><strong>SPACE RACE</strong><small>BEYOND EARTH</small></div></div>
-          <nav aria-label="Primary" className="game-tabs" role="tablist">
-              {([
-                ['missions','Play Campaign'],['rockets','Rocket Fleet'],['systems','Engineering Lab'],['moon','Moon Base'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],['nasa','NASA Intel'],
-              ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>{
-                  if(id==='systems')setLabObservationChoices(readObservationChoices());
-                  if(id==='research')setResearchFocus('All');
-                  setActiveView(id);
-                }}>{label}</button>)}
-            </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.7</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
+          <nav aria-label="Game branches" className="game-tabs grouped-game-tabs" role="tablist">
+            {([
+              {heading:'01 · CAMPAIGN',hint:'Missions & trajectories',
+                tabs:[['missions','Play Campaign'],['orbits','Orbital Map']]},
+              {heading:'02 · ENGINEERING',hint:'Build reusable spacecraft',
+                tabs:[['systems','Engineering Lab'],['crafts','Spacecraft Library'],['rockets','Rocket Fleet']]},
+              {heading:'03 · INFRASTRUCTURE',hint:'Build revenue-generating assets',
+                tabs:[['infrastructure','Orbital Networks'],['moon','Moon Base']]},
+              {heading:'04 · RESEARCH',hint:'Develop capabilities',
+                tabs:[['research','Research & Roadmap']]},
+              {heading:'05 · INTELLIGENCE',hint:'Science data & archives',
+                tabs:[['nasa','NASA Intel'],['library','Mission Library'],
+                  ['sources','Sources & Data'],['learning','Learn Physics']]},
+            ] as const).map(group=><div key={group.heading} className={'game-nav-group '+
+              (group.tabs.some(([id])=>id===activeView)?'selected':'')}>
+              <div className="game-nav-heading"><strong>{group.heading}</strong>
+                <small>{group.hint}</small></div>
+              <div className="game-nav-links">
+                {group.tabs.map(([id,label])=><button key={id} type="button"
+                  role="tab" aria-selected={activeView===id}
+                  className={activeView===id?'current':''} onClick={()=>{
+                    if(id==='systems')setLabObservationChoices(readObservationChoices());
+                    if(id==='research')setResearchFocus('All');
+                    setActiveView(id);
+                  }}>{label}</button>)}
+              </div>
+            </div>)}
+          </nav>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.9</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
       </header>
 
