@@ -367,24 +367,66 @@ test('RP and operating costs persist, Moon investment income and hidden missions
     await expect(page.getByRole('button',{name:/Select 03 Mars Orbiter/})).toHaveCount(0);
   });
 });
-test('Moon Base dividends fund agency recurring expenses in a saved lunar-success campaign',async({page})=>{
+test('Moon Base income requires paid transport, a lunar landing and separate construction investment',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
     await page.evaluate(()=>{
       const key='space-race-v01-save',saved=JSON.parse(localStorage.getItem(key)!);
       saved.game.storyCompleted=['observation','lunar'];
-      saved.game.cash=350000000;
+      saved.game.cash=600e6;
+      saved.game.rocketService='falcon9';
       localStorage.setItem(key,JSON.stringify(saved));
     });
     await page.reload();
     await page.getByRole('tab',{name:'Moon Base'}).click();
-    await page.getByRole('button',{name:/Invest in Lunar Survey Outpost/}).click();
+    await expect(page.getByRole('button',{name:/Deliver lunar hardware before constructing/})).toBeDisabled();
+    await expect(page.locator('.moon-cargo-manifest')).toContainText('Transfer + lunar descent propellant');
+    await expect(page.locator('.moon-cargo-manifest')).toContainText('Falcon 9');
+    await expect(page.locator('.agency-finance-bar')).toContainText('+$0M/d');
+    await page.getByRole('button',{name:/Dispatch 1 rocket launch/}).click();
+    await expect(page.getByRole('button',{name:/Cargo in transit · ETA/})).toBeDisabled();
+    await expect(page.locator('.agency-finance-bar')).toContainText('+$0M/d');
+    await page.evaluate(()=>{
+      const key='space-race-v01-save',saved=JSON.parse(localStorage.getItem(key)!);
+      saved.game.activeMoonCargoRun.startedAtMs=Date.now()-120000;
+      localStorage.setItem(key,JSON.stringify(saved));
+    });
+    await page.reload();
+    await page.getByRole('tab',{name:'Moon Base'}).click();
+    await page.getByRole('button',{name:/Confirm lunar landing & cargo receipt/}).click();
+    await expect(page.getByRole('button',{name:/Construct Lunar Survey Outpost/})).toBeEnabled();
+    await expect(page.locator('.agency-finance-bar')).toContainText('+$0M/d');
+    await page.getByRole('button',{name:/Construct Lunar Survey Outpost/}).click();
     await expect(page.getByText('1 / 3')).toBeVisible();
-    await expect(page.locator('.agency-finance-bar')).toContainText('MOON REVENUE');
-    await expect(page.locator('.agency-finance-bar')).toContainText('+');
+    await expect(page.locator('.agency-finance-bar')).toContainText('+$1.5M/d');
     await page.reload();
     await page.getByRole('tab',{name:'Moon Base'}).click();
     await expect(page.getByText('1 / 3')).toBeVisible();
+    await expect(page.locator('.moon-cargo-manifest')).toContainText('Landing deck and guidance beacons');
+  });
+});
+test('Rocket Fleet prices payload by launched mass and requires orbital assembly for large spacecraft',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Rocket Fleet'}).click();
+    await expect(page.getByRole('heading',{name:'Rocket Fleet & Orbital Logistics'})).toBeVisible();
+    await expect(page.locator('.rocket-fleet-grid')).toContainText('Starship');
+    await expect(page.locator('.rocket-fleet-option.locked')).toHaveCount(2);
+    await page.getByRole('button',{name:/Commission orbital assembly facility/}).click();
+    await expect(page.getByRole('button',{name:/Orbital assembly operational/})).toBeDisabled();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    await page.getByRole('tab',{name:'Science payload'}).click();
+    await page.locator('label.sys-field').filter({hasText:'Additional instruments / cargo mass'})
+      .locator('input').fill('2500');
+    await page.getByRole('tab',{name:'Thermal'}).click();
+    await page.locator('label.sys-field').filter({hasText:'Installed radiator area'}).locator('input').fill('5');
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.locator('.campaign-logistics-breakdown')).toContainText('Rocket 2:');
+    await expect(page.locator('.campaign-logistics-breakdown')).toContainText('Docking/assembly joins');
   });
 });
 test('NASA datasets, source linkage and future mission calendar remain navigable',async({page})=>{
@@ -473,6 +515,9 @@ test('A configured lunar milestone launches, survives reload and pays exactly on
     await page.getByRole('tab',{name:'Engineering Lab'}).click();
     await page.getByRole('tab',{name:'Thermal'}).click();
     await page.locator('label.sys-field').filter({hasText:'Installed radiator area'}).locator('input').fill('5');
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:'Rocket Fleet'}).click();
+    await page.locator('.rocket-fleet-option').filter({hasText:'Falcon 9 · dedicated'}).click();
     await page.getByRole('tab',{name:'Play Campaign'}).click();
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await page.getByRole('combobox',{name:'External kick stage'}).selectOption('cryogenic');
