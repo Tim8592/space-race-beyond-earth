@@ -7,7 +7,7 @@ type Props={
  onSave:(name:string,description:string)=>void;onNew:()=>void;
  onLoad:(id:string)=>void;onDuplicate:(id:string)=>void;
  onRename:(id:string,name:string)=>void;onRemove:(id:string)=>void;
- onOpenEngineering:()=>void;onOpenCampaign:()=>void;
+ onOpenEngineering:()=>void;onUseInMission:(id:string)=>void;
 };
 const fmt=(n:number,unit:string,digits=1)=>Number.isFinite(n)?
  n.toLocaleString('en-US',{maximumFractionDigits:digits})+' '+unit:'—';
@@ -101,7 +101,7 @@ export default function SpacecraftLibrary(p:Props){
        <button className="secondary-button" type="button"
          onClick={()=>p.onDuplicate(selected.id)}>Duplicate independent workbook ↗</button>
        <button className="secondary-button" type="button"
-         onClick={p.onOpenCampaign}>Use in current mission ↗</button>
+         onClick={()=>p.onUseInMission(selected.id)}>Use this saved spacecraft in mission ↗</button>
      </div>
      <div className="spacecraft-library-maintenance">
        <label>Rename saved revision <input type="text" maxLength={80}
