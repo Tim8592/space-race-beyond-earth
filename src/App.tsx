@@ -431,6 +431,63 @@ export default function App() {
         orbitalAssemblyUnlocked:true}};
     });
   }
+  function dispatchNetwork(kind:OrbitalNetworkKind){
+    setSnapshot(previous=>{
+      const g=previous.game;
+      if(!g.storyCompleted.includes('observation')&&!g.devMode)return previous;
+      if(g.activeStoryRun||g.activeMoonCargoRun||g.activeAssemblyProject||g.activeNetworkRun)
+        return previous;
+      const plan=planNetworkDeployment({kind,levels:g.networkLevels,
+        design:spacecraftDesign,launcher:previous.vehicle,
+        service:g.rocketService,tier:g.rocketProgramLevel,
+        assemblyUnlocked:g.orbitalAssemblyUnlocked,
+        priorServiceFlights:g.rocketFlightCounts[g.rocketService]??0,
+        canadianSuccesses:g.canadianMissionSuccesses,
+        productionDiscount:researchDiscount(g.researchUnlocked,g.devMode)});
+      if(!plan?.feasible||g.cash<plan.totalCostUsd)return previous;
+      const run:NetworkDeploymentRun={
+        id:'orbital-network-'+kind+'-'+plan.stage.level,
+        kind,stageIndex:g.networkLevels[kind],title:plan.stage.name,
+        launchedDay:g.day,departureDate:dateForGameDay(g.day),
+        startedAtMs:Date.now(),viewerDurationMs:DEFAULT_FLIGHT_VIEWER_MS,
+        durationDays:6,target:'ellipse',route:{flightDays:6},
+        costUsd:plan.totalCostUsd,launchCount:plan.manifest.flightsRequired,
+        launchService:g.rocketService,satelliteCount:plan.stage.additionalSatellites,
+        totalWetKg:plan.totalWetKg,moduleId:kind,
+      };
+      return {...previous,game:{...g,
+        cash:g.cash-plan.totalCostUsd,activeNetworkRun:run,
+        spacecraftBlueprints:markSpacecraftDeployed(g.spacecraftBlueprints,
+          plan.stage.name+' · '+kind,spacecraftDesign,plan.stage.name,g.day),
+        launched:g.launched+plan.manifest.flightsRequired,
+        rocketFlightCounts:{...g.rocketFlightCounts,
+          [g.rocketService]:(g.rocketFlightCounts[g.rocketService]??0)+
+            plan.manifest.flightsRequired}}};
+    });
+    setFlightNowMs(Date.now());setActiveView('infrastructure');
+    setMessage('Satellites, ground stations, assembly and launches charged. Revenue starts after orbital commissioning.');
+  }
+  function finishNetwork(){
+    setSnapshot(previous=>{
+      const g=previous.game,run=g.activeNetworkRun;
+      if(!run||!flightProgress(run.startedAtMs,Date.now(),run.viewerDurationMs).ready||
+        g.networkLevels[run.kind]!==run.stageIndex)return previous;
+      const advanced=advanceProgramDay(g,run.durationDays);
+      const event:HistoryItem={id:Date.now(),day:run.launchedDay,
+        contract:run.title+' · operational infrastructure',
+        craft:run.satelliteCount+' '+run.kind+' service satellites',
+        cost:run.costUsd,payout:0,deliveredKg:run.totalWetKg,success:true};
+      return {...previous,game:{...advanced,activeNetworkRun:null,
+        networkLevels:{...g.networkLevels,[run.kind]:run.stageIndex+1},
+        researchPoints:advanced.researchPoints+3+
+          (run.launchService==='custom'?CANADIAN_RESEARCH_BONUS_RP:0),
+        canadianMissionSuccesses:g.canadianMissionSuccesses+
+          (run.launchService==='custom'?1:0),
+        deliveredKg:g.deliveredKg+run.totalWetKg,completed:g.completed+1,
+        history:[event,...g.history].slice(0,12)}};
+    });
+    setMessage('Orbital network commissioned. Subscription revenue and daily operating costs now accrue with the game clock.');
+  }
   function startMoonCargo(){
     setSnapshot(previous=>{
       const g=previous.game,stage=g.moonBaseLevel;
