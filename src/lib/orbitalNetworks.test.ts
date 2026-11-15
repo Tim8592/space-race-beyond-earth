@@ -51,16 +51,25 @@ describe('Real orbit hardware is a prerequisite for new recurring revenues',()=>
   expect(plan.simplePaybackDays).toBeGreaterThan(30);
   expect(plan.simplePaybackDays).toBeLessThan(1000);
  });
- it('multi-satellite Canadian network requires more hardware, more launches and possibly orbital docking',()=>{
+ it('independent Canadian network nodes must fit whole on rockets and do not require docking',()=>{
   const relay={...qualified,orbitalServiceModuleId:'relay' as const};
-  const plan=planNetworkDeployment({...base,kind:'relay',design:relay,service:'custom'})!;
-  expect(plan.feasible).toBe(false);
-  expect(plan.manifest.flightsRequired).toBeGreaterThan(1);
-  expect(plan.manifest.issue).toContain('Orbital assembly');
-  const unlocked=planNetworkDeployment({...base,kind:'relay',design:relay,service:'custom',assemblyUnlocked:true})!;
-  expect(unlocked.feasible).toBe(true);
-  expect(unlocked.manifest.flights.every(x=>x.massKg<=x.capacityKg+1e-6)).toBe(true);
-  expect(unlocked.totalCostUsd).toBeGreaterThan(unlocked.hardwareUsd);
+  const tooSmall=planNetworkDeployment({...base,kind:'relay',design:relay,service:'custom'})!;
+  expect(tooSmall.feasible).toBe(false);
+  expect(tooSmall.manifest.issue).toContain('One complete satellite exceeds');
+  const launchable=planNetworkDeployment({...base,kind:'relay',design:relay,
+    service:'custom',tier:1,assemblyUnlocked:false})!;
+  expect(launchable.feasible).toBe(true);
+  expect(launchable.manifest.flightsRequired).toBeGreaterThanOrEqual(1);
+  expect(launchable.manifest.assemblyCostUsd).toBe(0);
+  expect(launchable.manifest.assemblyHardwareKg).toBe(0);
+  expect(launchable.manifest.flights.every(x=>x.massKg<=x.capacityKg+1e-6)).toBe(true);
+  expect(launchable.totalCostUsd).toBeGreaterThan(launchable.hardwareUsd);
+  const nextPhase=planNetworkDeployment({...base,kind:'relay',
+    levels:{compute:0,relay:2},design:relay,service:'custom',tier:1})!;
+  expect(nextPhase.manifest.flightsRequired).toBeGreaterThan(1);
+  expect(nextPhase.manifest.assemblyCostUsd).toBe(0);
+  expect(nextPhase.manifest.flights.reduce((sum,x)=>sum+x.massKg,0))
+    .toBeCloseTo(nextPhase.totalWetKg,4);
  });
  it('two networks activate stage revenue only after completed commissioning',()=>{
   const none=networkEconomics(EMPTY_ORBITAL_NETWORKS);
