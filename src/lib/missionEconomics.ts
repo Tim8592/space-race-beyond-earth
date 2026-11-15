@@ -1,6 +1,7 @@
 import {TECHNOLOGIES,formatMillions} from './technologyTree';
 import type {SubsystemDesign} from './subsystemDesign';
 import {extraFrameMassKg} from './structureSizing';
+import {ORBITAL_SERVICE_MODULES} from './orbitalServiceModules';
 
 const BASELINE_ENGINE_PRICES:Record<string,number>={
   'mono-reference':350000,'busek-bht100':750000,
@@ -34,6 +35,7 @@ export function spacecraftHardwareEconomics(design:SubsystemDesign,discountFract
       design.powerSourceId==='krusty'||design.powerSourceId==='reactor-25kwe'?
       design.reactorRadiatorAreaM2*900_000+(design.reactorRadiatorAreaM2>0?5_000_000:0):0},
     {name:'Generic bus, ADCS and power distribution',costUsd:1_400_000},
+    {name:'Orbital compute / relay service payload',costUsd:ORBITAL_SERVICE_MODULES[design.orbitalServiceModuleId].costUsd},
     {name:'Expanded structural bus and additional mounts',costUsd:extraFrameMassKg(design.structureScale)*85_000},
   ];
   const beforeDiscountUsd=items.reduce((sum,item)=>sum+item.costUsd,0);
