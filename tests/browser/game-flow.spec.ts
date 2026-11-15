@@ -279,7 +279,7 @@ test('Earth observation success unlocks the lunar mission and new campaign scree
   });
 });
 
-test('Special elliptical offers follow real-time in-game days rather than a skip button',async({page})=>{
+test('Continuous campaign clock is slower and replaces manual day skip',async({page})=>{
   await page.clock.install({time:new Date('2026-11-14T12:00:00Z')});
   await expectNoErrors(page,async()=>{
     await page.goto('/');
@@ -289,16 +289,15 @@ test('Special elliptical offers follow real-time in-game days rather than a skip
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await expect(page.getByRole('button',{name:/Advance 7 days/})).toHaveCount(0);
     await expect(page.locator('.campaign-special-offer')).toBeVisible();
-    await page.clock.runFor(60_000); // exactly seven simulated days
-    await expect(page.locator('.campaign-special-offer')).toContainText('WINDOW OPEN');
+    await expect(page.locator('.campaign-live-clock')).toContainText('1 game day / 2 minutes');
+    await page.clock.runFor(120_000);
+    await expect(page.locator('.campaign-live-clock')).toContainText('2026-11-15');
     await page.locator('.campaign-special-offer').click();
     await expect(page.locator('.campaign-orbital-inputs')).toBeVisible();
     const apogeeCheck=page.locator('.campaign-system-check').filter({hasText:'Elliptical target apogee'});
     const initial=await apogeeCheck.textContent();
     await page.getByRole('slider',{name:'Mission eccentricity'}).fill('0.78');
     await expect(apogeeCheck).not.toHaveText(initial??'');
-    await page.clock.runFor(200_000); // > 21 game days, before the next offer cycle
-    await expect(page.locator('.campaign-special-offer')).toContainText('WINDOW EXPIRED');
   });
 });
 
@@ -312,6 +311,54 @@ test('NASA datasets, source linkage and future mission calendar remain navigable
     await page.getByRole('tab',{name:/Explore Further/}).click();
     await expect(page.getByRole('heading',{name:'Future mission opportunities'})).toBeVisible();
     await expect(page.locator('.campaign-agency-offer')).toHaveCount(4);
+  });
+});
+
+test('Mission map zoom, selection and engineering lab bottlenecks stay synchronized',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.getByRole('heading',{name:'Orbital campaign map'})).toBeVisible();
+    await page.getByRole('button',{name:'Zoom in solar system map'}).click();
+    await page.getByRole('button',{name:'Select 03 Mars Orbiter'}).click();
+    await expect(page.locator('.campaign-map-current')).toContainText('Mars Orbiter');
+    await page.getByRole('button',{name:/Engineering Lab \/ installed equipment/}).click();
+    await expect(page.locator('.sys-mission-brief')).toContainText('Mars Orbiter');
+    await expect(page.locator('.sys-mission-bottlenecks')).toBeVisible();
+    await page.getByRole('tab',{name:'Thermal'}).click();
+    await expect(page.getByRole('heading',{name:'Thermal hardware effect'})).toBeVisible();
+    await expect(page.locator('.sys-impact-summary')).toContainText('Installed bus + reactor cooling mass');
+    await page.locator('.sys-mission-brief').getByRole('button',{name:/Return to selected mission/}).click();
+    await expect(page.locator('.campaign-map-current')).toContainText('Mars Orbiter');
+  });
+});
+
+test('Missed NASA game window becomes a playable follow-on rather than blocking later missions',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.evaluate(()=>{
+      const key='space-race-v01-save';
+      const raw=localStorage.getItem(key);
+      if(!raw)throw new Error('Missing campaign save');
+      const snapshot=JSON.parse(raw);
+      snapshot.game.day=100;
+      localStorage.setItem(key,JSON.stringify(snapshot));
+    });
+    await page.reload();
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    const agency=page.locator('.campaign-agency-offer').first();
+    await expect(agency).toContainText('FOLLOW-ON AVAILABLE');
+    await agency.click();
+    await expect(page.locator('.campaign-workshop-controls')).toContainText('Follow-on');
+    await expect(page.locator('.campaign-time-tag')).toContainText('remains available');
+    await page.locator('.campaign-stage-card').filter({hasText:'Mars Orbiter'}).click();
+    await expect(page.getByRole('heading',{name:'Mars Orbiter'})).toBeVisible();
   });
 });
 
