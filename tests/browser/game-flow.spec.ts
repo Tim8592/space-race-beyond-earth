@@ -582,6 +582,74 @@ test('CSA verified source data inspires actual optical, radar and auroral scienc
     await expect(page.locator('.campaign-workshop-controls')).toContainText('Canadian Optical Asteroid Survey');
   });
 });
+test('Five organized branches expose reusable craft library, real satellite deployments and physics forecast',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await expect(page.locator('.game-nav-group')).toHaveCount(5);
+    await expect(page.locator('.game-nav-heading')).toContainText([
+      'CAMPAIGN','ENGINEERING','INFRASTRUCTURE','RESEARCH','INTELLIGENCE']);
+    await page.getByRole('tab',{name:'Spacecraft Library'}).click();
+    await expect(page.getByRole('heading',{name:'Spacecraft Blueprint Library'})).toBeVisible();
+    await page.getByRole('button',{name:/Save independent snapshot/}).click();
+    await expect(page.locator('.spacecraft-library-card')).toHaveCount(1);
+    await page.locator('.spacecraft-library-card').first().click();
+    await page.getByRole('button',{name:/Duplicate independent workbook/}).click();
+    await page.getByRole('tab',{name:'Spacecraft Library'}).click();
+    await expect(page.locator('.spacecraft-library-card')).toHaveCount(2);
+    await expect(page.locator('.spacecraft-library-list')).toContainText('Copy');
+    await page.reload();
+    await page.getByRole('tab',{name:'Spacecraft Library'}).click();
+    await expect(page.locator('.spacecraft-library-card')).toHaveCount(2);
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await page.locator('.campaign-stage-card').filter({hasText:'Mars Orbiter'}).click();
+    await expect(page.locator('.flight-window-forecast')).toBeVisible();
+    await expect(page.locator('.flight-window-months button')).toHaveCount(32);
+    await expect(page.locator('.flight-window-forecast')).toContainText('LOWEST SAMPLED DATE');
+    await expect(page.locator('.flight-window-forecast')).toContainText('TREASURY IF WAITING');
+  });
+});
+test('Actual compute node needs module/power/radiator/rocket, and only earns daily revenue after commissioning',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Orbital Networks'}).click();
+    await expect(page.locator('.orbital-business-stats')).toContainText('$0M');
+    await expect(page.locator('.orbital-checks')).toContainText('Correct installed orbital-service module');
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    await page.getByRole('tab',{name:'Scientific payload'}).click();
+    await page.getByRole('combobox',{name:'On-orbit service payload'}).selectOption('compute');
+    await page.getByRole('tab',{name:'Electrical power'}).click();
+    await page.locator('label.sys-field').filter({hasText:'Active solar cell area'})
+      .locator('input').fill('17');
+    await page.getByRole('tab',{name:'Thermal'}).click();
+    await page.locator('label.sys-field').filter({hasText:'Installed radiator area'})
+      .locator('input').fill('5');
+    await page.getByRole('tab',{name:'Rocket Fleet'}).click();
+    await page.locator('.rocket-fleet-option').filter({hasText:'Falcon 9 · dedicated'}).click();
+    await page.getByRole('tab',{name:'Orbital Networks'}).click();
+    await expect(page.locator('.orbital-checks .blocked')).toHaveCount(0);
+    const fund=page.getByRole('button',{name:/Fund, launch and deploy 1 spacecraft/});
+    await expect(fund).toBeEnabled();
+    await fund.click();
+    await expect(page.locator('.network-active-deployment')).toBeVisible();
+    await expect(page.locator('.orbital-business-stats')).toContainText('$0M');
+    await page.evaluate(()=>{
+      const key='space-race-v01-save',snapshot=JSON.parse(localStorage.getItem(key)!);
+      snapshot.game.activeNetworkRun.startedAtMs=Date.now()-120_000;
+      localStorage.setItem(key,JSON.stringify(snapshot));
+    });
+    await page.reload();
+    await page.getByRole('tab',{name:'Orbital Networks'}).click();
+    await page.getByRole('button',{name:/Commission network and start income/}).click();
+    await expect(page.locator('.orbital-business-stats')).toContainText('$0.55M');
+    await expect(page.locator('.orbital-business-stats')).toContainText('1');
+    await expect(page.locator('.network-active-deployment')).toHaveCount(0);
+  });
+});
 test('Mission map zoom, selection and engineering lab bottlenecks stay synchronized',async({page})=>{
   await expectNoErrors(page,async()=>{
     await page.goto('/');
