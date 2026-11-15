@@ -1,6 +1,6 @@
 import type {NASAMissionSnapshot,NearEarthApproach,WeatherOperationalBrief}
   from './lib/nasaMissionIntelligence';
-import {nasaIntelCacheIsFresh} from './lib/nasaMissionIntelligence';
+import {nasaIntelCacheIsFresh,makeNeoObservationOffer} from './lib/nasaMissionIntelligence';
 type Props={
  snapshot:NASAMissionSnapshot|null;loading:boolean;error:string|null;
  gameDate:string;gameDay:number;brief:WeatherOperationalBrief;
@@ -111,6 +111,12 @@ export default function NASAMissionIntelligence({
              <span>MISS DISTANCE <b>{fmt(neo.missDistanceKm)} km</b></span>
              <span>SIZE EST. <b>{fmt(neo.diameterM)} m</b></span>
              <span>RELATIVE SPEED <b>{fmt(neo.velocityKmS,1)} km/s</b></span>
+           </div>
+           <div className="nasa-asteroid-scenario">
+             <small>FICTIONAL OBSERVATION CONTRACT (NASA-SCALED)</small>
+             <strong>Reward ${fmt(makeNeoObservationOffer(neo,gameDay).mission.payoutUsd/1e6)}M</strong>
+             <span>Required science payload {makeNeoObservationOffer(neo,gameDay).mission.requiredScienceKg} kg ·
+               minimum electrical power {makeNeoObservationOffer(neo,gameDay).mission.minElectricW} W</span>
            </div>
            {neo.potentiallyHazardous&&<small className="nasa-hazard-note">NASA potentially hazardous classification is an orbital-screening category, NOT an imminent impact alert.</small>}
            <div className="nasa-asteroid-actions">
