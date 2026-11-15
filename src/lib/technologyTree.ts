@@ -102,6 +102,7 @@ export const POWER_RESEARCH:Readonly<Record<string,TechnologyId|undefined>>={
 export const INSTRUMENT_RESEARCH:Readonly<Record<string,TechnologyId|undefined>>={
   magnetometer:'deep-space-science',irMapper:'deep-space-science',
   gammaNeutron:'deep-space-science',lidar:'deep-space-science',
+  neoTelescope:'precision-imaging',auroralImager:'precision-imaging',sarImager:'precision-imaging',
 };
 export function hasTechnology(id:TechnologyId|undefined,unlocked:readonly TechnologyId[],devMode:boolean):boolean {
   return !id||devMode||unlocked.includes(id);
