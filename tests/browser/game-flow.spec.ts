@@ -317,3 +317,33 @@ test('Dev Mode opens later planetary missions and orbital solver entry points',a
     await expect(page.getByRole('button',{name:/Find lowest Δv/})).toBeVisible();
   });
 });
+
+test('A configured lunar milestone launches, survives reload and pays exactly one contract reward',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.goto('/');
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await page.getByRole('button',{name:'DEV MODE: OFF'}).click();
+    await page.getByRole('tab',{name:'Engineering Lab'}).click();
+    await page.getByRole('tab',{name:'Thermal'}).click();
+    await page.locator('label.sys-field').filter({hasText:'Installed radiator area'}).locator('input').fill('5');
+    await page.getByRole('tab',{name:'Play Campaign'}).click();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await page.getByRole('combobox',{name:'External kick stage'}).selectOption('cryogenic');
+    const go=page.getByRole('button',{name:/Accept contract and launch/});
+    await expect(go).toBeEnabled();
+    await go.click();
+    await expect(page.getByRole('heading',{name:'Lunar Relay Pathfinder'})).toBeVisible();
+    await expect(page.getByText('FLIGHT OPERATIONS / CONTRACT IN PROGRESS')).toBeVisible();
+    await page.reload();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.getByText('FLIGHT OPERATIONS / CONTRACT IN PROGRESS')).toBeVisible();
+    await page.getByRole('button',{name:/Complete flight and mission debrief/}).click();
+    await expect(page.getByText(/unlocked the next stage/)).toBeVisible();
+    await expect(page.getByText('2 / 4')).toBeVisible();
+    await page.locator('.campaign-stage-card').filter({hasText:'Lunar Relay Pathfinder'}).click();
+    await expect(page.getByText(/reward cannot be claimed twice/)).toBeVisible();
+    await page.reload();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.locator('.campaign-stage-card').filter({hasText:'Lunar Relay Pathfinder'})).toContainText('COMPLETED');
+  });
+});
