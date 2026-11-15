@@ -1,11 +1,13 @@
 import type {NASAMissionSnapshot,NearEarthApproach,WeatherOperationalBrief}
   from './lib/nasaMissionIntelligence';
 import {nasaIntelCacheIsFresh,makeNeoObservationOffer} from './lib/nasaMissionIntelligence';
+import {CSA_DATA_PROGRAMS} from './lib/csaScienceMissions';
 type Props={
  snapshot:NASAMissionSnapshot|null;loading:boolean;error:string|null;
  gameDate:string;gameDay:number;brief:WeatherOperationalBrief;
  selectedNeoId:string|null;onRefresh:()=>void;
  onSelectNeo:(neo:NearEarthApproach)=>void;
+  onSelectCSAMission:(missionId:string)=>void;
 };
 const fmt=(n:number,decimals=0)=>n.toLocaleString('en-US',{maximumFractionDigits:decimals});
 const dateTime=(s:string)=>{
@@ -14,6 +16,7 @@ const dateTime=(s:string)=>{
 };
 export default function NASAMissionIntelligence({
  snapshot,loading,error,gameDate,gameDay,brief,selectedNeoId,onRefresh,onSelectNeo,
+  onSelectCSAMission,
 }:Props){
  const fresh=nasaIntelCacheIsFresh(snapshot);
  const weather=snapshot?.weather.slice(0,12)??[];
@@ -130,7 +133,50 @@ export default function NASAMissionIntelligence({
        </div>
      </div>
    </div>
-   <p className="research-legal">NASA source APIs:
+   <div className="panel csa-data-programs" aria-label="Canadian Space Agency GitHub mission and science dataset opportunities">
+      <div className="eyebrow">CANADIAN SPACE AGENCY / VERIFIED PUBLIC GITHUB SOURCE REPOS</div>
+      <h3>Canadian science-data missions</h3>
+      <p>Real CSA open-source tutorials demonstrate optical FITS image analysis,
+        auroral imaging and synthetic-aperture radar datasets. These official
+        repositories now inspire <strong>three optional playable spacecraft missions</strong>
+        with distinct physical payload, power, heat and launch requirements.
+        The hardware figures and mission rewards are original game estimates;
+        imagery is not copied or claimed to be live observations.</p>
+      <div className="csa-data-grid">
+        {CSA_DATA_PROGRAMS.map(program=><article key={program.id} className="csa-data-card">
+          <div className="eyebrow">{program.realProgram.toUpperCase()}</div>
+          <h4>{program.mission.title}</h4>
+          <p>{program.datasetDescription}</p>
+          <div className="csa-data-facts">
+            <span>DATA TYPE <b>{program.datasetFormat}</b></span>
+            <span>REQUIRED INSTRUMENT <b>{program.mission.acceptedInstruments.join(', ')}</b></span>
+            <span>GAME POWER FLOOR <b>{program.mission.minElectricW} W</b></span>
+            <span>FICTIONAL REWARD <b>${fmt(program.mission.payoutUsd/1e6)}M</b></span>
+          </div>
+          <small>{program.dataAccess}</small>
+          <div className="csa-data-actions">
+            <a href={program.sourceUrl} target="_blank" rel="noreferrer">CSA GitHub tutorial ↗</a>
+            <a href={program.technicalDataUrl} target="_blank" rel="noreferrer">Original data service ↗</a>
+          </div>
+          <button className="launch-button" type="button"
+            onClick={()=>onSelectCSAMission(program.mission.id)}>
+            Plan this Canadian data-inspired mission ↗
+          </button>
+        </article>)}
+      </div>
+    </div>
+    <div className="panel nasa-open-source-physics">
+      <div className="eyebrow">NASA OFFICIAL GITHUB / SCIENTIFIC SOFTWARE REFERENCES</div>
+      <h3>Mission dynamics libraries worth exploring</h3>
+      <p><a href="https://github.com/nasa/mission-viz" target="_blank" rel="noreferrer">NASA mission-viz ↗</a> demonstrates mathematical orbital visualizations.
+        <a href="https://github.com/NASA/GMAT" target="_blank" rel="noreferrer"> NASA GMAT ↗</a>
+        provides a much more comprehensive mission-design and trajectory platform.
+        <a href="https://github.com/nasa/jeod" target="_blank" rel="noreferrer"> NASA JEOD ↗</a>
+        is a sophisticated dynamics framework built for NASA Trick.
+        None is directly running in this browser. The Flight Directorate
+        uses the smaller existing Orekit service and explicit two-body physics.</p>
+    </div>
+    <p className="research-legal">NASA source APIs:
       <a href="https://api.nasa.gov/" target="_blank" rel="noreferrer">NASA Open APIs</a>,
       <a href="https://ccmc.gsfc.nasa.gov/tools/DONKI/" target="_blank" rel="noreferrer"> NASA CCMC DONKI</a>,
       and <a href="https://api.nasa.gov/#browseAPI" target="_blank" rel="noreferrer"> JPL NeoWs</a>.
