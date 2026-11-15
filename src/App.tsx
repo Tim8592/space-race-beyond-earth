@@ -4,6 +4,9 @@ import type { SubsystemDesign } from './lib/subsystemDesign';
 import OrbitalLab from './OrbitalLab';
 import MissionLibrary from './MissionLibrary';
 import LearningLab from './LearningLab';
+import ResearchLab from './ResearchLab';
+import {canResearch,TECHNOLOGIES, type TechnologyId,hasTechnology,
+  THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,researchDiscount} from './lib/technologyTree';
 import FieldHelp from './components/FieldHelp';
 import { descriptionFor } from './lib/fieldHelp';
 import { useEffect, useMemo, useState } from 'react';
@@ -91,6 +94,9 @@ type Game = {
   engineBuildCounts: Record<EngineId, number>;
   history: HistoryItem[];
   blueprints: Vehicle[];
+  researchUnlocked: TechnologyId[];
+  researchSpentUsd: number;
+  devMode: boolean;
 };
 
 const DEFAULT_GAME: Game = {
@@ -103,6 +109,9 @@ const DEFAULT_GAME: Game = {
   engineBuildCounts: { kerolox: 0, methalox: 0, hydrolox: 0 },
   history: [],
   blueprints: [],
+  researchUnlocked: [],
+  researchSpentUsd: 0,
+  devMode: false,
 };
 
 type Snapshot = { game: Game; vehicle: Vehicle; missionId: MissionId };
@@ -120,7 +129,13 @@ function loadSave(): Snapshot {
       !ENGINES[parsed.vehicle.engineId] ||
       !CONTRACTS.some((mission) => mission.id === parsed.missionId)
     ) return fallback;
-    return parsed;
+    return {...parsed,game:{
+      ...DEFAULT_GAME,...parsed.game,
+      researchUnlocked:Array.isArray(parsed.game.researchUnlocked)
+        ?parsed.game.researchUnlocked.filter(id=>TECHNOLOGIES.some(t=>t.id===id)):[],
+      researchSpentUsd:Number.isFinite(parsed.game.researchSpentUsd)?parsed.game.researchSpentUsd:0,
+      devMode:parsed.game.devMode===true,
+    }};
   } catch {
     return fallback;
   }
@@ -159,6 +174,8 @@ function Field({
 export default function App() {
   const [snapshot, setSnapshot] = useState<Snapshot>(loadSave);
   const { game, vehicle, missionId } = snapshot;
+  const effectiveUnlocks=game.researchUnlocked;
+  const missionTechnologyDiscount=researchDiscount(effectiveUnlocks,game.devMode);
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'>('missions');
@@ -184,6 +201,29 @@ export default function App() {
     try { localStorage.setItem('space-race-systems-lab-v1',JSON.stringify(spacecraftDesign)); }
     catch { /* optional browser persistence */ }
   },[spacecraftDesign]);
+
+  function investResearch(id:TechnologyId){
+    const tech=TECHNOLOGIES.find(t=>t.id===id);
+    if(!tech||game.devMode||!canResearch(id,game.researchUnlocked,game.cash))return;
+    setSnapshot(previous=>{
+      if(!canResearch(id,previous.game.researchUnlocked,previous.game.cash))return previous;
+      return {...previous,game:{...previous.game,
+        cash:previous.game.cash-tech.researchUsd,
+        researchSpentUsd:previous.game.researchSpentUsd+tech.researchUsd,
+        researchUnlocked:[...previous.game.researchUnlocked,id],
+      }};
+    });
+    setMessage(tech.label+' researched. New hardware is now selectable in Engineering Lab.');
+  }
+  function toggleDevMode(){
+    setSnapshot(previous=>({...previous,game:{...previous.game,devMode:!previous.game.devMode}}));
+  }
+  const lockedLabParts=[
+    THRUSTER_RESEARCH[spacecraftDesign.thrusterId],
+    THRUSTER_RESEARCH[spacecraftDesign.secondaryThrusterId],
+    POWER_RESEARCH[spacecraftDesign.powerSourceId],
+    INSTRUMENT_RESEARCH[spacecraftDesign.payloadInstrumentId],
+  ].filter((id):id is TechnologyId=>!!id&&!hasTechnology(id,game.researchUnlocked,game.devMode));
 
   function updateVehicle(patch: Partial<Vehicle>) {
     setSnapshot((previous) => ({ ...previous, vehicle: { ...previous.vehicle, ...patch } }));
@@ -286,7 +326,7 @@ export default function App() {
   }
   function passWeek() {
     setSnapshot((previous) => ({ ...previous, game: { ...previous.game, day: previous.game.day + 7 } }));
-    setMessage('Seven simulated days passed. Research and recurring income are planned, not implemented yet.');
+    setMessage('Seven simulated days passed. Research is available in the Research & Roadmap tab.');
   }
   const orbitSpeed = circularOrbitSpeedKmS(contract.altitudeKm);
   const orbitPeriod = circularOrbitPeriodMinutes(contract.altitudeKm);
@@ -304,7 +344,7 @@ export default function App() {
                 ['missions','Play Campaign'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>setActiveView(id)}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.8</span></div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.9</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
       </header>
 
@@ -335,6 +375,8 @@ export default function App() {
             onEditSpacecraft={()=>setActiveView('systems')}
             onEditLauncher={()=>{setActiveView('missions');setCampaignMode('contracts')}}
             onStart={startEarthObservation}
+            technologyDiscount={missionTechnologyDiscount}
+            lockedTechnologies={lockedLabParts}
             onComplete={completeEarthObservation}/>}
         <div className={'control-layout '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')} id="mission-control">
           <div className="left-column">
@@ -389,13 +431,17 @@ export default function App() {
               setActiveView('missions');setCampaignMode('observation');
             }}>Return to mission design →</button>
           </div>
-          <SubsystemLab design={spacecraftDesign} onDesignChange={setSpacecraftDesign}/>
+          <SubsystemLab design={spacecraftDesign} onDesignChange={setSpacecraftDesign}
+            unlockedTechnologies={effectiveUnlocks} devMode={game.devMode}/>
         </div>}
         {activeView==='orbits' && <div className="single-tab-page"><OrbitalLab initialAltitudeKm={contract.altitudeKm} /></div>}
         {activeView==='library' && <div className="single-tab-page"><MissionLibrary onOpenMap={()=>setActiveView('orbits')}/></div>}
         {activeView==='learning' && <div className="single-tab-page">
           <LearningLab onOpenBuilder={()=>setActiveView('systems')} onOpenOrbital={()=>setActiveView('orbits')}/>
         </div>}
+        {activeView==='research'&&<ResearchLab cash={game.cash}
+          unlocked={game.researchUnlocked} devMode={game.devMode}
+          onToggleDevMode={toggleDevMode} onResearch={investResearch}/>}
         <section className={'bottom-grid '+(activeView==='research'?'':'view-hidden')} id="roadmap"><div className="panel roadmap"><div className="eyebrow">BEYOND THE PROTOTYPE</div><h2>Your next frontier</h2><div className="roadmap-items"><div><span className="road-icon">◎</span><strong>Earth orbit</strong><small>Playable now</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">◐</span><strong>Lunar economy</strong><small>Planned</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">✧</span><strong>Mars transfers</strong><small>Planned</small></div><div className="roadmap-line"/><div className="muted"><span className="road-icon">✦</span><strong>Outer planets</strong><small>Vision</small></div></div><p>Next: technology research, spacecraft production learning curves, fuel depots, transfer windows, and a competing space program.</p></div><div className="panel history"><div className="eyebrow">FLIGHT LOG</div><h2>Recent missions</h2>{game.history.length === 0 ? <p>No launches yet. Build a spacecraft and accept your first contract.</p> : <div className="history-list">{game.history.slice(0, 4).map((item) => <div key={item.id}><span className={item.success ? 'success-dot' : 'failed-dot'}>●</span><div><strong>{item.contract}</strong><small>Day {item.day} · {item.craft}</small></div><strong className={item.success ? 'green' : 'danger-text'}>{item.success ? '+' + usd(item.payout - item.cost) : '-' + usd(item.cost)}</strong></div>)}</div>}</div></section>
         <footer><div><span>SPACE RACE: BEYOND EARTH</span> · NASA Space Apps Challenge 2026 · Independently created prototype</div><div><button onClick={() => setShowHelp(!showHelp)}>{showHelp ? 'Hide notes' : 'Model limitations & credits'}</button><button onClick={reset}>Reset campaign</button></div></footer>
         {showHelp && <div className="help-notes"><p><strong>Model limits:</strong> Only a simplified one-stage launcher and fictional contracts are implemented. Earth orbital speed and period use JPL's Earth gravitational parameter and NASA's Earth radius. Engine performance, budgets, mission thresholds, and manufacturing discounts are invented and must not be treated as real mission values. The in-space spacecraft lab includes approximate subsystem sizing, and the optional Orekit backend computes idealized impulsive planetary transfers. Historical mission tracks require a JPL Horizons connection. None of these models validate full mission feasibility, finite thrust, ascent, detailed shielding or actual flight hardware.</p><p><strong>AI-assisted work:</strong> Initial source code, interface copy, and documentation were drafted with ChatGPT. See README.md and docs/ATTRIBUTION.md for disclosures. No NASA logos or mission insignia are used.</p></div>}
