@@ -179,9 +179,12 @@ function Curve({ranked, best, objective}:{
   </div>;
 }
 
-export default function TransferPlanner({onSolved}:{onSolved:(solution:LambertSolution)=>void}) {
-  const [date,setDate] = useState('2027-02-01');
-  const [target,setTarget] = useState<'venus'|'mars'|'jupiter'>('mars');
+export default function TransferPlanner({onSolved,initialDate='2027-02-01',initialTarget='mars'}:{
+  onSolved:(solution:LambertSolution)=>void;
+  initialDate?:string;initialTarget?:'venus'|'mars'|'jupiter';
+}) {
+  const [date,setDate] = useState(initialDate);
+  const [target,setTarget] = useState<'venus'|'mars'|'jupiter'>(initialTarget);
   const [flightDays,setFlightDays] = useState(260);
   const [mode,setMode] = useState<Mode>('manual');
   const [objective,setObjective] = useState<Objective>('total');

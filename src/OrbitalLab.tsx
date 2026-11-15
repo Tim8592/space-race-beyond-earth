@@ -17,15 +17,22 @@ function formatted(n: number, decimals = 2): string {
   return n.toLocaleString('en-US',{maximumFractionDigits:decimals});
 }
 
-export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitudeKm?: number }) {
-  const [mode,setMode] = useState<'earth'|'heliocentric'>('earth');
+export default function OrbitalLab({
+  initialAltitudeKm=400,initialEccentricity=.25,initialMode='earth',
+  initialDayOffset=0,initialTarget='mars',onTransferSolved,
+}:{
+  initialAltitudeKm?:number;initialEccentricity?:number;
+  initialMode?:'earth'|'heliocentric';initialDayOffset?:number;initialTarget?:PlanetId;
+  onTransferSolved?:(transfer:LambertSolution)=>void;
+}) {
+  const [mode,setMode] = useState<'earth'|'heliocentric'>(initialMode);
   const [perigeeKm,setPerigeeKm] = useState(Math.max(180,Math.min(1500,initialAltitudeKm)));
-  const [eccentricity,setEccentricity] = useState(0.25);
+  const [eccentricity,setEccentricity] = useState(Math.max(0,Math.min(.8,initialEccentricity)));
   const [periapsisAngle,setPeriapsisAngle] = useState(20);
   const [elapsedMinutes,setElapsedMinutes] = useState(0);
-  const [dayOffset,setDayOffset] = useState(0);
-  const [outerView,setOuterView] = useState(false);
-  const [selectedPlanet,setSelectedPlanet] = useState<PlanetId>('mars');
+  const [dayOffset,setDayOffset] = useState(Math.max(0,Math.min(3200,initialDayOffset)));
+  const [outerView,setOuterView] = useState(initialTarget==='jupiter');
+  const [selectedPlanet,setSelectedPlanet] = useState<PlanetId>(initialTarget);
   const [running,setRunning] = useState(false);
   const [transfer,setTransfer] = useState<LambertSolution|null>(null);
 
@@ -181,7 +188,11 @@ export default function OrbitalLab({ initialAltitudeKm = 400 }: { initialAltitud
           </>}
         </div>
       </div>
-      {mode==='heliocentric' && <TransferPlanner onSolved={s=>{
+      {mode==='heliocentric' && <TransferPlanner
+        initialDate={utcDate.toISOString().slice(0,10)}
+        initialTarget={initialTarget==='jupiter'?'jupiter':initialTarget==='venus'?'venus':'mars'}
+        onSolved={s=>{
+        onTransferSolved?.(s);
         setTransfer(s);
         setSelectedPlanet(s.target);
         setOuterView(s.target==='jupiter');
