@@ -121,6 +121,35 @@ describe('Next chapter campaign and orbit integrations',()=>{
     expect(late.requiredScienceKg).toBeGreaterThan(early.requiredScienceKg);
     expect(late.minElectricW).toBeGreaterThan(early.minElectricW);
   });
+  it('onboard Δv uses shared mission duration and available powered engine count',()=>{
+    const short=reviewCampaignMission({...referenceArgs,
+      definition:{...luna,durationDays:1},
+      options:{...DEFAULT_MISSION_OPTIONS,booster:'none'},
+      spacecraft:{...DEFAULT_SUBSYSTEM_DESIGN,cellAreaM2:50,
+        thrusterCount:4,propellantMassKg:25,structureScale:1.4}});
+    const long=reviewCampaignMission({...referenceArgs,
+      definition:{...luna,durationDays:80},
+      options:{...DEFAULT_MISSION_OPTIONS,booster:'none'},
+      spacecraft:{...DEFAULT_SUBSYSTEM_DESIGN,cellAreaM2:50,
+        thrusterCount:4,propellantMassKg:25,structureScale:1.4}});
+    expect(long.busDeltaVms).toBeGreaterThan(short.busDeltaVms);
+    const noPower=reviewCampaignMission({...referenceArgs,
+      definition:{...luna,durationDays:80},
+      options:{...DEFAULT_MISSION_OPTIONS,booster:'none'},
+      spacecraft:{...DEFAULT_SUBSYSTEM_DESIGN,cellAreaM2:0,
+        thrusterCount:4,propellantMassKg:25,structureScale:1.4}});
+    expect(noPower.busDeltaVms).toBe(0);
+    const cramped=reviewCampaignMission({...referenceArgs,
+      spacecraft:{...DEFAULT_SUBSYSTEM_DESIGN,thrusterCount:8,
+        secondaryThrusterId:'mono-reference',secondaryThrusterCount:8,structureScale:1}});
+    expect(cramped.checks.find(c=>c.label==='Engine mount clearance')?.passed).toBe(false);
+    const wider=reviewCampaignMission({...referenceArgs,
+      spacecraft:{...DEFAULT_SUBSYSTEM_DESIGN,thrusterCount:8,
+        secondaryThrusterId:'mono-reference',secondaryThrusterCount:8,structureScale:1.8}});
+    expect(wider.checks.some(c=>c.label==='Engine mount clearance'&&!c.passed)).toBe(false);
+    expect(wider.hardwareWetKg).toBeGreaterThan(cramped.hardwareWetKg);
+    expect(wider.costUsd).toBeGreaterThan(cramped.costUsd);
+  });
   it('booster ideal delta-V accounts for attached spacecraft and jettisoned dry stage',()=>{
     const booster=BOOSTERS.storable;
     const review=reviewCampaignMission(referenceArgs);
