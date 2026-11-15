@@ -60,6 +60,11 @@ describe('NASA data integration: data provenance vs game assumptions',()=>{
   expect(offer.mission.target).toBe('ellipse');
   expect(offer.mission.stage).toBe(1);
   expect(offer.mission.summary).toContain('does not intercept');
+  const muchLarger=makeNeoObservationOffer({
+    ...neos[0],diameterM:800,missDistanceKm:450000,velocityKmS:36},15);
+  expect(muchLarger.mission.requiredScienceKg).toBeGreaterThan(offer.mission.requiredScienceKg);
+  expect(muchLarger.mission.minElectricW).toBeGreaterThan(offer.mission.minElectricW);
+  expect(muchLarger.mission.payoutUsd).toBeGreaterThan(offer.mission.payoutUsd);
   expect(specialOfferStatus(offer.mission,22)).toBe('open');
   expect(specialOfferStatus(offer.mission,24)).toBe('expired');
   expect(parseNeoFeed({near_earth_objects:{'x':[{}]}})).toEqual([]);
