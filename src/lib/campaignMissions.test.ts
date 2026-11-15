@@ -89,6 +89,15 @@ describe('Next chapter campaign and orbit integrations',()=>{
     const stale=orbitalRoute('mars',9,DEFAULT_MISSION_OPTIONS,solved);
     expect(stale.source).toBe('Hohmann approximation');
   });
+  it('external energy reserve increases survival margin without creating solar power',()=>{
+    const noReserve=reviewCampaignMission({...referenceArgs,options:{...DEFAULT_MISSION_OPTIONS,reserveBattery:false}});
+    const reserve=reviewCampaignMission({...referenceArgs,options:{...DEFAULT_MISSION_OPTIONS,reserveBattery:true}});
+    expect(reserve.backupUsableWh).toBeGreaterThan(noReserve.backupUsableWh);
+    expect(reserve.backupRequiredWh).toBeGreaterThan(noReserve.backupRequiredWh);
+    expect(reserve.powerAvailableW).toBe(noReserve.powerAvailableW);
+    expect(noReserve.checks.find(c=>c.label==='Power interruption reserve')?.passed).toBe(false);
+    expect(reserve.checks.find(c=>c.label==='Power interruption reserve')?.passed).toBe(true);
+  });
   it('booster ideal delta-V accounts for attached spacecraft and jettisoned dry stage',()=>{
     const booster=BOOSTERS.storable;
     const review=reviewCampaignMission(referenceArgs);
