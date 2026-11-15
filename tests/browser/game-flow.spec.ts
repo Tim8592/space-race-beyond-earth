@@ -133,7 +133,7 @@ test('Rocket Fleet uses immutable preset vehicles instead of editable arbitrary 
     await page.goto('/');
     await page.getByRole('tab',{name:'Rocket Fleet'}).click();
     await expect(page.getByRole('heading',{name:/Choose between sovereign launch/})).toBeVisible();
-    await expect(page.getByText('220 kg').first()).toBeVisible();
+    await expect(page.locator('.rocket-fleet-stats')).toContainText('220 kg');
     await expect(page.locator('.rocket-fleet-option')).toHaveCount(4);
     await expect(page.locator('.rocket-custom-builder input')).toHaveCount(0);
     await expect(page.locator('#craft-name')).toHaveCount(0);
@@ -141,7 +141,7 @@ test('Rocket Fleet uses immutable preset vehicles instead of editable arbitrary 
     await page.reload();
     await page.getByRole('tab',{name:'Rocket Fleet'}).click();
     await expect(page.locator('.rocket-fleet-option.selected')).toContainText('Falcon 9');
-    await expect(page.locator('.rocket-fleet-option')).toContainText(['Aurora']);
+    await expect(page.locator('.rocket-fleet-grid')).toContainText('Aurora');
   });
 });
 test('Earth Observation One shares spacecraft design and completes a seven-day scientific mission',async({page})=>{
@@ -474,6 +474,66 @@ test('Heavy spacecraft launches rocket batches individually and assembles hardwa
     await page.getByRole('button',{name:/Assemble spacecraft and begin transfer flight/}).click();
     await expect(page.getByText('FLIGHT OPERATIONS / CONTRACT IN PROGRESS')).toBeVisible();
     await expect(page.locator('.flight-progress-pill')).not.toContainText('ORBIT INVENTORY');
+  });
+});
+test('NASA DONKI observations raise near-Earth power reserve and NeoWs adds real asteroid watch contract',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    const current=new Date().toISOString().slice(0,10);
+    const approachDay=new Date(Date.now()+2*86_400_000).toISOString().slice(0,10);
+    await page.route('**/nasa-api/**',async route=>{
+      const u=route.request().url();
+      const reply=(data:unknown)=>route.fulfill({
+        status:200,contentType:'application/json',body:JSON.stringify(data)});
+      if(u.includes('/DONKI/FLR'))return reply([
+        {flrID:'test-xflare',classType:'X2.1',peakTime:new Date(Date.now()-3_600_000).toISOString(),
+          link:'https://ccmc.gsfc.nasa.gov/tools/DONKI/'}]);
+      if(u.includes('/DONKI/GST'))return reply([
+        {gstID:'test-storm',startTime:new Date(Date.now()-2*3_600_000).toISOString(),
+          allKpIndex:[{kpIndex:7}]}]);
+      if(u.includes('/DONKI/SEP'))return reply([]);
+      if(u.includes('/neo/rest/v1/feed'))return reply({near_earth_objects:{
+        [approachDay]:[{id:'20986001',name:'(2026 NASAQA)',
+          is_potentially_hazardous_asteroid:false,
+          nasa_jpl_url:'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html',
+          estimated_diameter:{meters:{estimated_diameter_min:45,estimated_diameter_max:85}},
+          close_approach_data:[{orbiting_body:'Earth',close_approach_date:approachDay,
+            miss_distance:{kilometers:'1380000'},
+            relative_velocity:{kilometers_per_second:'12.4'}}]}]
+      }});
+      return reply([]);
+    });
+    await page.goto('/');
+    await page.evaluate(()=>{
+      const k='space-race-v01-save',s=JSON.parse(localStorage.getItem(k)!);
+      s.game.storyCompleted=['observation'];localStorage.setItem(k,JSON.stringify(s));
+    });
+    await page.reload();
+    await page.getByRole('tab',{name:'NASA Intel'}).click();
+    await expect(page.getByRole('heading',{name:'NASA Mission Intelligence'})).toBeVisible();
+    await expect(page.locator('.nasa-intel-event-list')).toContainText('X2.1');
+    await expect(page.locator('.nasa-intel-asteroids')).toContainText('(2026 NASAQA)');
+    await expect(page.locator('.nasa-intel-operational-note')).toContainText('2 hour(s)');
+    await page.getByRole('button',{name:/Create asteroid-watch contract/}).click();
+    await expect(page.locator('.nasa-campaign-watch')).toContainText('(2026 NASAQA)');
+    await expect(page.locator('.campaign-workshop')).toBeVisible();
+    await expect(page.locator('.campaign-system-checks')).toContainText('NASA DONKI');
+    await page.reload();
+    await page.getByRole('tab',{name:/Explore Further/}).click();
+    await expect(page.locator('.nasa-campaign-watch')).toContainText('(2026 NASAQA)');
+    await page.getByRole('tab',{name:'NASA Intel'}).click();
+    await expect(page.locator('.nasa-intel-event-list')).toContainText('X2.1');
+  });
+});
+test('NASA API network errors never prevent launch economy, research or offline game',async({page})=>{
+  await expectNoErrors(page,async()=>{
+    await page.route('**/nasa-api/**',r=>r.fulfill({status:503,body:'NASA temporarily unavailable'}));
+    await page.goto('/');
+    await page.getByRole('tab',{name:'NASA Intel'}).click();
+    await expect(page.getByRole('alert')).toContainText('NASA sources are currently unavailable');
+    await page.getByRole('tab',{name:'Rocket Fleet'}).click();
+    await expect(page.locator('.rocket-fleet-grid')).toContainText('Aurora');
+    await page.getByRole('tab',{name:'Research & Roadmap'}).click();
+    await expect(page.locator('.tech-map-node')).toHaveCount(15);
   });
 });
 test('NASA datasets, source linkage and future mission calendar remain navigable',async({page})=>{
