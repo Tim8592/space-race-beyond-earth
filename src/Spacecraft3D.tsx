@@ -11,7 +11,7 @@ export type PartName = 'bus' | 'power' | 'radiator' | 'tank' | 'propulsion' | 'a
 const PART_DETAILS: Record<PartName, string> = {
   bus: 'Structural spacecraft body: currently a visual envelope. Dry bus mass is entered in the engineering panel.',
   power: 'Solar wings: the number of panels follows the Power tab; individual wing area changes with the total active cell area. Generator count is also shown for radioisotope/fission options.',
-  radiator: 'Radiator count and individual panel size follow your Thermal tab. Heat pipes, view factors and source cooling still need detailed modeling.',
+  radiator: 'Bus radiators and, for fission concepts, a separate deployable hot radiator branch. Installed area controls panel mass and cooling power; heat pipe transport and shielding remain first-order assumptions.',
   tank: 'Separate colored tank/reservoir shapes match selected propellant families; mass, pressure and spherical tmin estimates are in Tanks. This is schematic geometry, not flight CAD.',
   propulsion: 'Primary and optional secondary thruster sets appear separately. They use independent propellant stores and a sequential idealized burn model; no finite-thrust trajectory is simulated.',
   antenna: 'Communications dish: visual placeholder. Link-budget and pointing constraints are future engineering features.',
@@ -143,6 +143,9 @@ export function ModularSpacecraft({
   const primaryTankScale=Math.max(.18,Math.min(.53,.20+(tankReports[0]?.radiusM??.08)*1.3));
   const secondaryTankScale=Math.max(.18,Math.min(.43,.17+(tankReports[1]?.radiusM??.06)*1.3));
   const isNuclear = design.powerSourceId!=='solar';
+  const isFission=design.powerSourceId==='snap10a'||
+    design.powerSourceId==='krusty'||design.powerSourceId==='reactor-25kwe';
+  const hotBranchArea=isFission?design.reactorRadiatorAreaM2:0;
   const wingCount = design.cellAreaM2 > 0 ? design.solarWingCount : 0;
   return <group rotation={[.12,.1,0]}>
     <Pick part="bus" selected={selected} onSelect={onSelect}>
@@ -175,6 +178,31 @@ export function ModularSpacecraft({
     </Pick>}
     <Pick part="radiator" selected={selected} onSelect={onSelect}>
       <RadiatorPanels areaM2={radiatorArea} count={design.radiatorPanelCount}/>
+      {hotBranchArea>0&&<group>
+        <mesh position={[2.15,-.66,-.6]} rotation={[0,0,Math.PI/2]}>
+          <cylinderGeometry args={[.055,.055,2.9,12]}/><Metal color="#cda877"/>
+        </mesh>
+        <group position={[2.2,-1.03,-.65]}>
+          {Array.from({length:Math.max(2,Math.min(8,Math.ceil(hotBranchArea/4)))},(_,i)=>{
+            const count=Math.max(2,Math.min(8,Math.ceil(hotBranchArea/4)));
+            const per=Math.sqrt(hotBranchArea/count);
+            const side=i%2===0?-1:1;
+            const index=Math.floor(i/2);
+            const z=(index-(Math.ceil(count/2)-1)/2)*.9;
+            return <group key={i} position={[side*(.54+per*.25),0,z]}>
+              <mesh rotation={[0,0,side*.13]}>
+                <boxGeometry args={[Math.max(.45,Math.min(2,per)),.047,
+                  Math.max(.45,Math.min(1.4,per*.75))]}/>
+                <meshStandardMaterial color="#b78d65" metalness={.62} roughness={.35}/>
+              </mesh>
+              <mesh position={[0,.04,0]}>
+                <boxGeometry args={[.035,.03,Math.max(.42,Math.min(1.3,per*.7))]}/>
+                <Metal color="#e7c4a4"/>
+              </mesh>
+            </group>;
+          })}
+        </group>
+      </group>}
     </Pick>
     <Pick part="tank" selected={selected} onSelect={onSelect}>
       <group position={design.secondaryThrusterId==='none'?[0,-.12,0]:[-.39,-.10,0]}>
