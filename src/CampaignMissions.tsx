@@ -1,6 +1,7 @@
 import {useMemo} from 'react';
 import CampaignOrbitMap from './CampaignOrbitMap';
 import MissionFlightViewer from './MissionFlightViewer';
+import type {LauncherId} from './lib/launchLogistics';
 import {flightProgress,flightEta,DEFAULT_FLIGHT_VIEWER_MS} from './lib/flightProgress';
 import {earthOrbitAtTime} from './lib/orbitalMechanics';
 import {dateForGameDay,BOOSTERS,EXTERNAL_MODULES,
@@ -18,6 +19,8 @@ export type CampaignRun={
   target:CampaignDefinition['target'];options:MissionOptions;
   route:MissionReview['route'];scienceKg:number;
   deltaVms:number;requiredDeltaVms:number;
+  launchService:LauncherId;launchCount:number;
+  launchCostsUsd:number;orbitalAssemblyCostsUsd:number;
   busPropellantBurnedKg?:number;busPropellantRemainingKg?:number;
   startedAtMs?:number;viewerDurationMs?:number;orekitTrajectoryAu?:number[][];
 };
@@ -112,6 +115,7 @@ export default function CampaignMissions({
   solvedTransfer,onStart,onFinish,onGoToLab,onGoToRocket,onViewOrbital,
   selected,onSelectedIdChange,options,onOptionsChange,agencyOffers,scheduled,
   nowMs,viewerOpen,onViewerOpenChange,
+  launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,logisticsInProgress,
 }:{
   day:number;cash:number;completed:readonly string[];devMode:boolean;
   lockedTechnologies?:readonly string[];
@@ -126,6 +130,8 @@ export default function CampaignMissions({
   options:MissionOptions;onOptionsChange:(next:MissionOptions)=>void;
   agencyOffers:readonly CampaignDefinition[];scheduled:CampaignDefinition|null;
   nowMs:number;viewerOpen:boolean;onViewerOpenChange:(open:boolean)=>void;
+  launchService:LauncherId;rocketProgramLevel:number;
+  orbitalAssemblyUnlocked:boolean;priorServiceFlights:number;logisticsInProgress:boolean;
 }){
   const stage=unlockedStage(completed,devMode);
   const originalAgency=useMemo(()=>agencyMissionDefinitions(),[]);
@@ -137,13 +143,15 @@ export default function CampaignMissions({
     try{return {review:reviewCampaignMission({
       definition:selected,day,options,spacecraft,launcher,capitalUsd:cash,
       productionDiscount,completedWithLauncherEngine,solvedTransfer,
+      launchService,rocketProgramLevel,orbitalAssemblyUnlocked,priorServiceFlights,
     }),error:''};}
     catch(e){return {review:null,error:e instanceof Error?e.message:String(e)}}
   },[selected,day,options,spacecraft,launcher,cash,productionDiscount,
-    completedWithLauncherEngine,solvedTransfer]);
+    completedWithLauncherEngine,solvedTransfer,launchService,rocketProgramLevel,
+    orbitalAssemblyUnlocked,priorServiceFlights]);
   const review=draft.review;
   const canStart=stage>=selected.stage&&!completedMission&&
-    review?.feasible===true&&!run&&lockedTechnologies.length===0&&
+    review?.feasible===true&&!run&&!logisticsInProgress&&lockedTechnologies.length===0&&
     (status===null||status==='open');
   const change=<K extends keyof MissionOptions>(key:K,val:MissionOptions[K])=>{
     onOptionsChange({...options,[key]:val});
@@ -153,6 +161,9 @@ export default function CampaignMissions({
     onStart({id:selected.id,title:selected.title,special:!!selected.special,
       durationDays:selected.durationDays,launchedDay:day,departureDate:dateForGameDay(day),
       costUsd:review.costUsd,payoutUsd:selected.payoutUsd,payloadKg:review.hardwareWetKg,
+      launchService,launchCount:review.launchManifest.flightsRequired,
+      launchCostsUsd:review.launchManifest.launchCostUsd,
+      orbitalAssemblyCostsUsd:review.launchManifest.assemblyCostUsd,
       scienceKg:review.scienceMassKg,target:selected.target,options:{...options},
       route:review.route,deltaVms:review.totalDeltaVms,requiredDeltaVms:review.requiredDeltaVms,
       busPropellantBurnedKg:review.busPropellantBurnedKg,
@@ -257,6 +268,7 @@ export default function CampaignMissions({
             onClick={()=>onViewerOpenChange(true)}>Reopen flight viewer ↗</button>
         </div>}
       <div className="campaign-flight-stats"><div><span>MISSION COST PAID</span><strong>{usd(run.costUsd)}</strong></div>
+        <div><span>ROCKET FLIGHTS PAID</span><strong>{run.launchCount??1} · {run.launchService??'legacy rocket'}</strong></div>
         <div><span>CONTRACT REWARD</span><strong>{usd(run.payoutUsd)}</strong></div>
         <div><span>EXPECTED SCIENCE / PAYLOAD</span><strong>{num(run.scienceKg)} kg</strong></div>
         {run.busPropellantBurnedKg!==undefined&&<div>
@@ -360,6 +372,32 @@ export default function CampaignMissions({
             <div className="campaign-system-checks">
               {review.checks.map((c,i)=><Check key={i} {...c}/>)}
             </div>
+            <div className="campaign-logistics-breakdown" aria-label="Paid launch services and orbital assembly plan">
+              <div className="eyebrow">ACTUAL LAUNCH LOGISTICS · SEPARATE FROM SATELLITE DESIGN</div>
+              <h3>{review.launchManifest.vehicleLabel}</h3>
+              <p>Spacecraft/transfer vehicle wet mass: <strong>{num(review.hardwareWetKg,1)} kg</strong>.
+                 Installed LEO capacity per rocket: <strong>{num(review.launchCapacityKg,0)} kg</strong>.
+                 {review.launchManifest.flightsRequired>1?
+                   ' Larger spacecraft are split into separately paid launches, assembled and fueled in orbit before departure.':
+                   ' One launch can deliver the complete configured vehicle to Earth orbit.'}</p>
+              <div className="campaign-logistics-costs">
+                <div><span>Spacecraft + kick-stage procurement</span><strong>{usd(review.spacecraftProcurementUsd)}</strong></div>
+                <div><span>{review.launchManifest.flightsRequired} × launch-service invoices</span>
+                  <strong>{usd(review.launchManifest.launchCostUsd)}</strong></div>
+                <div><span>Docking/assembly joins</span>
+                  <strong>{usd(review.launchManifest.assemblyCostUsd)}</strong></div>
+                <div><span>Modeled cost per delivered kg to LEO</span>
+                  <strong>${num(review.launchManifest.actualCostPerKgUsd,0)}/kg</strong></div>
+              </div>
+              {review.launchManifest.flights.map(f=><div className="campaign-flight-manifest-row" key={f.flight}>
+                <span>Rocket {f.flight}: {num(f.massKg,1)} / {num(f.capacityKg,1)} kg</span>
+                <strong>{usd(f.serviceCostUsd)}</strong></div>)}
+              {review.launchManifest.issue&&<p className="campaign-model-warning">
+                {review.launchManifest.issue} Open Rocket Fleet to increase payload capability
+                or purchase orbital docking infrastructure.</p>}
+              <button type="button" className="secondary-button" onClick={onGoToRocket}>
+                 Change rocket / upgrade flight economics ↗</button>
+            </div>
             <div className="campaign-flight-stats">
               <div><span>MISSION PROCUREMENT & LAUNCH</span><strong>{usd(review.costUsd)}</strong></div>
               <div><span>AGENCY FUNDS</span><strong>{usd(cash)}</strong></div>
@@ -373,7 +411,10 @@ export default function CampaignMissions({
               <button type="button" className="launch-button" disabled={!canStart}
                 onClick={launch}>{review.feasible?'Accept contract and launch':'Resolve engineering constraints'} ↗</button>}
             {stageIsLocked&&<p className="campaign-model-warning">Complete preceding milestones or use Developer Mode before launching.</p>}
-            {lockedTechnologies.length>0&&<p className="campaign-model-warning" role="status">
+            {logisticsInProgress&&<p className="campaign-model-warning" role="status">
+               A lunar cargo lander is already underway. Complete its delivery before launching another exploration mission.
+             </p>}
+             {lockedTechnologies.length>0&&<p className="campaign-model-warning" role="status">
               Research required: {lockedTechnologies.join(', ')}. Unlock your installed spacecraft parts in Research &amp; Roadmap or temporarily enable Dev Mode.
             </p>}
           </>:<p role="alert">Cannot analyze the selected design: {draft.error}. Restore valid spacecraft parameters in Engineering Lab.</p>}
