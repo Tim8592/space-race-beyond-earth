@@ -3,7 +3,11 @@ import type {CampaignRun} from './CampaignMissions';
 import {flightEta,flightProgress} from './lib/flightProgress';
 import {tryOrekitFlightPath} from './missionFlightTrajectory';
 
-type Props={run:CampaignRun;nowMs:number};
+type FlightPlayable=Pick<CampaignRun,
+  'title'|'target'|'durationDays'|'departureDate'|'startedAtMs'|'viewerDurationMs'|'orekitTrajectoryAu'> & {
+   route:{flightDays:number};
+  };
+type Props={run:FlightPlayable;nowMs:number};
 const W=640,H=340;
 type Point={x:number;y:number};
 function fitTrajectory(trajectory:number[][]):Point[]{
