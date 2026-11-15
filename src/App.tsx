@@ -5,6 +5,9 @@ import OrbitalLab from './OrbitalLab';
 import MissionLibrary from './MissionLibrary';
 import LearningLab from './LearningLab';
 import ResearchLab from './ResearchLab';
+import CampaignMissions,{type CampaignRun,type CampaignDebrief} from './CampaignMissions';
+import {dateForGameDay,type CampaignDefinition,type MissionOptions,type SolvedCampaignTransfer} from './lib/campaignMissions';
+import type {LambertSolution} from './TransferPlanner';
 import {canResearch,TECHNOLOGIES, type TechnologyId,hasTechnology,
   THRUSTER_RESEARCH,POWER_RESEARCH,INSTRUMENT_RESEARCH,researchDiscount} from './lib/technologyTree';
 import FieldHelp from './components/FieldHelp';
@@ -97,6 +100,9 @@ type Game = {
   researchUnlocked: TechnologyId[];
   researchSpentUsd: number;
   devMode: boolean;
+  storyCompleted: string[];
+  activeStoryRun: CampaignRun|null;
+  lastStoryDebrief: CampaignDebrief|null;
 };
 
 const DEFAULT_GAME: Game = {
@@ -112,6 +118,9 @@ const DEFAULT_GAME: Game = {
   researchUnlocked: [],
   researchSpentUsd: 0,
   devMode: false,
+  storyCompleted: [],
+  activeStoryRun: null,
+  lastStoryDebrief: null,
 };
 
 type Snapshot = { game: Game; vehicle: Vehicle; missionId: MissionId };
@@ -135,6 +144,12 @@ function loadSave(): Snapshot {
         ?parsed.game.researchUnlocked.filter(id=>TECHNOLOGIES.some(t=>t.id===id)):[],
       researchSpentUsd:Number.isFinite(parsed.game.researchSpentUsd)?parsed.game.researchSpentUsd:0,
       devMode:parsed.game.devMode===true,
+      storyCompleted:Array.isArray(parsed.game.storyCompleted)
+        ?parsed.game.storyCompleted.filter(id=>typeof id==='string'):
+        parsed.game.history.some(h=>h.contract==='Earth Observation One'&&h.success)?['observation']:[],
+      activeStoryRun:parsed.game.activeStoryRun?.id&&
+        Number.isFinite(parsed.game.activeStoryRun.costUsd)?parsed.game.activeStoryRun:null,
+      lastStoryDebrief:parsed.game.lastStoryDebrief?.id?parsed.game.lastStoryDebrief:null,
     }};
   } catch {
     return fallback;
@@ -179,7 +194,11 @@ export default function App() {
   const [message, setMessage] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [activeView,setActiveView] = useState<'missions'|'systems'|'orbits'|'library'|'learning'|'research'>('missions');
-  const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'>('observation');
+  const [campaignMode,setCampaignMode]=useState<'observation'|'contracts'|'progression'>('observation');
+  const [orbitalSelection,setOrbitalSelection]=useState<{
+    mode:'earth'|'heliocentric';day:number;target:'mars'|'jupiter';
+    perigee:number;eccentricity:number;}|null>(null);
+  const [lastSolvedTransfer,setLastSolvedTransfer]=useState<LambertSolution|null>(null);
   const [observationResetKey,setObservationResetKey]=useState(0);
   const [spacecraftDesign,setSpacecraftDesign]=useState<SubsystemDesign>(readSubsystemDesign);
   const contract = CONTRACTS.find((item) => item.id === missionId) ?? CONTRACTS[0];
@@ -278,6 +297,65 @@ export default function App() {
       ? `${contract.label} complete. ${integer(vehicle.payloadMassKg)} kg delivered; ${usd(contract.payoutUsd)} contract revenue received.`
       : `Mission unsuccessful. Your design did not meet every requirement. ${usd(buildCost)} was spent on the attempt.`);
   }
+  function startCampaignMission(run:CampaignRun){
+    setSnapshot(previous=>{
+      if(previous.game.activeStoryRun||previous.game.storyCompleted.includes(run.id)||
+        previous.game.cash<run.costUsd||run.launchedDay!==previous.game.day)return previous;
+      return {...previous,game:{...previous.game,
+        cash:previous.game.cash-run.costUsd,
+        launched:previous.game.launched+1,
+        engineBuildCounts:{...previous.game.engineBuildCounts,
+          [previous.vehicle.engineId]:
+            (previous.game.engineBuildCounts[previous.vehicle.engineId]??0)+1},
+        activeStoryRun:run,lastStoryDebrief:null,
+      }};
+    });
+    setMessage('Spacecraft launched on '+dateForGameDay(run.launchedDay)+'. Flight operations underway.');
+  }
+  function finishCampaignMission(){
+    setSnapshot(previous=>{
+      const run=previous.game.activeStoryRun;
+      if(!run)return previous;
+      const event:HistoryItem={
+        id:Date.now(),day:run.launchedDay,contract:run.title,
+        craft:previous.vehicle.name+' / exploration probe',
+        success:true,cost:run.costUsd,payout:run.payoutUsd,
+        deliveredKg:run.payloadKg,
+      };
+      return {...previous,game:{...previous.game,
+        cash:previous.game.cash+run.payoutUsd,
+        day:previous.game.day+run.durationDays,
+        completed:previous.game.completed+1,
+        deliveredKg:previous.game.deliveredKg+run.payloadKg,
+        revenue:previous.game.revenue+run.payoutUsd,
+        history:[event,...previous.game.history].slice(0,12),
+        storyCompleted:[...new Set([...previous.game.storyCompleted,run.id])],
+        activeStoryRun:null,
+        lastStoryDebrief:{id:run.id,title:run.title,
+          day:previous.game.day+run.durationDays,success:true,special:run.special,
+          costUsd:run.costUsd,payoutUsd:run.payoutUsd,durationDays:run.durationDays,
+          deltaVms:run.deltaVms,neededDeltaVms:run.requiredDeltaVms,
+          scienceKg:run.scienceKg},
+      }};
+    });
+    setMessage('Mission completed; agency contract revenue received and new campaign milestones may be available.');
+  }
+  function openMissionOrbit(definition:CampaignDefinition,options:MissionOptions){
+    setOrbitalSelection({mode:definition.target==='mars'||definition.target==='jupiter'||
+      definition.target==='asteroid'?'heliocentric':'earth',
+      day:game.day,target:definition.target==='jupiter'?'jupiter':'mars',
+      perigee:options.perigeeKm,eccentricity:definition.target==='ellipse'?options.eccentricity:
+        definition.target==='lunar'?.72:.25});
+    setActiveView('orbits');
+  }
+  const missionSolved: SolvedCampaignTransfer|null=lastSolvedTransfer&&
+    (lastSolvedTransfer.target==='mars'||lastSolvedTransfer.target==='jupiter')?
+    {target:lastSolvedTransfer.target,departureDate:lastSolvedTransfer.departureDate,
+      flightDays:lastSolvedTransfer.flightDays,
+      departureVInfinityKmS:lastSolvedTransfer.departureVInfinityKmS,
+      arrivalVInfinityKmS:lastSolvedTransfer.arrivalVInfinityKmS,
+      eccentricity:lastSolvedTransfer.eccentricity}:null;
+
   function startEarthObservation(costUsd:number){
     setSnapshot(previous=>({...previous,game:{
       ...previous.game,
@@ -310,6 +388,9 @@ export default function App() {
         completed:previous.game.completed+Number(success),
         deliveredKg:previous.game.deliveredKg+wetMassKg,
         revenue:previous.game.revenue+payoutUsd,
+        storyCompleted:success?
+          [...new Set([...previous.game.storyCompleted,'observation'])]:
+          previous.game.storyCompleted,
         history:[event,...previous.game.history].slice(0,12),
       }};
     });
@@ -320,13 +401,16 @@ export default function App() {
   function reset() {
     if (!window.confirm('Start over? This clears your locally saved campaign and blueprints.')) return;
     setSnapshot({ game: DEFAULT_GAME, vehicle: INITIAL_VEHICLE, missionId: 'cargo' });
-    try {localStorage.removeItem('space-race-observation-one-v1')}catch{/* optional storage */}
+    try {localStorage.removeItem('space-race-observation-one-v1');
+      localStorage.removeItem('space-race-mission-workshop-v1')}catch{/* optional storage */}
+    setLastSolvedTransfer(null);
     setObservationResetKey(k=>k+1);
     setMessage('Campaign restarted, including the Earth Observation One mission.');
   }
   function passWeek() {
+    if(game.activeStoryRun){setMessage('Finish the active flight before advancing the calendar.');return;}
     setSnapshot((previous) => ({ ...previous, game: { ...previous.game, day: previous.game.day + 7 } }));
-    setMessage('Seven simulated days passed. Research is available in the Research & Roadmap tab.');
+    setMessage('Seven simulated days passed. Limited-time offers may have opened or expired.');
   }
   const orbitSpeed = circularOrbitSpeedKmS(contract.altitudeKm);
   const orbitPeriod = circularOrbitPeriodMinutes(contract.altitudeKm);
@@ -344,7 +428,7 @@ export default function App() {
                 ['missions','Play Campaign'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>setActiveView(id)}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V0.9</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.0</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
       </header>
 
@@ -365,6 +449,9 @@ export default function App() {
           <button type="button" role="tab" aria-selected={campaignMode==='observation'}
             className={campaignMode==='observation'?'selected':''}
             onClick={()=>setCampaignMode('observation')}>Earth Observation One · Guided mission</button>
+          <button type="button" role="tab" aria-selected={campaignMode==='progression'}
+            className={campaignMode==='progression'?'selected':''}
+            onClick={()=>setCampaignMode('progression')}>Explore Further · {game.storyCompleted.includes('observation')?'Missions unlocked':'Complete first mission to unlock'}</button>
           <button type="button" role="tab" aria-selected={campaignMode==='contracts'}
             className={campaignMode==='contracts'?'selected':''}
             onClick={()=>setCampaignMode('contracts')}>Orbital Contracts · Classic mode</button>
@@ -378,6 +465,18 @@ export default function App() {
             technologyDiscount={missionTechnologyDiscount}
             lockedTechnologies={lockedLabParts}
             onComplete={completeEarthObservation}/>}
+        {activeView==='missions'&&campaignMode==='progression'&&
+          <CampaignMissions day={game.day} cash={game.cash}
+            completed={game.storyCompleted} devMode={game.devMode}
+            spacecraft={spacecraftDesign} launcher={vehicle}
+            productionDiscount={missionTechnologyDiscount}
+            lockedTechnologies={lockedLabParts}
+            run={game.activeStoryRun} debrief={game.lastStoryDebrief}
+            solvedTransfer={missionSolved}
+            onStart={startCampaignMission} onFinish={finishCampaignMission}
+            onGoToLab={()=>setActiveView('systems')}
+            onGoToRocket={()=>{setCampaignMode('contracts');setActiveView('missions')}}
+            onViewOrbital={openMissionOrbit} onAdvance={passWeek}/>}
         <div className={'control-layout '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')} id="mission-control">
           <div className="left-column">
             <section className="panel" id="builder">
@@ -434,7 +533,15 @@ export default function App() {
           <SubsystemLab design={spacecraftDesign} onDesignChange={setSpacecraftDesign}
             unlockedTechnologies={effectiveUnlocks} devMode={game.devMode}/>
         </div>}
-        {activeView==='orbits' && <div className="single-tab-page"><OrbitalLab initialAltitudeKm={contract.altitudeKm} /></div>}
+        {activeView==='orbits' && <div className="single-tab-page">
+          <OrbitalLab key={orbitalSelection?orbitalSelection.day+'-'+orbitalSelection.mode:'default'}
+            initialMode={orbitalSelection?.mode??'earth'}
+            initialDayOffset={(orbitalSelection?.day??1)-1}
+            initialTarget={orbitalSelection?.target??'mars'}
+            initialAltitudeKm={orbitalSelection?.perigee??contract.altitudeKm}
+            initialEccentricity={orbitalSelection?.eccentricity??.25}
+            onTransferSolved={setLastSolvedTransfer}/>
+        </div>}
         {activeView==='library' && <div className="single-tab-page"><MissionLibrary onOpenMap={()=>setActiveView('orbits')}/></div>}
         {activeView==='learning' && <div className="single-tab-page">
           <LearningLab onOpenBuilder={()=>setActiveView('systems')} onOpenOrbital={()=>setActiveView('orbits')}/>
