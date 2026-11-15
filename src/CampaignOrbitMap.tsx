@@ -40,7 +40,7 @@ export default function CampaignOrbitMap({
   };
   const entries:Entry[]=[
     ...story.map((mission,i)=>({mission,index:String(i+1).padStart(2,'0'),category:'story' as const})),
-    ...agency.map((mission,i)=>({mission,index:'N'+(i+1),category:'agency' as const})),
+    ...agency.map((mission,i)=>({mission,index:mission.id.startsWith('csa-')?'C'+(i-3):'N'+(i+1),category:'agency' as const})),
     ...(special?[{mission:special,index:'S',category:'special' as const}]:[])
   ];
   // Locked missions have names in the directory, but no spatial or trajectory
@@ -129,7 +129,7 @@ export default function CampaignOrbitMap({
             <span className="mission-index">{e.index}</span>
             <span><strong>{e.mission.title}</strong>
               <small>{stage<e.mission.stage?'LOCKED · destination hidden':completed.includes(e.mission.id)?'✓ Complete':
-                e.category==='agency'?'NASA-inspired · optional':
+                e.category==='agency'?(e.mission.id.startsWith('csa-')?'CSA research data · optional':'NASA-inspired · optional'):
                 e.category==='special'?'Limited-time contract':'Story mission'}</small></span>
           </button>)}
         </div>
