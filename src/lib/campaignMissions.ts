@@ -343,6 +343,7 @@ export function reviewCampaignMission(args:{
     priorFlights:args.priorServiceFlights??args.completedWithLauncherEngine??0,
   });
   const launchCapacityKg=launchManifest.capacityKg;
+  const hardware=spacecraftHardwareEconomics(design,args.productionDiscount);
   const spacecraftProcurementUsd=hardware.afterDiscountUsd+booster.costUsd+
     extraModules.reduce((s,m)=>s+m.costUsd,0)+cubesatCostUsd+
     (instrument?.costUsd??0);
