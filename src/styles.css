@@ -1152,3 +1152,20 @@
 .campaign-optional-kit-body{display:grid;gap:12px;border-top:1px solid #36536a;padding:12px}
 .campaign-optional-kit .campaign-module-option{min-width:0}
 @media(max-width:520px){.campaign-installed-facts{grid-template-columns:minmax(0,1fr)}.campaign-installed-craft>.secondary-button{width:100%}}
+
+/* Guided tutorial: one mission camera override, extra hardware clearly separated. */
+.ob-guided-source{display:grid;gap:6px;background:#102b3d;border:1px solid #4b7894;border-radius:8px;padding:12px;color:#a9c9dc;font-size:11px;line-height:1.5}
+.ob-guided-source strong{color:#f1d39d;font-size:10px;letter-spacing:.9px}
+.ob-mission-upgrades{background:#11293a;border:1px solid #4b6981;border-radius:8px;min-width:0}
+.ob-mission-upgrades>summary{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;cursor:pointer;list-style:none;padding:13px;color:#e8f4ff;font-size:12px;font-weight:800}
+.ob-mission-upgrades>summary::-webkit-details-marker{display:none}
+.ob-mission-upgrades>summary::before{content:'▸';color:#edc08d;font-size:16px}
+.ob-mission-upgrades[open]>summary::before{content:'▾'}
+.ob-mission-upgrades>summary small{font-size:10px;font-weight:600;color:#a7c7da;overflow-wrap:anywhere}
+.ob-mission-upgrade-body{display:grid;gap:12px;border-top:1px solid #3f5e72;padding:12px}
+.ob-mission-upgrade-body>p{font-size:11px;color:#a9c5d6;line-height:1.65;margin:0}
+.sys-guided-payload-notice{background:#122d42;border:1px solid #567b94;border-radius:9px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.sys-guided-payload-notice>strong{font-family:'Space Grotesk',sans-serif;color:#f4dba9;font-size:16px}
+.sys-guided-payload-notice>p{font-size:12px;color:#b4d0e2;line-height:1.7;margin:0}
+.sys-guided-payload-notice>.secondary-button{align-self:flex-start;white-space:normal;text-align:left}
+@media(max-width:520px){.sys-guided-payload-notice>.secondary-button{width:100%}}
