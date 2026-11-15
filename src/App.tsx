@@ -919,7 +919,7 @@ export default function App() {
           <div><small>AVAILABLE CASH</small><strong>{usd(game.cash)}</strong></div>
           <div><small>RESEARCH POINTS</small><strong>{game.researchPoints} RP</strong></div>
           <div><small>DAILY OPERATING COST</small><strong>−{usd(dailyBudget.expensesUsd)}/d</strong></div>
-          <div><small>MOON REVENUE</small><strong>+{usd(dailyBudget.revenueUsd)}/d</strong></div>
+          <div><small>PASSIVE REVENUE · LUNAR + ORBITAL</small><strong>+{usd(dailyBudget.revenueUsd)}/d</strong></div>
           <div className={dailyBudget.netUsd>=0?'positive':'negative'}>
             <small>NET / GAME DAY</small><strong>{dailyBudget.netUsd>=0?'+':''}{usd(dailyBudget.netUsd)}/d</strong>
             <small>{dailyBudget.netUsd>=0?'POSITIVE CASH FLOW':
@@ -928,22 +928,22 @@ export default function App() {
           </div>
           {game.cash<0&&<div className="finance-distress">CASH DEFICIT · new investments blocked</div>}
         </section>
-        {(game.activeStoryRun&&activeFlightProgress||game.activeMoonCargoRun&&lunarProgress||game.activeAssemblyProject)&&<button type="button"
+        {(game.activeStoryRun&&activeFlightProgress||game.activeMoonCargoRun&&lunarProgress||game.activeNetworkRun&&networkProgress||game.activeAssemblyProject)&&<button type="button"
           className="flight-progress-pill" onClick={openFlightViewer}
           aria-label="Open active flight progress">
           <svg viewBox="0 0 52 52" aria-hidden="true">
             <circle cx="26" cy="26" r="20" fill="none" stroke="#344963" strokeWidth="5"/>
             <circle cx="26" cy="26" r="20" fill="none" stroke="#f3bd7b" strokeWidth="5"
               transform="rotate(-90 26 26)"
-              strokeDasharray={String(125.66*(lunarProgress?.fraction??activeFlightProgress?.fraction??assemblyFraction??0))+' 125.66'}/>
-            <text x="26" y="30" fill="#f6e7d0" textAnchor="middle" fontSize="11" fontWeight="800">{Math.round((lunarProgress?.fraction??activeFlightProgress?.fraction??assemblyFraction??0)*100)}%</text>
+              strokeDasharray={String(125.66*(networkProgress?.fraction??lunarProgress?.fraction??activeFlightProgress?.fraction??assemblyFraction??0))+' 125.66'}/>
+            <text x="26" y="30" fill="#f6e7d0" textAnchor="middle" fontSize="11" fontWeight="800">{Math.round((networkProgress?.fraction??lunarProgress?.fraction??activeFlightProgress?.fraction??assemblyFraction??0)*100)}%</text>
           </svg>
-          <span><strong>{game.activeMoonCargoRun?.title??game.activeStoryRun?.title??game.activeAssemblyProject?.draft.title}</strong>
-            <small>{(lunarProgress??activeFlightProgress)?.ready?
-              game.activeMoonCargoRun?'LANDED · CONFIRM DELIVERY':'READY FOR DEBRIEF':
+          <span><strong>{game.activeNetworkRun?.title??game.activeMoonCargoRun?.title??game.activeStoryRun?.title??game.activeAssemblyProject?.draft.title}</strong>
+            <small>{(networkProgress??lunarProgress??activeFlightProgress)?.ready?
+              game.activeMoonCargoRun?'LANDED · CONFIRM DELIVERY':game.activeNetworkRun?'READY · COMMISSION NETWORK':'READY FOR DEBRIEF':
               game.activeAssemblyProject?
               'ORBIT INVENTORY '+game.activeAssemblyProject.launchesCompleted+'/'+game.activeAssemblyProject.draft.launchCount+' · open staging':
-              'ETA '+flightEta((lunarProgress??activeFlightProgress)?.remainingMs??0)+' · open viewer'}</small></span>
+              'ETA '+flightEta((networkProgress??lunarProgress??activeFlightProgress)?.remainingMs??0)+' · open viewer'}</small></span>
         </button>}
         <section className={'intro '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')}>
           <div><div className="eyebrow"><span className="small-diamond" /> YOUR SPACE PROGRAM STARTS HERE</div><h1>Build the future.<br /><em>Beyond Earth.</em></h1><p>Design capable spacecraft, accept orbital contracts, and turn engineering decisions into a thriving space economy.</p></div>
@@ -978,7 +978,7 @@ export default function App() {
             launchService={game.rocketService} rocketProgramLevel={game.rocketProgramLevel}
             orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
             priorServiceFlights={game.rocketFlightCounts[game.rocketService]??0}
-            otherMissionActive={!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject)}
+            otherMissionActive={!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject||game.activeNetworkRun)}
             canadianSuccesses={game.canadianMissionSuccesses}
             weatherReserveHours={nasaWeather.reserveHours}
             onEditSpacecraft={()=>{setLabObservationChoices(readObservationChoices());setActiveView('systems')}}
@@ -999,7 +999,7 @@ export default function App() {
             canadianSuccesses={game.canadianMissionSuccesses}
             nasaNeoOffer={game.neoOpportunity?.mission??null}
             weatherReserveHours={nasaWeather.reserveHours}
-            logisticsInProgress={!!game.activeMoonCargoRun}
+            logisticsInProgress={!!(game.activeMoonCargoRun||game.activeNetworkRun)}
             nowMs={flightNowMs} viewerOpen={flightViewerOpen}
             onViewerOpenChange={setFlightViewerOpen}
             selected={campaignSelection.selected}
@@ -1127,6 +1127,27 @@ export default function App() {
           onFleetUpgrade={buyFleetUpgrade}
           onUnlockAssembly={buyOrbitalAssembly}
           onGoResearch={()=>{setResearchFocus('Launch');setActiveView('research')}}/>}
+        {activeView==='infrastructure'&&<OrbitalInfrastructure
+          levels={game.networkLevels} activeRun={game.activeNetworkRun}
+          design={spacecraftDesign} cash={game.cash} day={game.day} nowMs={flightNowMs}
+          unlocked={game.storyCompleted.includes('observation')||game.devMode}
+          launcher={vehicle} service={game.rocketService} tier={game.rocketProgramLevel}
+          assemblyUnlocked={game.orbitalAssemblyUnlocked}
+          priorFlights={game.rocketFlightCounts[game.rocketService]??0}
+          canadianSuccesses={game.canadianMissionSuccesses}
+          productionDiscount={missionTechnologyDiscount}
+          otherFlightActive={!!(game.activeStoryRun||game.activeMoonCargoRun||game.activeAssemblyProject)}
+          onDispatch={dispatchNetwork} onComplete={finishNetwork}
+          onGoToLab={()=>setActiveView('systems')}
+          onGoToFleet={()=>setActiveView('rockets')}
+          onGoToMission={()=>{setCampaignMode('observation');setActiveView('missions')}}/>}
+        {activeView==='crafts'&&<SpacecraftLibrary
+          designs={game.spacecraftBlueprints} working={spacecraftDesign}
+          onSave={saveWorkingSpacecraft} onNew={newWorkingSpacecraft}
+          onLoad={loadWorkingSpacecraft} onDuplicate={duplicateWorkingSpacecraft}
+          onRename={renameWorkingSpacecraft} onRemove={deleteWorkingSpacecraft}
+          onOpenEngineering={()=>setActiveView('systems')}
+          onOpenCampaign={()=>{setCampaignMode('progression');setActiveView('missions')}}/>}
         {activeView==='moon'&&<MoonBase cash={game.cash} level={game.moonBaseLevel}
           unlocked={game.storyCompleted.includes('lunar')||game.devMode} devMode={game.devMode}
           cargoDeliveredLevel={game.moonCargoDeliveredLevel}
@@ -1135,7 +1156,7 @@ export default function App() {
           orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
           rocketFlights={game.rocketFlightCounts} vehicle={vehicle}
           canadianSuccesses={game.canadianMissionSuccesses}
-          otherFlightActive={!!(game.activeStoryRun||game.activeAssemblyProject)}
+          otherFlightActive={!!(game.activeStoryRun||game.activeAssemblyProject||game.activeNetworkRun)}
           onDispatchCargo={startMoonCargo} onCompleteCargo={finishMoonCargo}
           onOpenRocketFleet={()=>setActiveView('rockets')}
           onInvest={investMoonBase}
