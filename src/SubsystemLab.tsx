@@ -163,10 +163,20 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
       ['Ideal all-fuel Δv',fmt(result.idealDeltaVms,'m/s',0)],
       ['Usable Δv in '+design.plannedBurnDays+' days',fmt(result.burnPreview.deliveredDeltaVms,'m/s',0)],
       ['Fuel burned / loaded',fmt(result.burnPreview.burnedPropellantKg,'kg',2)+' / '+fmt(result.totalPropellantKg,'kg',2)]]},
-    payload:{title:'Science payload effect',description:'Sensors add instrument mass, steady active watts and associated waste heat; generic cargo is counted separately.',stats:[
-      ['Total science + cargo',fmt(result.instrumentMassKg+design.payloadMassKg,'kg',1)],
-      ['Active instrument load',fmt(result.instrumentPowerW,'W',0)],
-      ['Selected sensor',result.instrumentName]]},
+    payload:{title:observation?'Guided flight sensor':'Science payload effect',
+      description:observation?
+        'Earth Observation One uses the guided camera selected in Play Campaign instead of the Lab sensor and cargo slot. Other spacecraft components remain shared.':
+        'Sensors add instrument mass, steady active watts and associated waste heat; generic cargo is counted separately.',
+      stats:[
+        ['Science sensor + generic cargo',fmt(observation?
+          (observation.forecast?.preview.missionResult.instrumentMassKg??0):
+          result.instrumentMassKg+design.payloadMassKg,'kg',1)],
+        ['Active instrument load',fmt(observation?
+          (observation.forecast?.preview.missionResult.instrumentPowerW??0):
+          result.instrumentPowerW,'W',0)],
+        ['Selected sensor',observation?
+          (observation.forecast?.preview.missionResult.instrumentName??'Guided mission review unavailable'):
+          result.instrumentName]]},
     power:{title:'Power generation effect',description:'Solar area, number of wings, batteries and generators set delivered electrical power, margins and installed equipment mass.',stats:[
       ['Generation at selected distance',fmt(result.totalAvailablePowerW,'W',0)],
       ['Power margin vs peak loads',fmt(result.totalPowerMarginW,'W',0)],
@@ -200,9 +210,11 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
       <p className="sys-intro">
         This is the <b>one source for installed spacecraft hardware</b>: the science sensor,
         generic cargo, commercial service module, core power, thermal systems, tanks and propulsion.
-        Play Campaign reads these selections directly; its separate mission-only kit (kick stage,
+        Explore Further reads these selections directly; its separate mission kit (kick stage,
         high-gain communications, shielding, reserve battery and optional CubeSat) is added
-        only for that flight, not entered as base payload a second time.
+        only for that flight. The introductory Earth Observation One tutorial is an exception:
+        its camera is selected in Play Campaign and replaces this Lab's sensor and generic
+        cargo for that single guided mission, without double-counting either.
         Real published component examples are used where available;
         everything labeled <b>assumption</b> is an illustrative sizing input, not a NASA-certified design.
         Technologies marked locked are developed in Research &amp; Roadmap. Dev Mode enables all catalog parts for presentations.
@@ -449,19 +461,34 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
 
       <div className={'sys-group '+(activeSystemTab==='payload'?'':'sys-hidden')}>
         <div className="sys-heading"><span>02</span><div><h3>Scientific payload</h3><small>Instrument mass, continuous active load and mission suitability</small></div></div>
-        <div className="sys-input-grid">
-          <label className="sys-field sys-wide">
-            <span>Installed science sensor<small>GAME ENGINEERING EXAMPLES</small><FieldHelp term="Installed science sensor"/></span>
-            <select value={design.payloadInstrumentId} onChange={e=>change('payloadInstrumentId',e.target.value as InstrumentSelection)}>
-              <option value="none">No catalog sensor · generic payload only</option>
-              {Object.values(SCIENCE_INSTRUMENTS).map(inst=><option key={inst.id} value={inst.id}
-                disabled={!unlocked(INSTRUMENT_RESEARCH[inst.id])}>
-                {inst.name} · {inst.massKg} kg · {inst.powerW} W · {inst.category}{!unlocked(INSTRUMENT_RESEARCH[inst.id])?' · RESEARCH LOCKED':''}</option>)}
-            </select>
-          </label>
-          <NumberField label="Additional instruments / cargo mass" unit="kg · generic cargo only; excludes sensor and mission kit" value={design.payloadMassKg}
-            min={0} max={1000} step={5} onChange={n=>change('payloadMassKg',n)}/>
-        </div>
+        {observation?
+          <div className="sys-guided-payload-notice" aria-label="Earth Observation One payload override">
+            <div className="eyebrow">GUIDED MISSION / PAYLOAD SELECTED IN PLAY CAMPAIGN</div>
+            <strong>{observation.forecast?.preview.missionResult.instrumentName??'Guided science camera'}</strong>
+            <p>For Earth Observation One, the camera is set in the guided mission's
+              control panel. That camera replaces the saved Lab instrument
+              <em> and</em> generic cargo mass for this first mission only.
+              The two Lab payload inputs are hidden here to avoid editing hardware
+              that will not fly. Lab propulsion, power, core battery, radiators
+              and other installed spacecraft systems still carry into the mission.
+              Switch to Explore Further to edit a reusable science payload for later missions.</p>
+            <button type="button" className="secondary-button" onClick={onReturnToMission}>
+              Change guided camera in Play Campaign ↗
+            </button>
+          </div>:
+          <div className="sys-input-grid">
+            <label className="sys-field sys-wide">
+              <span>Installed science sensor<small>GAME ENGINEERING EXAMPLES</small><FieldHelp term="Installed science sensor"/></span>
+              <select value={design.payloadInstrumentId} onChange={e=>change('payloadInstrumentId',e.target.value as InstrumentSelection)}>
+                <option value="none">No catalog sensor · generic payload only</option>
+                {Object.values(SCIENCE_INSTRUMENTS).map(inst=><option key={inst.id} value={inst.id}
+                  disabled={!unlocked(INSTRUMENT_RESEARCH[inst.id])}>
+                  {inst.name} · {inst.massKg} kg · {inst.powerW} W · {inst.category}{!unlocked(INSTRUMENT_RESEARCH[inst.id])?' · RESEARCH LOCKED':''}</option>)}
+              </select>
+            </label>
+            <NumberField label="Additional instruments / cargo mass" unit="kg · generic cargo only; excludes sensor and mission kit" value={design.payloadMassKg}
+              min={0} max={1000} step={5} onChange={n=>change('payloadMassKg',n)}/>
+          </div>}
         <div className="sys-orbital-service">
           <div className="eyebrow">ORBITAL SERVICE PAYLOAD / COMPUTE & CANADIAN NETWORK</div>
           <h4>Commercial orbital module</h4>
@@ -491,7 +518,7 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
               hardware specifications.</p>
           </div>}
         </div>
-        {selectedInstrument?<div className="sys-sensor-card">
+        {!observation&&selectedInstrument?<div className="sys-sensor-card">
           <div><span className="sys-chip">{selectedInstrument.category==='earth'?'EARTH OBSERVATION':'DEEP-SPACE SCIENCE'}</span><h4>{selectedInstrument.name}</h4>
             <p>{selectedInstrument.description}</p>
             <a href={selectedInstrument.reference} target="_blank" rel="noreferrer">Explore NASA science inspiration ↗</a>
@@ -499,12 +526,12 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
           <div className="sys-sensor-numbers"><strong>{fmt(selectedInstrument.massKg,'kg')}</strong><span>INSTALLED MASS</span>
             <strong>{fmt(selectedInstrument.powerW,'W')}</strong><span>ACTIVE DRAW</span>
             <strong>{selectedInstrument.dataMbps} Mb/s</strong><span>ILLUSTRATIVE DATA</span></div>
-        </div>:<p className="sys-subnote">Install a camera, magnetometer, spectrometer, thermal sensor or altimeter to automatically add its mass, active electric demand and heat. Values are illustrative—not certified specifications of NASA flight instruments.</p>}
-        <p className="sys-subnote">This payload configuration is reused automatically by Play Campaign.
-          Enter generic cargo mass here only once. Campaign-specific antennas, shielding, backup
-          batteries and CubeSat rideshares are separate physical items; they add launch weight but
-          their support-hardware mass does not satisfy science-payload quotas. Earth Observation
-          One chooses its own instrument in this same sensor slot.</p>
+        </div>:!observation?<p className="sys-subnote">Install a camera, magnetometer, spectrometer, thermal sensor or altimeter to automatically add its mass, active electric demand and heat. Values are illustrative—not certified specifications of NASA flight instruments.</p>:null}
+        {!observation&&<p className="sys-subnote">This payload configuration is reused automatically
+          by Explore Further missions. Enter generic cargo here only once. Campaign-specific
+          antennas, shielding and reserve batteries are separate physical items; they add
+          launch weight but cannot satisfy science-payload quotas. A separately launched
+          CubeSat contributes only its own science payload mass.</p>}
       </div>
 
       <div className={'sys-group '+(activeSystemTab==='power'?'':'sys-hidden')}>
