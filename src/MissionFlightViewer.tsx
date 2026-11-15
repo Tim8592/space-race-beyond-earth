@@ -17,9 +17,15 @@ function fitTrajectory(trajectory:number[][]):Point[]{
 function fallbackPath(target:CampaignRun['target']):Point[]{
  return Array.from({length:151},(_,i)=>{
   const t=i/150;
-  if(target==='ellipse'||target==='lunar'){
-   const e=target==='lunar'?.79:.36;
-   const theta=2*Math.PI*(.03+t*.86);
+  if(target==='lunar'){
+   // Earth-to-Moon schematic transfer: spacecraft visibly arrives near Moon.
+   // This is not a propagated three-body translunar injection or capture.
+   const p0={x:110,y:218},p1={x:195,y:40},p2={x:408,y:250},p3={x:550,y:105};
+   return {x:(1-t)**3*p0.x+3*(1-t)**2*t*p1.x+3*(1-t)*t*t*p2.x+t**3*p3.x,
+     y:(1-t)**3*p0.y+3*(1-t)**2*t*p1.y+3*(1-t)*t*t*p2.y+t**3*p3.y};
+  }
+  if(target==='ellipse'){
+   const e=.36,theta=2*Math.PI*(.03+t*.86);
    const radius=90*(1-e*e)/(1+e*Math.cos(theta));
    return {x:245+Math.cos(theta)*radius*2.15,y:170-Math.sin(theta)*radius};
   }
@@ -77,7 +83,8 @@ export default function MissionFlightViewer({run,nowMs}:Props){
        {Array.from({length:60},(_,i)=><circle key={i} cx={9+(i*159)%627} cy={14+(i*113)%320}
           r={i%5===0?1.2:.5} fill="#c2e1ff" opacity=".4"/>)}
        {target==='lunar'&&<circle cx="555" cy="105" r="37" fill="#858d9c" stroke="#bbcbd5" opacity=".7"/>}
-       {(target==='lunar'||target==='ellipse')&&<circle cx="245" cy="170" r="29"
+       {(target==='lunar'||target==='ellipse')&&<circle cx={target==='lunar'?110:245}
+          cy={target==='lunar'?218:170} r="29"
           fill="url(#mission-globe)" stroke="#9ccff0"/>}
        {(target==='mars'||target==='jupiter'||target==='asteroid')&&<>
           <circle cx={start.x} cy={start.y} r="12" fill="url(#mission-globe)" stroke="#bde5ff"/>
