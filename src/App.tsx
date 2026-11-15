@@ -486,11 +486,22 @@ export default function App() {
   }
   function startCampaignMission(run:CampaignRun){
     setSnapshot(previous=>{
-      if(previous.game.activeStoryRun||previous.game.storyCompleted.includes(run.id)||
-        previous.game.cash<run.costUsd||run.launchedDay!==previous.game.day)return previous;
+      if(previous.game.activeStoryRun||previous.game.activeMoonCargoRun||previous.game.storyCompleted.includes(run.id)||
+        previous.game.cash<run.costUsd||run.launchedDay!==previous.game.day||
+        (run.launchService!==undefined&&run.launchService!==previous.game.rocketService))
+        return previous;
+      const manifest=planLaunchManifest({
+        totalWetKg:run.payloadKg,service:previous.game.rocketService,
+        vehicle:previous.vehicle,tier:previous.game.rocketProgramLevel,
+        assemblyUnlocked:previous.game.orbitalAssemblyUnlocked,
+        priorFlights:previous.game.rocketFlightCounts[previous.game.rocketService]??0,
+      });
+      if(!manifest.feasible||manifest.flightsRequired!==run.launchCount)return previous;
       return {...previous,game:{...previous.game,
         cash:previous.game.cash-run.costUsd,
-        launched:previous.game.launched+1,
+        launched:previous.game.launched+manifest.flightsRequired,
+        rocketFlightCounts:{...previous.game.rocketFlightCounts,
+          [previous.game.rocketService]:(previous.game.rocketFlightCounts[previous.game.rocketService]??0)+manifest.flightsRequired},
         engineBuildCounts:{...previous.game.engineBuildCounts,
           [previous.vehicle.engineId]:
             (previous.game.engineBuildCounts[previous.vehicle.engineId]??0)+1},
@@ -502,7 +513,7 @@ export default function App() {
       }};
     });
     setFlightViewerOpen(true);setFlightNowMs(Date.now());
-    setMessage('Flight launched. You can leave the viewer and monitor its progress elsewhere.');
+    setMessage('All rocket launch slots paid. Flight in progress; transport assembly and mission reward remain time-gated.');
   }
   function finishCampaignMission(){
     setSnapshot(previous=>{
@@ -639,13 +650,13 @@ export default function App() {
           <div className="brand"><span className="brand-symbol"><span className="brand-orbit" /></span><div><strong>SPACE RACE</strong><small>BEYOND EARTH</small></div></div>
           <nav aria-label="Primary" className="game-tabs" role="tablist">
               {([
-                ['missions','Play Campaign'],['moon','Moon Base'],['systems','Engineering Lab'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],
+                ['missions','Play Campaign'],['rockets','Rocket Fleet'],['systems','Engineering Lab'],['moon','Moon Base'],['orbits','Orbital Map'],['library','Mission Library'],['learning','Learn Physics'],['research','Research & Roadmap'],['sources','Sources & Data'],
               ] as const).map(([id,label])=><button key={id} type="button" role="tab" aria-selected={activeView===id} className={activeView===id?'current':''} onClick={()=>{
                   if(id==='systems')setLabObservationChoices(readObservationChoices());
                   setActiveView(id);
                 }}>{label}</button>)}
             </nav>
-          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.4</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
+          <div className="prototype-pill"><span className="live-dot" /> PROTOTYPE <span className="version">V1.5</span>{game.devMode&&<span className="dev-indicator"> · DEV UNLOCKED</span>}</div>
         </div>
       </header>
 
@@ -663,19 +674,20 @@ export default function App() {
           </div>
           {game.cash<0&&<div className="finance-distress">CASH DEFICIT · new investments blocked</div>}
         </section>
-        {game.activeStoryRun&&activeFlightProgress&&<button type="button"
+        {(game.activeStoryRun&&activeFlightProgress||game.activeMoonCargoRun&&lunarProgress)&&<button type="button"
           className="flight-progress-pill" onClick={openFlightViewer}
           aria-label="Open active flight progress">
           <svg viewBox="0 0 52 52" aria-hidden="true">
             <circle cx="26" cy="26" r="20" fill="none" stroke="#344963" strokeWidth="5"/>
             <circle cx="26" cy="26" r="20" fill="none" stroke="#f3bd7b" strokeWidth="5"
               transform="rotate(-90 26 26)"
-              strokeDasharray={String(125.66*activeFlightProgress.fraction)+' 125.66'}/>
-            <text x="26" y="30" fill="#f6e7d0" textAnchor="middle" fontSize="11" fontWeight="800">{Math.round(activeFlightProgress.fraction*100)}%</text>
+              strokeDasharray={String(125.66*(lunarProgress?.fraction??activeFlightProgress?.fraction??0))+' 125.66'}/>
+            <text x="26" y="30" fill="#f6e7d0" textAnchor="middle" fontSize="11" fontWeight="800">{Math.round((lunarProgress?.fraction??activeFlightProgress?.fraction??0)*100)}%</text>
           </svg>
-          <span><strong>{game.activeStoryRun.title}</strong>
-            <small>{activeFlightProgress.ready?'READY FOR DEBRIEF':
-              'ETA '+flightEta(activeFlightProgress.remainingMs)+' · open viewer'}</small></span>
+          <span><strong>{game.activeMoonCargoRun?.title??game.activeStoryRun?.title}</strong>
+            <small>{(lunarProgress??activeFlightProgress)?.ready?
+              game.activeMoonCargoRun?'LANDED · CONFIRM DELIVERY':'READY FOR DEBRIEF':
+              'ETA '+flightEta((lunarProgress??activeFlightProgress)?.remainingMs??0)+' · open viewer'}</small></span>
         </button>}
         <section className={'intro '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')}>
           <div><div className="eyebrow"><span className="small-diamond" /> YOUR SPACE PROGRAM STARTS HERE</div><h1>Build the future.<br /><em>Beyond Earth.</em></h1><p>Design capable spacecraft, accept orbital contracts, and turn engineering decisions into a thriving space economy.</p></div>
@@ -714,7 +726,12 @@ export default function App() {
             lockedTechnologies={lockedLabParts}
             onComplete={completeEarthObservation}/>}
         {activeView==='missions'&&campaignMode==='progression'&&
-          <CampaignMissions nowMs={flightNowMs} viewerOpen={flightViewerOpen}
+          <CampaignMissions launchService={game.rocketService}
+            rocketProgramLevel={game.rocketProgramLevel}
+            orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
+            priorServiceFlights={game.rocketFlightCounts[game.rocketService]??0}
+            logisticsInProgress={!!game.activeMoonCargoRun}
+            nowMs={flightNowMs} viewerOpen={flightViewerOpen}
             onViewerOpenChange={setFlightViewerOpen}
             selected={campaignSelection.selected}
             agencyOffers={campaignSelection.agency} scheduled={campaignSelection.special}
@@ -730,7 +747,7 @@ export default function App() {
             solvedTransfer={missionSolved}
             onStart={startCampaignMission} onFinish={finishCampaignMission}
             onGoToLab={()=>setActiveView('systems')}
-            onGoToRocket={()=>{setCampaignMode('contracts');setActiveView('missions')}}
+            onGoToRocket={()=>setActiveView('rockets')}
             onViewOrbital={openMissionOrbit}/>}
         <div className={'control-layout '+(activeView==='missions'&&campaignMode==='contracts'?'':'view-hidden')} id="mission-control">
           <div className="left-column">
@@ -820,8 +837,24 @@ export default function App() {
             initialEccentricity={orbitalSelection?.eccentricity??.25}
             onTransferSolved={setLastSolvedTransfer}/>
         </div>}
+        {activeView==='rockets'&&<RocketFleet vehicle={vehicle} cash={game.cash}
+          service={game.rocketService} tier={game.rocketProgramLevel}
+          assemblyUnlocked={game.orbitalAssemblyUnlocked}
+          priorFlights={game.rocketFlightCounts}
+          onUpdateVehicle={updateVehicle}
+          onServiceChange={id=>setSnapshot(previous=>({...previous,game:{...previous.game,rocketService:id}}))}
+          onFleetUpgrade={buyFleetUpgrade}
+          onUnlockAssembly={buyOrbitalAssembly}/>}
         {activeView==='moon'&&<MoonBase cash={game.cash} level={game.moonBaseLevel}
           unlocked={game.storyCompleted.includes('lunar')||game.devMode} devMode={game.devMode}
+          cargoDeliveredLevel={game.moonCargoDeliveredLevel}
+          cargoRun={game.activeMoonCargoRun} nowMs={flightNowMs}
+          rocketService={game.rocketService} rocketTier={game.rocketProgramLevel}
+          orbitalAssemblyUnlocked={game.orbitalAssemblyUnlocked}
+          rocketFlights={game.rocketFlightCounts} vehicle={vehicle}
+          otherFlightActive={!!game.activeStoryRun}
+          onDispatchCargo={startMoonCargo} onCompleteCargo={finishMoonCargo}
+          onOpenRocketFleet={()=>setActiveView('rockets')}
           onInvest={investMoonBase}
           onExploreCampaign={()=>{
             setSelectedCampaignId('lunar');setCampaignMode('progression');setActiveView('missions');
