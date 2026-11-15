@@ -28,6 +28,24 @@ export const SCIENCE_INSTRUMENTS = {
     description:'Measures infrared radiance for temperature-related Earth science.',
     reference:'https://landsat.gsfc.nasa.gov/',
   },
+  neoTelescope: {
+    id:'neoTelescope',name:'NEOSSAT-inspired optical telescope',category:'earth' as const,
+    massKg:35,powerW:118,standbyW:7,dataMbps:.12,sciencePerHour:2.4,costUsd:15_000_000,
+    description:'Optical astrometry and near-Earth-object candidate imaging inspired by CSA NEOSSAT FITS data extraction tutorials. All sensor engineering figures are game assumptions, NOT NEOSSAT actual hardware performance.',
+    reference:'https://github.com/asc-csa/NEOSSAT_Tutorial',
+  },
+  auroralImager: {
+    id:'auroralImager',name:'CASSIOPE-inspired auroral imager',category:'earth' as const,
+    massKg:22,powerW:94,standbyW:6,dataMbps:.075,sciencePerHour:2.1,costUsd:12_000_000,
+    description:'Auroral imaging and ionospheric research inspired by CASSIOPE e-POP/FAI data tutorials. The power, data rate, mass and procurement amounts are fictional.',
+    reference:'https://github.com/asc-csa/CASSIOPE-Tutorial',
+  },
+  sarImager: {
+    id:'sarImager',name:'RADARSAT-inspired synthetic-aperture radar',category:'earth' as const,
+    massKg:95,powerW:345,standbyW:12,dataMbps:.75,sciencePerHour:4.5,costUsd:45_000_000,
+    description:'Active SAR payload, higher peak electrical and downlink burden, inspired by CSA RADARSAT-1/RCM Earth-observation archive tutorials. This illustrative sensor is NOT an actual RADARSAT antenna or specification.',
+    reference:'https://github.com/asc-csa/EO-Visualization-and-Search-Tutorial',
+  },
   magnetometer: {
     id:'magnetometer',name:'Fluxgate magnetometer',category:'planetary' as const,
     massKg:6,powerW:12,standbyW:2,dataMbps:0.0006,sciencePerHour:0.7,costUsd:2_000_000,
