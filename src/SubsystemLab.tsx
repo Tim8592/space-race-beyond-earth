@@ -102,7 +102,7 @@ function checkPanel(label:string):SystemTab|null{
   if(/thermal|heat|radiator|reactor/i.test(label))return 'thermal';
   if(/power|electric|generator/i.test(label))return 'power';
   if(/payload|science|instrument/i.test(label))return 'payload';
-  if(/transfer|delta.v|propulsion/i.test(label))return 'propulsion';
+  if(/transfer|delta.v|propulsion|engine mount/i.test(label))return 'propulsion';
   return null; // launcher, antenna, launch window and budget are campaign controls
 }
 export default function SubsystemLab({design,onDesignChange,unlockedTechnologies=[],devMode=false,
@@ -157,10 +157,10 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
   ];
 
   const summary=result?({
-    propulsion:{title:'Propulsion effect',description:'Installed engine(s), fuel and feed architecture influence thrust, stored mass and ideal Δv. The timeline is still an approximation.',stats:[
-      ['Ideal onboard Δv',fmt(result.idealDeltaVms,'m/s',0)],
-      ['Thruster hardware + tank mass',fmt(result.engineHardwareMassKg+result.totalTankHardwareMassKg,'kg',2)],
-      ['Propulsion peak electrical input',fmt(result.propulsionPeakPowerW,'W',0)]]},
+    propulsion:{title:'Propulsion effect',description:'Ideal Δv rises if you remove heavy engines without changing fuel. Usable Δv also depends on burn time, mass flow and how many engines can be powered. Fuel mass is subtracted as it burns.',stats:[
+      ['Ideal all-fuel Δv',fmt(result.idealDeltaVms,'m/s',0)],
+      ['Usable Δv in '+design.plannedBurnDays+' days',fmt(result.burnPreview.deliveredDeltaVms,'m/s',0)],
+      ['Fuel burned / loaded',fmt(result.burnPreview.burnedPropellantKg,'kg',2)+' / '+fmt(result.totalPropellantKg,'kg',2)]]},
     payload:{title:'Science payload effect',description:'Sensors add instrument mass, steady active watts and associated waste heat; generic cargo is counted separately.',stats:[
       ['Total science + cargo',fmt(result.instrumentMassKg+design.payloadMassKg,'kg',1)],
       ['Active instrument load',fmt(result.instrumentPowerW,'W',0)],
@@ -365,13 +365,72 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
               </select>
             </label>
           </>}
-          <NumberField label="Spacecraft bus (other dry hardware)" unit="kg · assumption" value={design.busDryMassKg} min={1} max={2000} step={5} onChange={n=>change('busDryMassKg',n)}/>
+          <NumberField label="Spacecraft bus (other dry hardware)" unit="kg · base frame and other equipment" value={design.busDryMassKg} min={1} max={2000} step={5} onChange={n=>change('busDryMassKg',n)}/>
+          <NumberField label="Bus structural frame scale" unit="× baseline width/height · adds frame mass" value={design.structureScale} min={1} max={3} step={0.05}
+            onChange={n=>change('structureScale',n)}/>
+          <NumberField label="Propulsion evaluation window" unit="days · total active mission interval" value={design.plannedBurnDays} min={1} max={3650} step={1}
+            onChange={n=>change('plannedBurnDays',n)}/>
+          <NumberField label="Engine firing duty fraction" unit="fraction · active vs elapsed time" value={design.propulsionDutyFraction} min={0.05} max={1} step={0.05}
+            onChange={n=>change('propulsionDutyFraction',n)}/>
 
         </div>
+        {result&&<div className={'sys-engine-packing '+(result.engineMountsFit?'fits':'crowded')} aria-label="Thruster mounting clearance">
+          <div><strong>{result.engineMountsFit?'✓ Engine mounts fit structure':'! Engine mounting structure too small'}</strong>
+            <span>Selected frame {fmt(design.structureScale,'×',2)} · needed at least {fmt(result.requiredStructureScale,'×',2)}
+              {' · '}extra structure {fmt(result.extraStructureMassKg,'kg',2)}</span></div>
+          <button type="button" onClick={()=>change('structureScale',
+            Math.min(3,Math.ceil(result.requiredStructureScale*20)/20))}>
+            Auto-fit installed thrusters ↗
+          </button>
+        </div>}
+        {result&&<div className="sys-burn-ledger" aria-label="Finite propellant burn and delta-V analysis">
+          <div className="eyebrow">PHYSICS / PROPELLANT DEPLETION AT NOMINAL ENGINE OPERATING POINT</div>
+          <h4>Where the Δv comes from</h4>
+          <p>Removing engines decreases dry mass, so ideal Δv can increase with the same propellant.
+            But fewer engines lower thrust, reduce kg/s fuel flow and extend burn time. This
+            preview limits burn duration and only allows whole thrusters whose rated electrical
+            input fits the current power budget. No additional fuel is created or instantly spent.</p>
+          <div className="sys-burn-stats">
+            <div><small>Ideal all-fuel Δv</small><strong>{fmt(result.burnPreview.idealDeltaVms,'m/s',1)}</strong></div>
+            <div><small>Within {fmt(design.plannedBurnDays,'days',0)}</small><strong>{fmt(result.burnPreview.deliveredDeltaVms,'m/s',1)}</strong></div>
+            <div><small>Consumed propellant</small><strong>{fmt(result.burnPreview.burnedPropellantKg,'kg',3)}</strong></div>
+            <div><small>Propellant remaining</small><strong>{fmt(result.burnPreview.remainingPropellantKg,'kg',3)}</strong></div>
+          </div>
+          <div className="sys-burn-modes">
+            {result.burnPreview.phases.map((phase,i)=><div key={phase.id+'-'+i}>
+              <div><strong>{i+1}. {phase.name}</strong>
+                <span>{phase.activeEngines} / {phase.installedEngines} engines powered</span></div>
+              <div className="sys-burn-metrics">
+                <span>Thrust: {fmt(phase.activeThrustN,'N',3)}</span>
+                <span>Mass flow: {fmt(phase.activeMassFlowKgS*1e6,'mg/s',3)}</span>
+                <span>Burn time: {fmt(phase.elapsedCalendarDays,'days',2)}</span>
+                <span>Fuel used: {fmt(phase.propellantBurnedKg,'kg',3)}</span>
+                <span>Remaining: {fmt(phase.propellantRemainingKg,'kg',3)}</span>
+                <span>Δv delivered: {fmt(phase.deltaVms,'m/s',1)}</span>
+                <span>Start acceleration: {fmt(phase.initialAccelerationMmS2,'mm/s²',3)}</span>
+                <span>End acceleration: {fmt(phase.finalAccelerationMmS2,'mm/s²',3)}</span>
+              </div>
+            </div>)}
+          </div>
+          <table className="sys-fuel-table">
+            <thead><tr><th>Mission day</th><th>Wet mass</th><th>Remaining fuel</th><th>Cumulative Δv</th></tr></thead>
+            <tbody>{result.burnPreview.samples.map((sample,i)=><tr key={i}>
+              <td>{fmt(sample.day,'d',1)}</td><td>{fmt(sample.wetMassKg,'kg',2)}</td>
+              <td>{fmt(sample.propellantRemainingKg,'kg',3)}</td>
+              <td>{fmt(sample.deltaVms,'m/s',1)}</td>
+            </tr>)}</tbody>
+          </table>
+          <p className="sys-subnote"><b>Model assumptions:</b> dm/dt = −F/(Isp·g₀), constant nominal thrust/Isp,
+            independent tanks, sequential engine families and {fmt(design.propulsionDutyFraction*100,'%',0)}
+            scheduled firing duty. Powered engines may be fewer than installed engines. Ideal logarithmic
+            Δv integrates the decreasing instantaneous mass. No finite-thrust trajectory, thrust-vector
+            steering, eclipse coasting dynamics, throttle curves, boiloff or mission-specific gravity loss
+            is included.</p>
+        </div>}
         {result&&<div className="sys-architecture">
           <div><strong>Primary · {result.primaryMode.name}</strong><span>{result.primaryMode.kind} · {fmt(result.primaryMode.thrustN*1000,'mN',1)} · {fmt(result.primaryMode.completePropulsionPowerW,'W',0)} peak bus draw</span></div>
           {result.secondaryMode&&<div><strong>Secondary · {result.secondaryMode.name}</strong><span>{result.secondaryMode.kind} · {fmt(result.secondaryMode.thrustN*1000,'mN',1)} · {fmt(result.secondaryMode.completePropulsionPowerW,'W',0)} peak bus draw</span></div>}
-          <p>Both engines count toward launch mass. The power and thermal systems are sized to the highest single active engine family, not both firing at once. Ideal Δv uses separate sequential burns; no real low-thrust trajectory is implied.</p>
+          <p>Both propulsion families and the expanded structural frame count toward launch mass. Power and thermal sizing consider the peak nominal installed engine family. The finite propellant preview instead fires only the rated engines the available bus power supports, sequentially. This is still not an orbit-integrated low-thrust trajectory.</p>
         </div>}
         <p className="sys-subnote">
           {selectedElectric
@@ -559,7 +618,13 @@ export default function SubsystemLab({design,onDesignChange,unlockedTechnologies
             <span>LIVE · IDEALIZED</span>
           </div>
           <div className="sys-result-grid">
-            <Result label="Ideal delta-V (partial mass model)" value={fmt(result.idealDeltaVms,'m/s',0)} note="Not a flight-trajectory prediction"/>
+            <Result label="Ideal all-fuel Δv (Tsiolkovsky)" value={fmt(result.idealDeltaVms,'m/s',0)} note="Unlimited burn time and electrical power; assumes full fuel depletion"/>
+            <Result label={'Usable Δv within '+design.plannedBurnDays+' days'} value={fmt(result.burnPreview.deliveredDeltaVms,'m/s',1)}
+              note={fmt(result.burnPreview.burnedPropellantKg,'kg',2)+' burned / '+fmt(result.burnPreview.remainingPropellantKg,'kg',2)+' fuel remaining'}
+              tone={result.burnPreview.deliveredDeltaVms<result.idealDeltaVms?'warn':'good'}/>
+            <Result label="Expanded structural frame mass" value={fmt(result.extraStructureMassKg,'kg',2)}
+              note={result.engineMountsFit?'Engine positions fit structure':'Frame undersized for mounted engine count'}
+              tone={result.engineMountsFit?'good':'bad'}/>
             <Result label="Propellant burn at rated thrust" value={fmt(result.idealBurnDays,'days',1)} note="Continuous thrust; no coasting or eclipses"/>
             <Result label="Solar power generated" value={fmt(result.sunlightPowerW,'W',1)} note={fmt(design.distanceAu, 'AU',2)+' from Sun'}/>
             <Result label="Radioisotope / reactor output" value={fmt(result.generatorElectricPowerW,'W',1)} note={result.powerSystemHeritage}/>
