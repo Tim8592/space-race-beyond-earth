@@ -688,3 +688,59 @@
 .sys-fuel-table th{font-weight:800;color:#d7e9f6;background:#20364c}
 .sys-fuel-table td{color:#b9d6e6}
 @media(max-width:750px){.sys-burn-stats,.sys-burn-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* v1.4 — persistent agency budget, R&D resource economy and lunar base */
+.agency-finance-bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0 0 18px}
+.agency-finance-bar>div:not(.finance-distress){padding:12px 14px;background:#132a3d;border:1px solid #36536e;border-radius:8px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.agency-finance-bar small{font-size:9px;font-weight:850;letter-spacing:.8px;color:#9ebbd0}
+.agency-finance-bar strong{font:750 clamp(12px,1.6vw,19px) 'Space Grotesk',sans-serif;color:#f3e4ca;overflow-wrap:anywhere}
+.agency-finance-bar>.positive strong{color:#91e4b5}
+.agency-finance-bar>.negative strong{color:#ffa78d}
+.finance-distress{grid-column:1/-1;background:#543033;border:1px solid #ab686d;border-radius:6px;padding:10px;color:#ffb1b1;font-weight:800;font-size:11px}
+.flight-progress-pill{display:flex;align-items:center;gap:11px;position:fixed;bottom:20px;right:19px;z-index:15;background:#142c41;border:1px solid #c2935f;border-radius:12px;padding:8px 16px 8px 7px;color:#e5f3ff;box-shadow:0 7px 24px #020810a9;max-width:320px;text-align:left}
+.flight-progress-pill:hover{background:#23415c;border-color:#f7cb8a}
+.flight-progress-pill svg{width:52px;height:52px;flex-shrink:0}
+.flight-progress-pill span{display:flex;flex-direction:column;gap:6px;min-width:0}
+.flight-progress-pill strong{font:750 11px 'Space Grotesk',sans-serif;line-height:1.4}
+.flight-progress-pill small{color:#e6c28e;font-weight:700;font-size:10px}
+.mission-flight-viewer{margin:17px 0;background:#0a192a;border:1px solid #436580;border-radius:9px;padding:15px}
+.mission-flight-title{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:12px}
+.mission-flight-title h3{font:800 22px 'Space Grotesk',sans-serif;margin:5px 0;color:#f7f0e4}
+.mission-flight-title p{color:#9fbcd1;font-size:11px;margin:0}
+.mission-flight-title>strong{font:800 27px 'Space Grotesk',sans-serif;color:#f5c784}
+.mission-flight-scene svg{display:block;width:100%;border:1px solid #354e65;border-radius:8px}
+.mission-flight-model-note{font-size:11px;line-height:1.75;color:#b3cddf;margin:12px 0}
+.mission-flight-timeline{margin-top:12px;display:flex;flex-direction:column;gap:9px}
+.mission-flight-rail{height:9px;background:#283d52;border-radius:8px;overflow:hidden}
+.mission-flight-rail span{display:block;height:100%;background:linear-gradient(90deg,#d78f67,#f4cd88);transition:width .45s}
+.mission-flight-timeline>div:last-child{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11px;color:#c2d8e8}
+.mission-flight-timeline strong{color:#f4e0b9}
+.campaign-viewer-minimized{display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:14px;background:#142c43;border:1px dashed #597c94;border-radius:8px}
+.campaign-viewer-minimized strong{font-size:12px;color:#f1d49e}
+.campaign-viewer-minimized span{color:#b6cbdd;font-size:11px}
+.campaign-flight .launch-button:disabled{cursor:wait;opacity:.6}
+.moon-base-page{display:flex;flex-direction:column;gap:16px;margin-bottom:28px}
+.moon-base-intro{background:linear-gradient(135deg,#17344a,#121e30);border-color:#527089}
+.moon-base-intro h2{font:800 clamp(22px,3.8vw,36px) 'Space Grotesk',sans-serif;color:#eef5f8}
+.moon-base-intro p{line-height:1.7;color:#afc7d7;font-size:12px;max-width:840px}
+.moon-base-lock{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:15px;padding:12px 14px;background:#382c34;border:1px solid #806e6b;border-radius:7px;font-size:11px}
+.moon-base-lock strong{color:#ffe3ba}
+.moon-base-lock span{flex:1;color:#c9cbd0}
+.moon-base-body{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(295px,1fr);gap:15px;align-items:start}
+.moon-base-surface svg{width:100%;height:auto;display:block;border:1px solid #44596b;border-radius:8px}
+.moon-base-economy{display:flex;flex-direction:column;gap:14px}
+.moon-base-economy h3{font:800 20px 'Space Grotesk',sans-serif;color:#f3e4c9;margin:4px 0}
+.moon-base-numbers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.moon-base-numbers>div{padding:12px;border-radius:7px;border:1px solid #43637b;background:#102438;display:flex;flex-direction:column;gap:7px}
+.moon-base-numbers small{color:#adc9da;font-size:10px}
+.moon-base-numbers strong{color:#f5ce94;font-size:18px}
+.moon-next-investment{border-top:1px solid #49667a;padding-top:16px}
+.moon-next-investment h4{font:800 18px 'Space Grotesk',sans-serif;margin:8px 0;color:#f4e4b9}
+.moon-next-investment p{color:#aec9da;font-size:11px;line-height:1.65}
+.moon-next-investment>div:not(.eyebrow){display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #364f62;padding:11px 0;color:#afc7d5;font-size:11px}
+.moon-next-investment strong{color:#f2d19c}
+.moon-next-investment .launch-button{font-size:12px;text-align:left;line-height:1.5}
+.moon-base-complete{font-size:12px;color:#a9dfc0;line-height:1.8}
+@media(max-width:980px){.agency-finance-bar{grid-template-columns:repeat(3,minmax(0,1fr))}.moon-base-body{grid-template-columns:1fr}}
+@media(max-width:600px){.agency-finance-bar{grid-template-columns:repeat(2,minmax(0,1fr))}.moon-base-numbers{grid-template-columns:1fr}.flight-progress-pill{right:8px;bottom:8px}.agency-finance-bar strong{font-size:14px}}
