@@ -500,7 +500,7 @@ export default function App() {
             plan.manifest.flightsRequired}}};
     });
     setFlightNowMs(Date.now());setActiveView('infrastructure');
-    setMessage('Satellites, ground stations, assembly and launches charged. Revenue starts after orbital commissioning.');
+    setMessage('Satellites, ground equipment and all independent rocket launch invoices charged. Revenue starts after orbital commissioning.');
   }
   function finishNetwork(){
     setSnapshot(previous=>{
