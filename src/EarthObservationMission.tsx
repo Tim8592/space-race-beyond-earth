@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Spacecraft3D from './Spacecraft3D';
+import MissionOrbitScene from './MissionOrbitScene';
 import {
   DEFAULT_OBSERVATION, INSTRUMENTS, RADIOS, STORAGE,
   SCIENCE_GOAL, OBSERVATION_BUDGET_USD, OBSERVATION_DAYS,
@@ -66,7 +67,8 @@ function PercentBars({days}:{days:ReturnType<typeof simulateObservation>['days']
 }
 
 export default function EarthObservationMission({
-  spacecraft,launcher,cash,completedWithEngine,onEditSpacecraft,onEditLauncher,onStart,onComplete,
+  spacecraft,launcher,cash,completedWithEngine,technologyDiscount=0,lockedTechnologies=[],
+  onEditSpacecraft,onEditLauncher,onStart,onComplete,
 }:{
   spacecraft:SubsystemDesign;
   launcher:Vehicle;
@@ -74,6 +76,8 @@ export default function EarthObservationMission({
   completedWithEngine:number;
   onEditSpacecraft:()=>void;
   onEditLauncher:()=>void;
+  technologyDiscount?:number;
+  lockedTechnologies?:readonly string[];
   onStart:(costUsd:number)=>void;
   onComplete:(result:{success:boolean;missionCostUsd:number;payoutUsd:number;
     wetMassKg:number;returnedScience:number})=>void;
@@ -82,8 +86,9 @@ export default function EarthObservationMission({
   const {choices,run}=state;
   useEffect(()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch{/* optional storage */}},[state]);
 
-  const config:ObservationConfig=useMemo(()=>({choices,spacecraft,launcher,completedWithEngine}),
-    [choices,spacecraft,launcher,completedWithEngine]);
+  const config:ObservationConfig=useMemo(()=>({
+    choices,spacecraft,launcher,completedWithEngine,technologyDiscount,
+  }),[choices,spacecraft,launcher,completedWithEngine,technologyDiscount]);
   const current=useMemo(()=>{
     try{return {simulation:simulateObservation(config),error:''}}
     catch(error){return {simulation:null,error:error instanceof Error?error.message:'Invalid design'}}
@@ -96,7 +101,7 @@ export default function EarthObservationMission({
   const preview=forecast?.preview;
   const activeInstrument=INSTRUMENTS[choices.instrument];
   const budgetOK=!!preview&&preview.missionCostUsd<=OBSERVATION_BUDGET_USD&&preview.missionCostUsd<=cash;
-  const canStart=!!preview&&preview.launchReady&&budgetOK;
+  const canStart=!!preview&&preview.launchReady&&budgetOK&&lockedTechnologies.length===0;
   function choicesChange<K extends keyof ObservationChoices>(key:K,val:ObservationChoices[K]){
     setState(p=>({...p,choices:{...p.choices,[key]:val}}));
   }
@@ -204,6 +209,29 @@ export default function EarthObservationMission({
             <div><span>Power / thermal / eclipse efficiency</span><strong>{Math.round(preview.effectPower*100)}% / {Math.round(preview.effectThermal*100)}% / {Math.round(preview.effectEclipse*100)}%</strong></div>
             <div><span>Program balance</span><strong>{usd(cash)} available</strong></div>
           </div>
+          <div className="ob-research-economics">
+            <div className="eyebrow">SPACECRAFT TECHNOLOGY / PROCUREMENT ECONOMICS</div>
+            <div><span>Installed spacecraft bus, propulsion and power hardware</span>
+              <strong>{usd(preview.spacecraftProcurement.beforeDiscountUsd)}</strong></div>
+            <div><span>Manufacturing learning curve savings</span>
+              <strong>{'-'+usd(preview.spacecraftProcurement.discountUsd)}</strong></div>
+            <div className="total"><span>Hardware procurement after research</span>
+              <strong>{usd(preview.spacecraftProcurement.afterDiscountUsd)}</strong></div>
+            <p>Includes illustrative procurement for flight hardware. The mission total also includes
+              your launch rocket, scientific payload, radio, storage and mission upgrades.
+              These are game financial estimates, not supplier quotes.</p>
+          </div>
+          <div className="ob-risk-review">
+            <div><span>ENGINEERING RISK REVIEW</span>
+              <strong>{preview.riskReview.level.toUpperCase()}</strong></div>
+            {preview.riskReview.drivers.length?
+              <p>{preview.riskReview.drivers.join(' · ')}</p>:
+              <p>Capacity margins are positive in this simple check. Deployment, redundancy, pointing, weather and schedule risks are not yet quantified.</p>}
+            <small>Risk is qualitative, not an actual flight failure probability or official NASA TRL assessment.</small>
+          </div>
+          {lockedTechnologies.length>0&&<p className="ob-research-lock" role="status">
+            RESEARCH REQUIRED: {lockedTechnologies.length} selected spacecraft technology unlock(s) are missing. Research them in Research &amp; Roadmap or enable Dev Mode for demonstration.
+          </p>}
           <div className="ob-warning-list" aria-label="Engineering review findings">
             {preview.warnings.length===0?
               <p className="ob-good">All first-order capacity checks are within modeled limits.</p>:
@@ -215,7 +243,9 @@ export default function EarthObservationMission({
             <div><strong>Ready for seven-day observation campaign?</strong>
               <small>{canStart
                 ? forecast?.successful?'Predicted science objective achievable with selected assumptions.':'You can launch, but the forecast warns of a likely science failure.'
-                : 'Resolve launch capacity, budget or available cash before launch.'}</small></div>
+                : lockedTechnologies.length>0
+                  ?'Unlock selected technology in Research & Roadmap or enable Dev Mode to proceed.'
+                  :'Resolve launch capacity, budget or available cash before launch.'}</small></div>
             <button className="launch-button" onClick={start} disabled={!canStart}>Launch Earth Observation One <span>↗</span></button>
           </div>
         </>}
@@ -227,6 +257,9 @@ export default function EarthObservationMission({
       <div className="panel ob-operations">
         <div className="eyebrow">04 / FLIGHT OPERATIONS · {'DAYS 1–7'}</div>
         <h3>{run.phase==='debrief'?'Mission complete — engineering debrief':'Satellite in orbit — collecting and returning science'}</h3>
+        <MissionOrbitScene altitudeKm={run.config.choices.orbitAltitudeKm}
+          completedDays={run.day} finished={run.phase==='debrief'}
+          downlinkAvailable={snapshot.preview.downlinkMbPerDay>0}/>
         <div className="ob-progress-strip">
           {Array.from({length:OBSERVATION_DAYS},(_,i)=><div key={i}
             className={'ob-day-tile '+(i<run.day?'done':'')}
