@@ -139,6 +139,31 @@ describe('coupled in-space spacecraft engineering', () => {
     expect(large.thermalMarginW).toBeGreaterThan(0);
   });
 
+  it('does not count NEXT-C published PPU input as though it were thruster-only discharge input', () => {
+    const next=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,thrusterId:'next-c'});
+    expect(next.primaryMode.thrusterInputW).toBe(7330);
+    expect(next.primaryMode.completePropulsionPowerW).toBeCloseTo(7330/.94,6);
+    expect(next.canPowerThruster).toBe(false);
+  });
+
+  it('propulsion burn order affects ideal delta-v without changing installed mass', () => {
+    const base={...DEFAULT_SUBSYSTEM_DESIGN,secondaryThrusterId:'mono-reference' as const,
+      secondaryPropellantMassKg:4};
+    const first=sizeSubsystemDesign({...base,burnOrder:'primary-first'});
+    const second=sizeSubsystemDesign({...base,burnOrder:'secondary-first'});
+    expect(first.modeledWetMassKg).toBeCloseTo(second.modeledWetMassKg);
+    expect(first.totalPropellantKg).toBeCloseTo(second.totalPropellantKg);
+    expect(first.idealDeltaVms).not.toBeCloseTo(second.idealDeltaVms,1);
+  });
+
+  it('reported mass breakdown sums to full modeled wet mass', () => {
+    const r=sizeSubsystemDesign({...DEFAULT_SUBSYSTEM_DESIGN,
+      secondaryThrusterId:'mono-reference',secondaryPropellantMassKg:3,
+      payloadInstrumentId:'magnetometer'});
+    const sum=r.massBreakdown.reduce((n,item)=>n+item.massKg,0);
+    expect(sum).toBeCloseTo(r.modeledWetMassKg,7);
+  });
+
   it('rejects nonphysical values rather than reporting plausible mass estimates', () => {
     expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, radiatorTemperatureK: -10 })).toThrow(RangeError);
     expect(() => sizeSubsystemDesign({ ...DEFAULT_SUBSYSTEM_DESIGN, propellantMassKg: 0 })).toThrow(RangeError);
