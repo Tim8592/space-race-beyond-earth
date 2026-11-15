@@ -274,6 +274,7 @@ export function reviewCampaignMission(args:{
   rocketProgramLevel?:number;
   orbitalAssemblyUnlocked?:boolean;
   priorServiceFlights?:number;
+  canadianSuccesses?:number;
 }):MissionReview{
   const {definition:d,day,options:o,spacecraft,launcher,capitalUsd}=args;
   const destinationAu=d.target==='jupiter'?5.2029:d.target==='mars'?1.5237:
@@ -341,6 +342,7 @@ export function reviewCampaignMission(args:{
     vehicle:launcher,tier:args.rocketProgramLevel??0,
     assemblyUnlocked:args.orbitalAssemblyUnlocked??false,
     priorFlights:args.priorServiceFlights??args.completedWithLauncherEngine??0,
+    canadianSuccesses:args.canadianSuccesses??0,
   });
   const launchCapacityKg=launchManifest.capacityKg;
   const hardware=spacecraftHardwareEconomics(design,args.productionDiscount);
