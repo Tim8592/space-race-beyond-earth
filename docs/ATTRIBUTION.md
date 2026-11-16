@@ -1,6 +1,8 @@
 # Sources, tools, and SI/AI attribution
 
-This file documents publicly linked resources actually used by **Space Race: Beyond Earth through v1.0**, including its initial prototype and subsequent NASA component and orbital data. Keep this updated for Space Apps judging.
+This file documents publicly linked resources used by **Space Race: Beyond Earth** throughout development, with detailed technical provenance and AI/SI disclosure.
+
+**For the 2026 NASA Space Apps submission (including links that would not fit in the entry form), start with [Complete NASA, Space Agency Partner & Other Resource Links](SPACE_APPS_RESOURCE_LINKS.md).** That judge-facing index includes full public URLs and indicates which sources supplied numerical data, which were used only as research or inspiration, and which are software/tool dependencies.
 
 ## NASA / JPL resources used in the application
 
