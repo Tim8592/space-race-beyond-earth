@@ -4,8 +4,6 @@
 
 An interactive, physics-informed space exploration and strategy game built for the **2026 NASA Space Apps Challenge — Space Mission Design Game**. Choose scientific objectives, assemble spacecraft, balance power, propulsion, cooling, payload, data and cost, then launch and operate missions.
 
-[![Engineering tests and build](https://github.com/Tim8592/space-race-beyond-earth/actions/workflows/engineering-ci.yml/badge.svg)](https://github.com/Tim8592/space-race-beyond-earth/actions/workflows/engineering-ci.yml)
-
 > **New here?** Start with [Play in a few minutes](#play-in-a-few-minutes). The core game runs in your web browser on your own computer with **no accounts, NASA API key, Java, or special hardware required**. A separately hosted public game URL is not provided by this repository; follow the local setup steps below.
 >
 > **NASA Space Apps judges:** The [complete public source and attribution index](docs/SPACE_APPS_RESOURCE_LINKS.md) includes NASA/JPL datasets, Canadian Space Agency resources, other references, software, visual credits, and AI/SI disclosure. The submission form had limited room for links.
