@@ -192,7 +192,9 @@ The [GitHub Actions workflow](.github/workflows/engineering-ci.yml) runs the web
 - [Orekit backend documentation](orekit-service/README.md)
 - [Detailed technical README and development history (archived)](README_DETAILS.md)
 
-**Project status:** Hackathon prototype with simplified educational calculations, not a flight-planning product. This independent entry is **not sponsored or endorsed by NASA, CSA or referenced companies**. A repository license for the project's original code has not yet been selected; do not assume the absence of a license grants unrestricted reuse.
+**License:** The project's original source code is available under the [Apache License, Version 2.0](LICENSE) (Copyright 2026 Timothy J.E. Bruneau). Third-party libraries, NASA/CSA materials, reference images and 3D models remain subject to their own terms and attribution; see [credits and data sources](docs/SPACE_APPS_RESOURCE_LINKS.md).
+
+**Project status:** Hackathon prototype with simplified educational calculations, not a flight-planning product. This independent entry is **not sponsored or endorsed by NASA, CSA or referenced companies**.
 
 ---
 
