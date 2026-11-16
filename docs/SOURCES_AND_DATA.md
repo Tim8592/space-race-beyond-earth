@@ -2,6 +2,8 @@
 
 Reviewed 2026-11-14. This document is intended to make the actual use of NASA source data easy for judges to verify. The game is an independent, educational prototype, not an endorsed mission-design tool.
 
+**Space Apps submission overflow references:** [Complete NASA, CSA/Space Agency Partner and Other Resource Links](SPACE_APPS_RESOURCE_LINKS.md) collects all public URLs, third-party development tools, industry inspiration and copyright/AI credits in one accessible document. This file supplies the deeper data-lineage and engineering-fidelity explanations.
+
 ## Challenge-resource NASA data used as input, not merely referenced
 
 **NASA CubeSat 101**, NASA CubeSat Launch Initiative (2017), Section 1.1:
